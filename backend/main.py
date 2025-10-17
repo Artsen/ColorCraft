@@ -10,6 +10,7 @@ import uvicorn
 from color_extractor import extract_colors
 from color_theory import analyze_color_theory
 from accessibility import analyze_accessibility
+from color_suggestions import generate_all_suggestions
 
 
 app = FastAPI(title="ColorCraft API", version="1.0.0")
@@ -102,7 +103,7 @@ async def analyze_colors_endpoint(request: ColorAnalysisRequest):
         Comprehensive color analysis including harmonies, accessibility, and score
     """
     try:
-        colors = [color.dict() for color in request.colors]
+        colors = [color.model_dump() for color in request.colors]
         
         # Perform color theory analysis
         theory_analysis = analyze_color_theory(colors)
@@ -122,6 +123,38 @@ async def analyze_colors_endpoint(request: ColorAnalysisRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Error analyzing colors: {str(e)}"
+        )
+
+
+@app.post("/api/suggest-colors")
+async def suggest_colors_endpoint(request: ColorAnalysisRequest):
+    """
+    Generate harmonious color suggestions for a palette.
+    
+    Args:
+        request: ColorAnalysisRequest with list of colors
+        
+    Returns:
+        Comprehensive color suggestions for each color in the palette
+    """
+    try:
+        colors = [color.model_dump() for color in request.colors]
+        
+        # Generate suggestions for each color
+        all_suggestions = []
+        for color in colors:
+            suggestions = generate_all_suggestions(color)
+            all_suggestions.append(suggestions)
+        
+        return {
+            "success": True,
+            "suggestions": all_suggestions
+        }
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating suggestions: {str(e)}"
         )
 
 

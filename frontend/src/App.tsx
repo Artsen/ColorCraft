@@ -3,6 +3,7 @@ import ImageUpload from './components/ImageUpload'
 import ColorPalette from './components/ColorPalette'
 import ColorWheel from './components/ColorWheel'
 import AnalysisResults from './components/AnalysisResults'
+import ColorSuggestions from './components/ColorSuggestions'
 
 export interface Color {
   hex: string
@@ -172,6 +173,13 @@ function App() {
                   )}
                 </div>
               </div>
+
+              {/* Color Suggestions */}
+              {colors.length > 0 && (
+                <div className="mt-8 pt-8 border-t border-gray-200">
+                  <ColorSuggestions colors={colors} onAddColor={handleAddColor} />
+                </div>
+              )}
             </>
           )}
         </div>
