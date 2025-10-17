@@ -26,7 +26,7 @@ interface ColorSuggestionData {
 
 interface ColorSuggestionsProps {
   colors: Color[]
-  onAddColor: (color: Color) => void
+  onAddColor: (color?: Color) => void
 }
 
 export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestionsProps) {
@@ -66,6 +66,8 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
       rgb: suggestion.rgb,
       hsl: suggestion.hsl,
     }
+    // Add the color to the palette by calling parent's add handler
+    // We need to modify the parent to accept a color parameter
     onAddColor(newColor)
   }
 

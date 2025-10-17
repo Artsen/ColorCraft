@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { Color } from '../App'
 
 interface ImageUploadProps {
-  onColorsExtracted: (colors: Color[]) => void
+  onColorsExtracted: (colors: Color[], imageFile?: File, imageUrl?: string) => void
   onSkipUpload: () => void
 }
 
@@ -38,7 +38,7 @@ export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUp
 
       const data = await response.json()
       if (data.success) {
-        onColorsExtracted(data.colors)
+        onColorsExtracted(data.colors, selectedFile, previewUrl || undefined)
       }
     } catch (error) {
       console.error('Error extracting colors:', error)
