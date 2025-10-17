@@ -70,25 +70,23 @@ export default function ColorPalette({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold text-gray-800">Color Palette</h3>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {colors.map((color, index) => (
           <div
             key={index}
-            className="relative bg-gray-50 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow"
+            className="relative bg-dark-tertiary rounded-lg p-3 border border-border-subtle hover:border-border-default transition-colors"
           >
             {/* Remove Button */}
             <button
               onClick={() => onRemoveColor(index)}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors text-xs font-bold"
+              className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center transition-colors text-xs"
             >
               ×
             </button>
 
             {/* Color Swatch */}
             <div
-              className="w-full h-24 rounded-md mb-3 border-2 border-gray-200 cursor-pointer"
+              className="w-full h-20 rounded-md mb-3 cursor-pointer"
               style={{ backgroundColor: color.hex }}
               onClick={() => {
                 const input = document.getElementById(`color-picker-${index}`) as HTMLInputElement
@@ -105,25 +103,23 @@ export default function ColorPalette({
             />
 
             {/* Color Values */}
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center space-x-2">
-                <span className="font-semibold text-gray-600">HEX:</span>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-text-tertiary text-[10px]">HEX</span>
                 <input
                   type="text"
                   value={color.hex}
                   onChange={(e) => handleHexChange(index, e.target.value)}
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
+                  className="flex-1 px-2 py-1 bg-dark-secondary border border-border-subtle rounded text-xs font-mono text-text-primary focus:border-purple-500 focus:outline-none"
                 />
               </div>
 
-              <div className="text-gray-600">
-                <span className="font-semibold">RGB:</span>{' '}
-                {color.rgb.r}, {color.rgb.g}, {color.rgb.b}
+              <div className="text-text-secondary text-[10px]">
+                RGB: {color.rgb.r}, {color.rgb.g}, {color.rgb.b}
               </div>
 
-              <div className="text-gray-600">
-                <span className="font-semibold">HSL:</span>{' '}
-                {color.hsl.h}°, {color.hsl.s}%, {color.hsl.l}%
+              <div className="text-text-secondary text-[10px]">
+                HSL: {color.hsl.h}°, {color.hsl.s}%, {color.hsl.l}%
               </div>
             </div>
           </div>
@@ -132,11 +128,11 @@ export default function ColorPalette({
         {/* Add Color Button */}
         <button
           onClick={onAddColor}
-          className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-purple-500 hover:bg-purple-50 transition-all flex items-center justify-center min-h-[180px]"
+          className="bg-dark-tertiary border border-dashed border-border-default rounded-lg p-3 hover:border-purple-500 hover:bg-dark-hover transition-all flex items-center justify-center min-h-[140px]"
         >
           <div className="text-center">
-            <div className="text-4xl text-gray-400 mb-2">+</div>
-            <div className="text-sm text-gray-600 font-medium">Add Color</div>
+            <div className="text-3xl text-text-tertiary mb-1">+</div>
+            <div className="text-xs text-text-secondary">Add Color</div>
           </div>
         </button>
       </div>

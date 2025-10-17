@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Color } from '../App'
+import MiniColorWheel from './MiniColorWheel'
 
 interface Suggestion {
   hex: string
@@ -66,8 +67,6 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
       rgb: suggestion.rgb,
       hsl: suggestion.hsl,
     }
-    // Add the color to the palette by calling parent's add handler
-    // We need to modify the parent to accept a color parameter
     onAddColor(newColor)
   }
 
@@ -75,21 +74,37 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
     setExpandedHarmony(expandedHarmony === harmonyType ? null : harmonyType)
   }
 
+  // Helper to extract angles and colors for mini wheel
+  const getHarmonyVisualization = (harmony: HarmonyGroup, baseHue: number) => {
+    const angles = [baseHue]
+    const colors = [suggestions[selectedColorIndex].base_color.hex]
+    
+    harmony.suggestions.forEach(sug => {
+      angles.push(sug.hsl.h)
+      colors.push(sug.hex)
+    })
+    
+    return { angles, colors }
+  }
+
   if (suggestions.length === 0) {
     return (
-      <div className="text-center py-8">
-        <button
-          onClick={fetchSuggestions}
-          disabled={loading || colors.length === 0}
-          className="bg-gradient-to-r from-green-600 to-teal-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:from-green-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-        >
-          {loading ? 'Generating Suggestions...' : '✨ Suggest Harmonious Colors'}
-        </button>
-        {colors.length === 0 && (
-          <p className="text-sm text-gray-500 mt-2">
-            Add colors to your palette first
-          </p>
-        )}
+      <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
+        <div className="text-center">
+          <h2 className="text-lg font-medium text-text-primary mb-4">Color Suggestions</h2>
+          <button
+            onClick={fetchSuggestions}
+            disabled={loading || colors.length === 0}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          >
+            {loading ? 'Generating...' : 'Suggest Harmonious Colors'}
+          </button>
+          {colors.length === 0 && (
+            <p className="text-xs text-text-tertiary mt-2">
+              Add colors to your palette first
+            </p>
+          )}
+        </div>
       </div>
     )
   }
@@ -97,195 +112,171 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
   const currentSuggestion = suggestions[selectedColorIndex]
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">
-          Color Suggestions & Harmony Guide
-        </h2>
-        <button
-          onClick={fetchSuggestions}
-          disabled={loading}
-          className="text-sm text-purple-600 hover:text-purple-700 underline"
-        >
-          Refresh Suggestions
-        </button>
-      </div>
+    <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
+      <h2 className="text-lg font-medium text-text-primary mb-4">Color Suggestions & Harmony Guide</h2>
 
-      {/* Color Selector */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
-          Select a base color to see suggestions:
-        </label>
-        <div className="flex flex-wrap gap-3">
+      {/* Base Color Selector */}
+      <div className="mb-6">
+        <p className="text-sm text-text-secondary mb-3">Select a base color:</p>
+        <div className="flex flex-wrap gap-2">
           {colors.map((color, index) => (
             <button
               key={index}
               onClick={() => setSelectedColorIndex(index)}
-              className={`relative group ${
-                selectedColorIndex === index ? 'ring-4 ring-purple-500' : ''
+              className={`w-12 h-12 rounded-md transition-all ${
+                selectedColorIndex === index
+                  ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-dark-secondary'
+                  : 'hover:scale-105'
               }`}
-            >
-              <div
-                className="w-16 h-16 rounded-lg shadow-md transition-transform hover:scale-110"
-                style={{ backgroundColor: color.hex }}
-              />
-              {selectedColorIndex === index && (
-                <div className="absolute -top-2 -right-2 bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                  ✓
-                </div>
-              )}
-            </button>
+              style={{ backgroundColor: color.hex }}
+              title={color.hex}
+            />
           ))}
         </div>
       </div>
 
-      {/* Base Color Info */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border-l-4 border-purple-500">
-        <div className="flex items-center space-x-4">
-          <div
-            className="w-20 h-20 rounded-lg shadow-lg"
-            style={{ backgroundColor: currentSuggestion.base_color.hex }}
-          />
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Base Color</h3>
-            <p className="text-sm text-gray-600 font-mono">
-              {currentSuggestion.base_color.hex}
-            </p>
-            <p className="text-xs text-gray-500">
-              HSL: {currentSuggestion.base_color.hsl.h}°,{' '}
-              {currentSuggestion.base_color.hsl.s}%,{' '}
-              {currentSuggestion.base_color.hsl.l}%
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Harmony Types */}
+      <div className="space-y-3">
+        {currentSuggestion.harmonies.map((harmony) => {
+          const isExpanded = expandedHarmony === harmony.type
+          const { angles, colors: harmonyColors } = getHarmonyVisualization(
+            harmony,
+            currentSuggestion.base_color.hsl.h
+          )
 
-      {/* Harmony Groups */}
-      <div className="space-y-4">
-        {currentSuggestion.harmonies.map((harmony, harmonyIndex) => (
-          <div
-            key={harmonyIndex}
-            className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
-          >
-            {/* Harmony Header */}
-            <button
-              onClick={() => toggleHarmony(harmony.type)}
-              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+          return (
+            <div
+              key={harmony.type}
+              className="border border-border-subtle rounded-lg overflow-hidden"
             >
-              <div className="flex-1 text-left">
-                <div className="flex items-center space-x-3">
-                  <h3 className="text-lg font-bold text-gray-800">
+              {/* Harmony Header */}
+              <button
+                onClick={() => toggleHarmony(harmony.type)}
+                className="w-full px-4 py-3 flex items-center justify-between hover:bg-dark-hover transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-text-primary">
                     {harmony.type}
-                  </h3>
-                  <span className="text-sm text-purple-600 font-semibold">
+                  </span>
+                  <span className="text-xs text-text-tertiary">
                     {harmony.angle}
                   </span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  {harmony.description}
-                </p>
-              </div>
-              <svg
-                className={`w-6 h-6 text-gray-400 transition-transform ${
-                  expandedHarmony === harmony.type ? 'rotate-180' : ''
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
+                <svg
+                  className={`w-4 h-4 text-text-secondary transition-transform ${
+                    isExpanded ? 'rotate-180' : ''
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
 
-            {/* Expanded Content */}
-            {expandedHarmony === harmony.type && (
-              <div className="px-6 pb-6 space-y-4 border-t border-gray-100">
-                {/* Mood & Examples */}
-                <div className="grid md:grid-cols-2 gap-4 pt-4">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                      🎨 Mood & Feel
-                    </h4>
-                    <p className="text-sm text-gray-600">{harmony.mood}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                      💡 Examples
-                    </h4>
-                    <p className="text-sm text-gray-600">{harmony.examples}</p>
-                  </div>
-                </div>
+              {/* Harmony Content */}
+              {isExpanded && (
+                <div className="px-4 pb-4 border-t border-border-subtle bg-dark-tertiary">
+                  <div className="py-4 space-y-4">
+                    {/* Mini Color Wheel */}
+                    <div className="flex justify-center">
+                      <MiniColorWheel
+                        baseHue={currentSuggestion.base_color.hsl.h}
+                        angles={angles}
+                        colors={harmonyColors}
+                        size={140}
+                      />
+                    </div>
 
-                {/* Use Cases */}
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                    ✅ Best Used For:
-                  </h4>
-                  <ul className="space-y-1">
-                    {harmony.use_cases.map((useCase, idx) => (
-                      <li key={idx} className="text-sm text-gray-600 flex items-start">
-                        <span className="text-green-500 mr-2">•</span>
-                        {useCase}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                    {/* Description */}
+                    <div>
+                      <p className="text-sm text-text-secondary mb-2">
+                        {harmony.description}
+                      </p>
+                    </div>
 
-                {/* Suggested Colors */}
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                    Suggested Colors:
-                  </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {harmony.suggestions.map((suggestion, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-gray-50 rounded-lg p-3 hover:shadow-md transition-shadow"
-                      >
-                        <div
-                          className="w-full h-20 rounded-md mb-2 shadow-sm"
-                          style={{ backgroundColor: suggestion.hex }}
-                        />
-                        <p className="text-xs font-semibold text-gray-700 mb-1">
-                          {suggestion.name}
-                        </p>
-                        <p className="text-xs text-gray-500 mb-2">
-                          {suggestion.description}
-                        </p>
-                        <p className="text-xs font-mono text-gray-600 mb-2">
-                          {suggestion.hex}
-                        </p>
-                        <button
-                          onClick={() => handleAddSuggestion(suggestion)}
-                          className="w-full bg-purple-600 text-white text-xs py-1.5 rounded hover:bg-purple-700 transition-colors font-medium"
-                        >
-                          + Add to Palette
-                        </button>
+                    {/* Mood */}
+                    <div>
+                      <p className="text-xs text-text-tertiary mb-1">Mood & Feel:</p>
+                      <p className="text-sm text-text-secondary">{harmony.mood}</p>
+                    </div>
+
+                    {/* Examples */}
+                    <div>
+                      <p className="text-xs text-text-tertiary mb-1">Examples:</p>
+                      <p className="text-sm text-text-secondary">{harmony.examples}</p>
+                    </div>
+
+                    {/* Use Cases */}
+                    <div>
+                      <p className="text-xs text-text-tertiary mb-2">Best used for:</p>
+                      <ul className="space-y-1">
+                        {harmony.use_cases.map((useCase, idx) => (
+                          <li key={idx} className="text-sm text-text-secondary flex items-start">
+                            <span className="text-purple-500 mr-2">•</span>
+                            <span>{useCase}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Suggested Colors */}
+                    <div>
+                      <p className="text-xs text-text-tertiary mb-3">Suggested colors:</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {harmony.suggestions.map((suggestion, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-dark-secondary rounded-lg p-3 border border-border-subtle"
+                          >
+                            <div className="flex items-center gap-3 mb-2">
+                              <div
+                                className="w-10 h-10 rounded-md flex-shrink-0"
+                                style={{ backgroundColor: suggestion.hex }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-text-primary truncate">
+                                  {suggestion.name}
+                                </p>
+                                <p className="text-xs text-text-tertiary">
+                                  {suggestion.hex}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="text-xs text-text-secondary mb-2 line-clamp-2">
+                              {suggestion.description}
+                            </p>
+                            <button
+                              onClick={() => handleAddSuggestion(suggestion)}
+                              className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded transition-colors"
+                            >
+                              Add to Palette
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          )
+        })}
       </div>
 
-      {/* Quick Tips */}
-      <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500">
-        <h4 className="text-sm font-bold text-blue-900 mb-2">💡 Pro Tips</h4>
-        <ul className="space-y-1 text-sm text-blue-800">
-          <li>• Click any harmony type to expand and see suggested colors</li>
-          <li>• Use "Add to Palette" to quickly test suggestions</li>
-          <li>• Combine multiple harmony types for rich, complex palettes</li>
-          <li>• Start with 2-3 colors, then add complementary accents</li>
-          <li>• Check accessibility after adding new colors</li>
+      {/* Pro Tips */}
+      <div className="mt-6 p-4 bg-dark-tertiary rounded-lg border border-border-subtle">
+        <p className="text-xs font-medium text-text-primary mb-2">💡 Pro Tips</p>
+        <ul className="space-y-1 text-xs text-text-secondary">
+          <li>• Click any color above to see its harmony suggestions</li>
+          <li>• Expand harmony types to view detailed relationships</li>
+          <li>• Add suggested colors directly to your palette</li>
+          <li>• Combine multiple harmony types for rich palettes</li>
         </ul>
       </div>
     </div>

@@ -49,12 +49,12 @@ export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUp
   }
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+    <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
+      <div className="mb-6">
+        <h2 className="text-lg font-medium text-text-primary mb-2">
           Upload Image & Extract Colors
         </h2>
-        <p className="text-gray-600">
+        <p className="text-sm text-text-secondary">
           Upload an image to extract dominant colors, or skip to add colors manually
         </p>
       </div>
@@ -62,21 +62,21 @@ export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUp
       {/* File Upload Area */}
       <div
         onClick={() => fileInputRef.current?.click()}
-        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-purple-500 transition-colors"
+        className="border-2 border-dashed border-border-default rounded-lg p-8 text-center cursor-pointer hover:border-purple-500 transition-colors mb-6"
       >
         {previewUrl ? (
           <div className="space-y-4">
             <img
               src={previewUrl}
               alt="Preview"
-              className="max-h-64 mx-auto rounded-lg shadow-md"
+              className="max-h-48 mx-auto rounded-lg"
             />
-            <p className="text-sm text-gray-600">{selectedFile?.name}</p>
+            <p className="text-sm text-text-secondary">{selectedFile?.name}</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-text-tertiary"
               stroke="currentColor"
               fill="none"
               viewBox="0 0 48 48"
@@ -88,11 +88,10 @@ export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUp
                 strokeLinejoin="round"
               />
             </svg>
-            <div className="text-gray-600">
-              <span className="font-semibold text-purple-600">Click to upload</span> or
-              drag and drop
+            <div className="text-text-secondary text-sm">
+              <span className="font-medium text-purple-500">Click to upload</span> or drag and drop
             </div>
-            <p className="text-xs text-gray-500">JPG, PNG, or WebP</p>
+            <p className="text-xs text-text-tertiary">JPG, PNG, or WebP</p>
           </div>
         )}
         <input
@@ -109,31 +108,31 @@ export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUp
         {selectedFile ? (
           <>
             {/* Number of Colors Selector */}
-            <div className="flex items-center space-x-3">
-              <label className="text-gray-700 font-medium">Colors:</label>
+            <div className="flex items-center gap-3">
+              <label className="text-sm text-text-secondary">Colors:</label>
               <input
                 type="range"
                 min="3"
                 max="10"
                 value={nColors}
                 onChange={(e) => setNColors(parseInt(e.target.value))}
-                className="w-32"
+                className="w-24"
               />
-              <span className="text-lg font-bold text-purple-600 w-8">{nColors}</span>
+              <span className="text-sm font-medium text-text-primary w-6">{nColors}</span>
             </div>
 
             <button
               onClick={handleExtractColors}
               disabled={loading}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-6 py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {loading ? 'Extracting Colors...' : 'Find Colors'}
+              {loading ? 'Extracting...' : 'Extract Colors'}
             </button>
           </>
         ) : (
           <button
             onClick={onSkipUpload}
-            className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all shadow-lg"
+            className="bg-dark-tertiary hover:bg-dark-hover text-text-primary text-sm px-6 py-2.5 rounded-md transition-colors border border-border-default font-medium"
           >
             Skip & Add Colors Manually
           </button>

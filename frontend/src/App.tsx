@@ -76,7 +76,6 @@ function App() {
 
   const handleSkipUpload = () => {
     setShowUpload(false)
-    // Start with 3 default colors
     const defaultColors: Color[] = [
       {
         hex: '#667eea',
@@ -155,19 +154,18 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-dark-primary">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-white mb-2">ColorCraft</h1>
-          <p className="text-xl text-purple-100">
-            Intelligent Color Theory Analysis & Harmony Detection
+        <div className="mb-12">
+          <h1 className="text-3xl font-semibold text-text-primary mb-2">ColorCraft</h1>
+          <p className="text-text-secondary text-sm">
+            Intelligent color theory analysis and harmony detection
           </p>
         </div>
 
         {/* Main Content */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8 mb-8">
-          {/* Image Upload Section */}
+        <div className="space-y-6">
           {showUpload ? (
             <ImageUpload 
               onColorsExtracted={handleColorsExtracted}
@@ -175,34 +173,30 @@ function App() {
             />
           ) : (
             <>
-              {/* Uploaded Image Preview & Re-extraction */}
+              {/* Uploaded Image Preview */}
               {uploadedImage && (
-                <div className="mb-8 pb-8 border-b border-gray-200">
+                <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800">Source Image</h2>
+                    <h2 className="text-lg font-medium text-text-primary">Source Image</h2>
                     <button
                       onClick={handleReset}
-                      className="text-sm text-gray-600 hover:text-purple-600 underline"
+                      className="text-sm text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      Upload Different Image
+                      Change image
                     </button>
                   </div>
 
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    {/* Image Preview */}
-                    <div className="mb-4">
-                      <img
-                        src={uploadedImage.previewUrl}
-                        alt="Uploaded"
-                        className="max-h-64 mx-auto rounded-lg shadow-md"
-                      />
-                    </div>
+                  <div className="space-y-4">
+                    <img
+                      src={uploadedImage.previewUrl}
+                      alt="Uploaded"
+                      className="max-h-48 mx-auto rounded-lg"
+                    />
 
-                    {/* Re-extraction Controls */}
-                    <div className="flex items-center justify-center gap-6 pt-4 border-t border-gray-200">
-                      <div className="flex items-center space-x-3">
-                        <label className="text-gray-700 font-medium">
-                          Number of colors:
+                    <div className="flex items-center justify-center gap-4 pt-4 border-t border-border-subtle">
+                      <div className="flex items-center gap-3">
+                        <label className="text-sm text-text-secondary">
+                          Colors:
                         </label>
                         <input
                           type="range"
@@ -210,9 +204,9 @@ function App() {
                           max="10"
                           value={nColors}
                           onChange={(e) => setNColors(parseInt(e.target.value))}
-                          className="w-32"
+                          className="w-24"
                         />
-                        <span className="text-lg font-bold text-purple-600 w-8">
+                        <span className="text-sm font-medium text-text-primary w-6">
                           {nColors}
                         </span>
                       </div>
@@ -220,25 +214,25 @@ function App() {
                       <button
                         onClick={handleReExtract}
                         disabled={extracting}
-                        className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {extracting ? 'Re-extracting...' : '🔄 Re-extract Colors'}
+                        {extracting ? 'Extracting...' : 'Re-extract'}
                       </button>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Color Palette Section */}
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-800">Your Color Palette</h2>
+              {/* Color Palette */}
+              <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-text-primary">Color Palette</h2>
                   {!uploadedImage && (
                     <button
                       onClick={handleReset}
-                      className="text-sm text-gray-600 hover:text-purple-600 underline"
+                      className="text-sm text-text-secondary hover:text-text-primary transition-colors"
                     >
-                      Start Over
+                      Start over
                     </button>
                   )}
                 </div>
@@ -250,28 +244,26 @@ function App() {
                   onRemoveColor={handleRemoveColor}
                 />
 
-                {/* Analyze Button */}
-                <div className="text-center">
+                <div className="mt-6 flex justify-center">
                   <button
                     onClick={handleAnalyze}
                     disabled={loading || colors.length < 2}
-                    className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                   >
-                    {loading ? 'Analyzing...' : 'Apply Color Theory'}
+                    {loading ? 'Analyzing...' : 'Analyze Colors'}
                   </button>
-                  {colors.length < 2 && (
-                    <p className="text-sm text-gray-500 mt-2">
-                      Add at least 2 colors to analyze
-                    </p>
-                  )}
                 </div>
+                
+                {colors.length < 2 && (
+                  <p className="text-xs text-text-tertiary text-center mt-2">
+                    Add at least 2 colors to analyze
+                  </p>
+                )}
               </div>
 
               {/* Color Suggestions */}
               {colors.length > 0 && (
-                <div className="mt-8 pt-8 border-t border-gray-200">
-                  <ColorSuggestions colors={colors} onAddColor={handleAddColor} />
-                </div>
+                <ColorSuggestions colors={colors} onAddColor={handleAddColor} />
               )}
             </>
           )}
@@ -279,11 +271,11 @@ function App() {
 
         {/* Analysis Results */}
         {analysis && (
-          <div className="space-y-8">
-            {/* Color Wheel Visualization */}
-            <div className="bg-white rounded-2xl shadow-2xl p-8">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                Color Wheel Visualization
+          <div className="mt-6 space-y-6">
+            {/* Color Wheel */}
+            <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
+              <h2 className="text-lg font-medium text-text-primary mb-6">
+                Color Wheel
               </h2>
               <ColorWheel colors={colors} analysis={analysis} />
             </div>
