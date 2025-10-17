@@ -129,7 +129,7 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
                     <div className="flex-1">
                       <p className="text-sm text-text-primary mb-1">{issue.message}</p>
                       <p className="text-xs text-text-secondary">
-                        {issue.color1} + {issue.color2} • Ratio: {issue.ratio.toFixed(2)}
+                        {issue.color1} + {issue.color2} • Ratio: {issue.ratio?.toFixed(2) ?? 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -161,7 +161,7 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
                     />
                   </div>
                   <span className="text-sm font-medium text-text-primary">
-                    {pair.ratio.toFixed(2)}:1
+                    {pair.ratio?.toFixed(2) ?? 'N/A'}:1
                   </span>
                 </div>
                 <div className="flex gap-2">

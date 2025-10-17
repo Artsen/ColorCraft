@@ -28,7 +28,7 @@ export default function ImageColorPicker({ imageUrl, onColorPicked, onClose }: I
     if (!canvasRef.current || !imageRef.current) return
 
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
     const img = imageRef.current
 
     const loadImage = () => {
@@ -57,7 +57,7 @@ export default function ImageColorPicker({ imageUrl, onColorPicked, onClose }: I
     if (!canvasRef.current || !imageRef.current) return
 
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
     if (!ctx) return
 
     const rect = imageRef.current.getBoundingClientRect()
@@ -84,7 +84,7 @@ export default function ImageColorPicker({ imageUrl, onColorPicked, onClose }: I
     if (!canvasRef.current || !imageRef.current) return
 
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
     if (!ctx) return
 
     const rect = imageRef.current.getBoundingClientRect()

@@ -117,7 +117,7 @@ export default function ColorPalette({
               <input
                 id={`color-picker-${index}`}
                 type="color"
-                value={color.hex}
+                value={color.hex || '#000000'}
                 onChange={(e) => handleHexChange(index, e.target.value)}
                 className="hidden"
               />
@@ -128,7 +128,7 @@ export default function ColorPalette({
                   <span className="text-text-tertiary text-[10px]">HEX</span>
                   <input
                     type="text"
-                    value={color.hex}
+                    value={color.hex || ''}
                     onChange={(e) => handleHexChange(index, e.target.value)}
                     className="flex-1 px-2 py-1 bg-dark-secondary border border-border-subtle rounded text-xs font-mono text-text-primary focus:border-purple-500 focus:outline-none"
                   />
