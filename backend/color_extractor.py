@@ -1,10 +1,9 @@
 """
-Color extraction using UMAP dimensionality reduction and KMeans clustering.
+Color extraction using KMeans clustering in LAB color space.
 """
 import numpy as np
 from PIL import Image
 from sklearn.cluster import KMeans
-from umap import UMAP
 import io
 
 
@@ -98,7 +97,7 @@ def lab_to_rgb(lab):
 
 def extract_colors(image_bytes: bytes, n_colors: int = 5) -> list:
     """
-    Extract dominant colors from an image using UMAP + KMeans.
+    Extract dominant colors from an image using KMeans in LAB color space.
     
     Args:
         image_bytes: Image file bytes
@@ -132,17 +131,17 @@ def extract_colors(image_bytes: bytes, n_colors: int = 5) -> list:
     # Convert to LAB color space for perceptual clustering
     lab_pixels = np.array([rgb_to_lab(pixel) for pixel in pixels])
     
-    # Apply UMAP for dimensionality reduction
-    # Use 3 components to preserve color space structure
-    umap_reducer = UMAP(n_components=min(3, n_colors), n_neighbors=15, min_dist=0.1, random_state=42)
-    reduced_pixels = umap_reducer.fit_transform(lab_pixels)
+    # Apply KMeans clustering directly on LAB space
+    # Using multiple initializations for better results
+    kmeans = KMeans(
+        n_clusters=n_colors, 
+        random_state=42, 
+        n_init=20,
+        max_iter=300
+    )
+    kmeans.fit(lab_pixels)
     
-    # Apply KMeans clustering
-    kmeans = KMeans(n_clusters=n_colors, random_state=42, n_init=10)
-    kmeans.fit(reduced_pixels)
-    
-    # Get cluster centers in original LAB space
-    # Map back from UMAP space to LAB space by finding closest original points
+    # Get cluster centers and find representative colors
     cluster_colors = []
     for i in range(n_colors):
         # Find all pixels in this cluster
