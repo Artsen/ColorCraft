@@ -242,6 +242,7 @@ function App() {
                   onColorChange={handleColorChange}
                   onAddColor={handleAddColor}
                   onRemoveColor={handleRemoveColor}
+                  imageUrl={uploadedImage?.previewUrl}
                 />
 
                 <div className="mt-6 flex justify-center">
