@@ -1,6 +1,8 @@
 # ColorCraft
 
-[![ColorCraft Banner](https://img.shields.io/badge/ColorCraft-Color_Theory_Analysis-purple?style=for-the-badge)](https://github.com/Artsen/ColorCraft)
+![ColorCraft Banner](./colorcraft-banner.png)
+
+[![ColorCraft Badge](https://img.shields.io/badge/ColorCraft-Color_Theory_Analysis-purple?style=for-the-badge)](https://github.com/Artsen/ColorCraft)
 
 ColorCraft is an intelligent visual design companion that transforms images into actionable color insights. Upload a photo, extract dominant colors using perceptual clustering, and instantly analyze color harmonies, accessibility compliance, and aesthetic balance. Whether you're a designer seeking palette validation, a developer ensuring WCAG compliance, or an artist exploring color relationships, ColorCraft provides the data-driven feedback you need.
 
