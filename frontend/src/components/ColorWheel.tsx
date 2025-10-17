@@ -157,8 +157,8 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
       .attr('cx', 0)
       .attr('cy', 0)
       .attr('r', radius - 30)
-      .attr('fill', 'white')
-      .attr('opacity', 0.9)
+      .attr('fill', '#1a1a1a')
+      .attr('opacity', 0.95)
 
     // Add harmony score in center
     wheelGroup
@@ -168,7 +168,7 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
       .attr('text-anchor', 'middle')
       .attr('font-size', '48px')
       .attr('font-weight', 'bold')
-      .attr('fill', '#6366f1')
+      .attr('fill', '#8b5cf6')
       .text(analysis.color_theory.score)
 
     wheelGroup
@@ -177,7 +177,7 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
       .attr('y', 20)
       .attr('text-anchor', 'middle')
       .attr('font-size', '16px')
-      .attr('fill', '#6b7280')
+      .attr('fill', '#a0a0a0')
       .text('Harmony Score')
   }, [colors, analysis])
 

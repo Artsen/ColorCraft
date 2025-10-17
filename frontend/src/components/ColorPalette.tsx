@@ -115,11 +115,11 @@ export default function ColorPalette({
               </div>
 
               <div className="text-text-secondary text-[10px]">
-                RGB: {color.rgb.r}, {color.rgb.g}, {color.rgb.b}
+                RGB: {color.rgb?.r ?? 0}, {color.rgb?.g ?? 0}, {color.rgb?.b ?? 0}
               </div>
 
               <div className="text-text-secondary text-[10px]">
-                HSL: {color.hsl.h}°, {color.hsl.s}%, {color.hsl.l}%
+                HSL: {color.hsl?.h ?? 0}°, {color.hsl?.s ?? 0}%, {color.hsl?.l ?? 0}%
               </div>
             </div>
           </div>
