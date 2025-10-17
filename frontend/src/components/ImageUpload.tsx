@@ -3,9 +3,10 @@ import { Color } from '../App'
 
 interface ImageUploadProps {
   onColorsExtracted: (colors: Color[]) => void
+  onSkipUpload: () => void
 }
 
-export default function ImageUpload({ onColorsExtracted }: ImageUploadProps) {
+export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [nColors, setNColors] = useState(5)
@@ -54,7 +55,7 @@ export default function ImageUpload({ onColorsExtracted }: ImageUploadProps) {
           Upload Image & Extract Colors
         </h2>
         <p className="text-gray-600">
-          Upload an image to extract dominant colors using AI-powered clustering
+          Upload an image to extract dominant colors, or skip to add colors manually
         </p>
       </div>
 
@@ -103,23 +104,24 @@ export default function ImageUpload({ onColorsExtracted }: ImageUploadProps) {
         />
       </div>
 
-      {/* Number of Colors Selector */}
-      {selectedFile && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-center space-x-4">
-            <label className="text-gray-700 font-medium">Number of colors:</label>
-            <input
-              type="range"
-              min="3"
-              max="10"
-              value={nColors}
-              onChange={(e) => setNColors(parseInt(e.target.value))}
-              className="w-48"
-            />
-            <span className="text-lg font-bold text-purple-600 w-8">{nColors}</span>
-          </div>
+      {/* Action Buttons */}
+      <div className="flex items-center justify-center gap-4">
+        {selectedFile ? (
+          <>
+            {/* Number of Colors Selector */}
+            <div className="flex items-center space-x-3">
+              <label className="text-gray-700 font-medium">Colors:</label>
+              <input
+                type="range"
+                min="3"
+                max="10"
+                value={nColors}
+                onChange={(e) => setNColors(parseInt(e.target.value))}
+                className="w-32"
+              />
+              <span className="text-lg font-bold text-purple-600 w-8">{nColors}</span>
+            </div>
 
-          <div className="text-center">
             <button
               onClick={handleExtractColors}
               disabled={loading}
@@ -127,9 +129,16 @@ export default function ImageUpload({ onColorsExtracted }: ImageUploadProps) {
             >
               {loading ? 'Extracting Colors...' : 'Find Colors'}
             </button>
-          </div>
-        </div>
-      )}
+          </>
+        ) : (
+          <button
+            onClick={onSkipUpload}
+            className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all shadow-lg"
+          >
+            Skip & Add Colors Manually
+          </button>
+        )}
+      </div>
     </div>
   )
 }
