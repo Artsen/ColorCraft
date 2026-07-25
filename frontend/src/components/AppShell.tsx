@@ -18,13 +18,18 @@ interface NavigationState {
   export: { available: boolean; reason: string }
 }
 
+export type NetworkStatus =
+  | { state: 'loading' }
+  | { state: 'available'; mode: 'loopback' | 'lan' }
+  | { state: 'unavailable' }
+
 interface AppShellProps {
   view: WorkspaceView
   navigation: NavigationState
   title: string
   sourceName: string
   summary: string
-  networkMode: 'loopback' | 'lan' | null
+  networkStatus: NetworkStatus
   onNavigate: (view: WorkspaceView) => void
   onNewPalette: () => void
   recentPalettes?: Array<{ id: string; name: string }>
@@ -46,7 +51,7 @@ export default function AppShell({
   title,
   sourceName,
   summary,
-  networkMode,
+  networkStatus,
   onNavigate,
   onNewPalette,
   recentPalettes = [],
@@ -54,6 +59,23 @@ export default function AppShell({
   headerActions,
   children,
 }: AppShellProps) {
+  const networkStatusLabel =
+    networkStatus.state === 'loading'
+      ? 'Checking network status'
+      : networkStatus.state === 'unavailable'
+        ? 'Network status unavailable'
+        : networkStatus.mode === 'loopback'
+          ? 'Loopback only'
+          : 'LAN enabled'
+  const networkStatusDescription =
+    networkStatus.state === 'loading'
+      ? 'ColorCraft is checking the resolved network exposure mode.'
+      : networkStatus.state === 'unavailable'
+        ? 'ColorCraft could not confirm the current network exposure mode.'
+        : networkStatus.mode === 'loopback'
+          ? 'The resolved web and API configuration accepts loopback traffic only.'
+          : 'The resolved ColorCraft configuration permits trusted LAN access.'
+
   const availability = (target: WorkspaceView) => {
     if (target === 'create') return { available: true, reason: '' }
     if (target === 'library') return { available: true, reason: '' }
@@ -175,21 +197,19 @@ export default function AppShell({
             <div className="workspace-header-actions">
               {headerActions}
               <StatusBadge
-                variant={networkMode === 'lan' ? 'warning' : 'neutral'}
-                title={
-                  networkMode === 'loopback'
-                    ? 'The resolved web and API configuration accepts loopback traffic only.'
-                    : networkMode === 'lan'
-                      ? 'The resolved ColorCraft configuration permits trusted LAN access.'
-                      : 'ColorCraft could not confirm the current network exposure mode.'
+                variant={
+                  networkStatus.state === 'available' &&
+                  networkStatus.mode === 'lan'
+                    ? 'warning'
+                    : 'neutral'
                 }
+                describedBy="network-status-description"
               >
-                {networkMode === 'loopback'
-                  ? 'Loopback only'
-                  : networkMode === 'lan'
-                    ? 'LAN enabled'
-                    : 'Network status unavailable'}
+                {networkStatusLabel}
               </StatusBadge>
+              <span className="visually-hidden" id="network-status-description">
+                {networkStatusDescription}
+              </span>
             </div>
           </header>
           <div className="workspace-content">{children}</div>

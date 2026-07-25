@@ -183,6 +183,7 @@ contents, clipboard contents, or unrelated palette data in user-facing errors.
 | angular deviation | The measured difference between detected and expected hue geometry. | State the unit when it is not already clear. |
 | meaningful hue | A hue with enough saturation to provide geometric evidence under the current algorithm. | The current minimum saturation is documented in `color-analysis.md`. |
 | contrast ratio | The relative-luminance contrast between two assigned colors. | A ratio is a measurement, not a complete accessibility result. |
+| displayed contrast ratio | The readable contrast ratio shown in the interface. | Preserve enough precision that a failing value does not appear equal to or greater than its threshold. |
 | contrast pair | Two colors evaluated together for contrast. | State the roles when the pair is role-based. |
 | text contrast check | A contrast-role check that applies WCAG normal-text or large-text thresholds. | Do not apply text badges to borders or focus indicators. |
 | non-text component contrast check | A contrast-role check that applies the 3:1 color threshold to a component boundary or state. | Do not claim complete component accessibility. |
@@ -192,6 +193,7 @@ contents, clipboard contents, or unrelated palette data in user-facing errors.
 | contrast-role check | A typed contrast test between two meaningful assigned color roles. | Identify whether the check is text, non-text component, or focus-indicator color contrast. |
 | all-pairs text contrast matrix | The advanced matrix that applies text thresholds to every palette color pair. | Keep separate from typed contrast-role checks. |
 | suggestion approach | One method that proposes colors from a base color. | Current API approaches include complementary, triadic, analogous, split-complementary, tetradic, rectangular, monochromatic, double-complementary, and shades and tints. |
+| canonical suggested color | The final RGB and HSL color returned after range limits and RGB canonicalization. | Describe changes from the canonical base color. Use *percentage points* for saturation and lightness differences. |
 | common associations | Context-dependent conventional associations for a suggestion approach. | Preserve the API field `commonAssociations`. Do not present associations as measurements or guaranteed effects. |
 | transitional hue | A meaningful hue greater than 60 degrees and less than 120 degrees in temperature evidence. | Keep separate from neutral colors, which do not provide meaningful hue evidence. |
 | Review | The application view that contains palette analysis. | Preserve capitalization when referring to the UI destination. |

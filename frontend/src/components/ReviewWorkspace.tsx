@@ -8,6 +8,7 @@ import {
 import type { Analysis, Color, HarmonyRelationship } from '../api/contracts'
 import {
   contrastRatio,
+  formatContrastRatio,
   paletteRoles,
   resultsForContrastCheck,
   roleChecks,
@@ -473,7 +474,13 @@ function Contrast({
                     <p>
                       <code>{foreground.hex}</code> on{' '}
                       <code>{background.hex}</code> ·{' '}
-                      <strong>{ratio.toFixed(2)} to 1</strong>
+                      <strong>
+                        {formatContrastRatio(
+                          ratio,
+                          results.map((result) => result.threshold),
+                        )}{' '}
+                        to 1
+                      </strong>
                     </p>
                   </div>
                 </div>
@@ -519,7 +526,7 @@ function Contrast({
                   <span>
                     <code>{pair.color1}</code> + <code>{pair.color2}</code>
                   </span>
-                  <strong>{pair.ratio.toFixed(2)}:1</strong>
+                  <strong>{formatContrastRatio(pair.ratio)}:1</strong>
                 </div>
                 <div className="badge-row">
                   <ResultBadge label="AA normal text" pass={pair.aaNormal} />

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { blue, red } from './test/fixtures'
 import {
   contrastRatio,
+  formatContrastRatio,
   pruneRoleAssignments,
   resultsForContrastCheck,
 } from './contrast'
@@ -43,6 +44,29 @@ describe('role contrast state', () => {
       expect(resultsForContrastCheck(kind, 3)[0].pass).toBe(true)
       expect(resultsForContrastCheck(kind, 2.99)[0].pass).toBe(false)
       expect(resultsForContrastCheck(kind, 3)[0].label).not.toMatch(/AA|AAA/)
+    },
+  )
+
+  it.each([3, 4.5, 7])(
+    'formats and evaluates values around the %s:1 boundary without contradiction',
+    (threshold) => {
+      const below = threshold - 0.0001
+      const exact = threshold
+      const above = threshold + 0.0001
+      const kind = threshold === 3 ? 'nonText' : 'text'
+      const resultAt = (ratio: number) =>
+        resultsForContrastCheck(kind, ratio).find(
+          (result) => result.threshold === threshold,
+        )
+
+      expect(resultAt(below)?.pass).toBe(false)
+      expect(resultAt(exact)?.pass).toBe(true)
+      expect(resultAt(above)?.pass).toBe(true)
+      expect(formatContrastRatio(below, [threshold])).toBe(
+        `${threshold - 0.0001}`,
+      )
+      expect(formatContrastRatio(exact, [threshold])).toBe(threshold.toFixed(2))
+      expect(formatContrastRatio(above, [threshold])).toBe(threshold.toFixed(2))
     },
   )
 

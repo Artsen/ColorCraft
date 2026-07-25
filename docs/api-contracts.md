@@ -118,6 +118,10 @@ Each pair contains `color1`, `color2`, `ratio`, `aaNormal`, `aaLarge`,
 `aaaNormal`, and `aaaLarge`. These fields report contrast thresholds for the
 pair. They do not prove complete accessibility or WCAG conformance.
 
+`ratio` preserves the calculated floating-point precision. Threshold booleans
+use that value. API consumers must not infer pass or fail from a value rounded
+for display.
+
 ## Suggestion response
 
 Each item in `suggestions` contains:
@@ -128,6 +132,11 @@ Each item in `suggestions` contains:
 Each harmony item contains `type`, `angle`, `description`, `useCases`,
 `commonAssociations`, `examples`, and `suggestions`. Each suggested color
 contains `name`, `description`, HEX, RGB, and HSL values.
+
+A suggested-color `description` compares the canonical base HSL with the final
+canonical HSL returned in the same object. Saturation and lightness differences
+are percentage-point differences. The description does not report an
+unbounded intermediate adjustment.
 
 `commonAssociations` is conventional guidance. It is not a measured result.
 This field replaces the removed `mood` field and is a breaking response-contract

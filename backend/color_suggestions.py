@@ -14,6 +14,91 @@ def normalize_hue(hue):
     return hue
 
 
+def circular_hue_difference(base_hue, final_hue):
+    """Return the shortest signed hue difference from base to final."""
+    difference = (final_hue - base_hue) % 360
+    return difference - 360 if difference > 180 else difference
+
+
+def describe_canonical_change(base_hsl, final_hsl):
+    """Describe differences between canonical base and returned HSL values."""
+    hue_difference = circular_hue_difference(base_hsl["h"], final_hsl["h"])
+    if hue_difference == 0:
+        hue_description = "Same hue"
+    elif abs(hue_difference) == 180:
+        hue_description = "Hue shifted 180\u00b0"
+    else:
+        direction = "clockwise" if hue_difference > 0 else "counterclockwise"
+        hue_description = f"Hue shifted {abs(hue_difference)}\u00b0 {direction}"
+
+    def describe_channel(channel, difference):
+        if difference == 0:
+            return f"{channel} unchanged"
+        direction = "increased" if difference > 0 else "decreased"
+        return (
+            f"{channel} {direction} {abs(difference)} percentage "
+            f"{'point' if abs(difference) == 1 else 'points'}"
+        )
+
+    saturation_description = describe_channel(
+        "saturation", final_hsl["s"] - base_hsl["s"]
+    )
+    lightness_description = describe_channel(
+        "lightness", final_hsl["l"] - base_hsl["l"]
+    )
+    return f"{hue_description}; {saturation_description}; {lightness_description}."
+
+
+def accurate_suggestion_name(name, base_hsl, final_hsl):
+    """Keep directional suggestion names aligned with the returned color."""
+    hue_difference = circular_hue_difference(base_hsl["h"], final_hsl["h"])
+    saturation_difference = final_hsl["s"] - base_hsl["s"]
+    lightness_difference = final_hsl["l"] - base_hsl["l"]
+
+    hue_relationship_names = (
+        "Complement",
+        "Triadic",
+        "Analogous",
+        "Split",
+        "Tetradic",
+        "Rectangular",
+        "Second Base",
+    )
+    if (
+        final_hsl["s"] == 0
+        and hue_difference == 0
+        and any(term in name for term in hue_relationship_names)
+    ):
+        return "Neutral Tone"
+
+    if "Tint" in name and lightness_difference <= 0:
+        suffix = name.rsplit(maxsplit=1)[-1]
+        suffix = f" {suffix}" if suffix.isdigit() else ""
+        name = (
+            f"{'Darker' if lightness_difference < 0 else 'Same-Lightness'} Tone{suffix}"
+        )
+    elif "Lighter" in name and lightness_difference <= 0:
+        replacement = "Darker" if lightness_difference < 0 else "Same-Lightness"
+        name = name.replace("Lighter", replacement)
+    if "Shade" in name and lightness_difference >= 0:
+        suffix = name.rsplit(maxsplit=1)[-1]
+        suffix = f" {suffix}" if suffix.isdigit() else ""
+        name = (
+            f"{'Lighter' if lightness_difference > 0 else 'Same-Lightness'}"
+            f" Tone{suffix}"
+        )
+    elif "Darker" in name and lightness_difference >= 0:
+        replacement = "Lighter" if lightness_difference > 0 else "Same-Lightness"
+        name = name.replace("Darker", replacement)
+    if "Saturated" in name and saturation_difference <= 0:
+        replacement = "Desaturated" if saturation_difference < 0 else "Same-Saturation"
+        name = name.replace("Saturated", replacement)
+    if "Desaturated" in name and saturation_difference >= 0:
+        replacement = "Saturated" if saturation_difference > 0 else "Same-Saturation"
+        name = name.replace("Desaturated", replacement)
+    return name
+
+
 def generate_complementary(base_color):
     """
     Generate complementary color (180° opposite).
@@ -28,21 +113,18 @@ def generate_complementary(base_color):
             "saturation": s,
             "lightness": l,
             "name": "Direct Complement",
-            "description": "Hue shifted by 180°; saturation and lightness unchanged",
         },
         {
             "hue": comp_hue,
             "saturation": min(100, s + 15),
             "lightness": max(20, l - 20),
             "name": "Darker Complement",
-            "description": "Hue +180°, saturation +15, lightness -20",
         },
         {
             "hue": comp_hue,
             "saturation": max(30, s - 20),
             "lightness": min(90, l + 20),
             "name": "Lighter Complement",
-            "description": "Hue +180°, saturation -20, lightness +20",
         },
     ]
 
@@ -57,7 +139,7 @@ def generate_complementary(base_color):
         ],
         "common_associations": "Emphasis, opposition, and color separation",
         "examples": "Red & Green, Blue & Orange, Yellow & Purple",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
@@ -79,14 +161,12 @@ def generate_triadic(base_color):
                     "saturation": s,
                     "lightness": l,
                     "name": f"Triadic Partner {offset}°",
-                    "description": f"Hue +{offset}°; saturation and lightness unchanged",
                 },
                 {
                     "hue": tri_hue,
                     "saturation": min(100, s + 10),
                     "lightness": l,
                     "name": f"Saturated Triadic {offset}°",
-                    "description": f"Hue +{offset}°, saturation +10, lightness unchanged",
                 },
             ]
         )
@@ -102,7 +182,7 @@ def generate_triadic(base_color):
         ],
         "common_associations": "Variety, category separation, and three-part systems",
         "examples": "Red-Yellow-Blue (primary colors), Orange-Green-Purple (secondary colors)",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
@@ -123,7 +203,6 @@ def generate_analogous(base_color):
                 "saturation": s,
                 "lightness": l,
                 "name": f"Analogous {abs(offset)}° {'Left' if offset < 0 else 'Right'}",
-                "description": f"Adjacent color {abs(offset)}° away",
             }
         )
 
@@ -138,7 +217,7 @@ def generate_analogous(base_color):
         ],
         "common_associations": "Continuity, proximity, and related color groups",
         "examples": "Blue-Blue/Green-Green, Red-Orange-Yellow",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
@@ -165,14 +244,12 @@ def generate_split_complementary(base_color):
                     "saturation": s,
                     "lightness": l,
                     "name": f"Split Complement {'+30°' if offset > 0 else '-30°'}",
-                    "description": f"Flanking the complement by {abs(offset)}°",
                 },
                 {
                     "hue": split_hue,
                     "saturation": max(40, s - 15),
                     "lightness": min(85, l + 15),
                     "name": f"Lighter Split {'+30°' if offset > 0 else '-30°'}",
-                    "description": f"Hue {150 if offset < 0 else 210:+d}°, saturation -15, lightness +15",
                 },
             ]
         )
@@ -188,7 +265,7 @@ def generate_split_complementary(base_color):
         ],
         "common_associations": "Contrast variation and a three-color structure",
         "examples": "Blue with Yellow-Orange and Red-Orange",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
@@ -209,7 +286,6 @@ def generate_tetradic(base_color):
                 "saturation": s,
                 "lightness": l,
                 "name": f"Tetradic {offset}°",
-                "description": f"Square harmony partner at {offset}°",
             }
         )
 
@@ -224,7 +300,7 @@ def generate_tetradic(base_color):
         ],
         "common_associations": "Variety, four-part systems, and category separation",
         "examples": "Red-Yellow-Green-Blue, Orange-Chartreuse-Cyan-Violet",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
@@ -247,7 +323,6 @@ def generate_rectangular(base_color):
                 "saturation": s,
                 "lightness": l,
                 "name": f"Rectangular {offset}°",
-                "description": f"Rectangle harmony at {offset}°",
             }
         )
 
@@ -262,7 +337,7 @@ def generate_rectangular(base_color):
         ],
         "common_associations": "Paired opposites and multi-category systems",
         "examples": "Blue-Orange paired with Yellow-Violet",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
@@ -278,42 +353,36 @@ def generate_monochromatic(base_color):
             "saturation": max(10, s - 30),
             "lightness": min(95, l + 30),
             "name": "Lighter Tint",
-            "description": "Same hue, saturation -30, lightness +30",
         },
         {
             "hue": h,
             "saturation": max(5, s - 40),
             "lightness": min(98, l + 40),
             "name": "Very Light Tint",
-            "description": "Same hue, saturation -40, lightness +40",
         },
         {
             "hue": h,
             "saturation": min(100, s + 20),
             "lightness": max(15, l - 30),
             "name": "Darker Shade",
-            "description": "Same hue, saturation +20, lightness -30",
         },
         {
             "hue": h,
             "saturation": min(100, s + 10),
             "lightness": max(10, l - 40),
             "name": "Very Dark Shade",
-            "description": "Same hue, saturation +10, lightness -40",
         },
         {
             "hue": h,
             "saturation": max(15, s - 25),
             "lightness": l,
             "name": "Desaturated Tone",
-            "description": "Same hue, saturation -25, lightness unchanged",
         },
         {
             "hue": h,
             "saturation": min(100, s + 30),
             "lightness": l,
             "name": "Saturated Tone",
-            "description": "Same hue, saturation +30, lightness unchanged",
         },
     ]
 
@@ -328,7 +397,7 @@ def generate_monochromatic(base_color):
         ],
         "common_associations": "Continuity, hierarchy, and one-hue systems",
         "examples": "Navy-Blue-Sky Blue-Powder Blue, Forest-Sage-Mint Green",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
@@ -354,14 +423,12 @@ def generate_double_complementary(base_color):
                     "saturation": s,
                     "lightness": l,
                     "name": "Second Base",
-                    "description": "30° from original",
                 },
                 {
                     "hue": comp_hue,
                     "saturation": s,
                     "lightness": l,
                     "name": "Second Complement",
-                    "description": "Complement of second base",
                 },
             ]
         )
@@ -373,7 +440,6 @@ def generate_double_complementary(base_color):
             "saturation": s,
             "lightness": l,
             "name": "Original Complement",
-            "description": "Complement of base color",
         }
     )
 
@@ -388,7 +454,7 @@ def generate_double_complementary(base_color):
         ],
         "common_associations": "Paired opposites and four-color systems",
         "examples": "Red-Green paired with Blue-Orange",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
@@ -408,7 +474,6 @@ def generate_shades_tints(base_color):
                 "saturation": s,
                 "lightness": min(98, l + lightness_offset),
                 "name": f"Tint {i}",
-                "description": f"{lightness_offset}% lighter",
             }
         )
 
@@ -420,7 +485,6 @@ def generate_shades_tints(base_color):
                 "saturation": s,
                 "lightness": max(5, l - lightness_offset),
                 "name": f"Shade {i}",
-                "description": f"{lightness_offset}% darker",
             }
         )
 
@@ -435,23 +499,28 @@ def generate_shades_tints(base_color):
         ],
         "common_associations": "Hierarchy, state variation, and tonal scales",
         "examples": "Light Blue → Blue → Navy, Pink → Red → Maroon",
-        "suggestions": [convert_hsl_to_color(s) for s in suggestions],
+        "suggestions": [convert_hsl_to_color(s, base_color) for s in suggestions],
     }
 
 
-def convert_hsl_to_color(hsl_obj):
-    """Convert HSL suggestion object to full color object."""
+def convert_hsl_to_color(hsl_obj, base_color):
+    """Convert a candidate to a canonical color and describe the returned values."""
     h, s, l = hsl_obj["hue"], hsl_obj["saturation"], hsl_obj["lightness"]
     rgb = hsl_to_rgb([h, s, l])
     canonical_hsl = rgb_to_hsl(rgb)
+    final_hsl = {
+        "h": canonical_hsl[0],
+        "s": canonical_hsl[1],
+        "l": canonical_hsl[2],
+    }
     hex_color = "#{:02x}{:02x}{:02x}".format(*rgb)
 
     return {
         "hex": hex_color,
         "rgb": {"r": rgb[0], "g": rgb[1], "b": rgb[2]},
-        "hsl": {"h": canonical_hsl[0], "s": canonical_hsl[1], "l": canonical_hsl[2]},
-        "name": hsl_obj["name"],
-        "description": hsl_obj["description"],
+        "hsl": final_hsl,
+        "name": accurate_suggestion_name(hsl_obj["name"], base_color["hsl"], final_hsl),
+        "description": describe_canonical_change(base_color["hsl"], final_hsl),
     }
 
 

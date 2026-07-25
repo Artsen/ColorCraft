@@ -143,6 +143,10 @@ not evaluate size, area, thickness, visibility, or focused-versus-unfocused
 appearance. A passing contrast-role check does not prove that a complete
 interface is accessible or conforms to WCAG.
 
+ColorCraft evaluates contrast with the full calculated ratio. Most ratios show
+two decimal places. A failing value near a threshold shows four decimal places
+when ordinary rounding would make it appear equal to the threshold.
+
 ### Suggestions
 
 1. Select **Suggestions**.
@@ -155,6 +159,10 @@ Select **Explore all relationships** for the complete set of suggestion
 approaches. **Common associations** and **Common applications** are conventional
 guidance. They are not measured suitability. ColorCraft discards suggestion
 results when a palette color changes.
+
+Each suggested-color description refers to the final returned color after
+range limits and RGB canonicalization. Saturation and lightness changes are
+stated in percentage points.
 
 ## Export a palette
 

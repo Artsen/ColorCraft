@@ -58,7 +58,7 @@ def wcag_rating(ratio):
         Dictionary with AA and AAA threshold results for normal and large text
     """
     return {
-        "ratio": round(ratio, 2),
+        "ratio": ratio,
         "aa_normal": ratio >= AA_NORMAL_MINIMUM,
         "aa_large": ratio >= AA_LARGE_MINIMUM,
         "aaa_normal": ratio >= AAA_NORMAL_MINIMUM,
@@ -124,7 +124,7 @@ def analyze_accessibility(colors):
                 results["issues"].append(
                     {
                         "type": "low_contrast",
-                        "message": f"Low contrast detected between {color1['hex']} and {color2['hex']} (ratio: {rating['ratio']})",
+                        "message": f"Low contrast detected between {color1['hex']} and {color2['hex']}.",
                         "severity": "warning",
                         "color1": color1["hex"],
                         "color2": color2["hex"],

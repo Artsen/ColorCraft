@@ -11,6 +11,7 @@ import { analyzeColors, extractColors, getMetadata } from './api/client'
 import type { Analysis, Color } from './api/contracts'
 import { errorMessage } from './api/errors'
 import AppShell from './components/AppShell'
+import type { NetworkStatus } from './components/AppShell'
 import ColorPalette from './components/ColorPalette'
 import ExportWorkspace from './components/ExportWorkspace'
 import ImageColorPicker from './components/ImageColorPicker'
@@ -76,9 +77,9 @@ function App() {
   const [analyzing, setAnalyzing] = useState(false)
   const [extracting, setExtracting] = useState(false)
   const [notice, setNotice] = useState<NoticeState | null>(null)
-  const [networkMode, setNetworkMode] = useState<'loopback' | 'lan' | null>(
-    null,
-  )
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
+    state: 'loading',
+  })
   const [confirmNewPalette, setConfirmNewPalette] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<number | 'add' | null>(null)
   const [reviewTab, setReviewTab] = useState<ReviewView>(() =>
@@ -171,9 +172,12 @@ function App() {
   useEffect(() => {
     const controller = new AbortController()
     void getMetadata(controller.signal)
-      .then((metadata) => setNetworkMode(metadata.networkMode))
+      .then((metadata) =>
+        setNetworkStatus({ state: 'available', mode: metadata.networkMode }),
+      )
       .catch((error: unknown) => {
         if (!controller.signal.aborted) {
+          setNetworkStatus({ state: 'unavailable' })
           console.error('Could not read runtime metadata:', error)
         }
       })
@@ -822,7 +826,7 @@ function App() {
         title={headerTitle}
         sourceName={headerSource}
         summary={headerSummary}
-        networkMode={networkMode}
+        networkStatus={networkStatus}
         onNavigate={navigate}
         onNewPalette={requestNewPalette}
         recentPalettes={savedPalettes.map(({ id, name }) => ({ id, name }))}

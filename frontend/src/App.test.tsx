@@ -81,8 +81,9 @@ describe('ColorCraft workspace', () => {
         'Extract, refine, and review color palettes from images.',
       ),
     ).toBeInTheDocument()
-    expect(await screen.findByText('Loopback only')).toHaveAttribute(
-      'title',
+    expect(
+      await screen.findByText('Loopback only'),
+    ).toHaveAccessibleDescription(
       expect.stringMatching(/loopback traffic only/i),
     )
   })
@@ -103,10 +104,34 @@ describe('ColorCraft workspace', () => {
       capabilities: [],
     })
     render(<App />)
-    expect(await screen.findByText('LAN enabled')).toHaveAttribute(
-      'title',
+    expect(await screen.findByText('LAN enabled')).toHaveAccessibleDescription(
       expect.stringMatching(/trusted LAN access/i),
     )
+  })
+
+  it('shows loading before metadata resolves and unavailable after failure', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    let rejectMetadata: ((reason?: unknown) => void) | undefined
+    vi.mocked(getMetadata).mockReturnValueOnce(
+      new Promise((_resolve, reject) => {
+        rejectMetadata = reject
+      }),
+    )
+    render(<App />)
+    expect(screen.getByText('Checking network status')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Network status unavailable'),
+    ).not.toBeInTheDocument()
+
+    rejectMetadata?.(new Error('metadata unavailable'))
+    expect(
+      await screen.findByText('Network status unavailable'),
+    ).toHaveAccessibleDescription(/could not confirm/i)
+    expect(consoleError).toHaveBeenCalledWith(
+      'Could not read runtime metadata:',
+      expect.any(Error),
+    )
+    consoleError.mockRestore()
   })
 
   it('enables views from real palette prerequisites and writes URL state', async () => {
