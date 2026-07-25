@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Color } from '../api/contracts'
+import Dialog from './ui/Dialog'
 
 interface ImageColorPickerProps {
   imageUrl: string
@@ -7,194 +8,116 @@ interface ImageColorPickerProps {
   onClose: () => void
 }
 
-export default function ImageColorPicker({ imageUrl, onColorPicked, onClose }: ImageColorPickerProps) {
+function rgbToHsl(rgb: { r: number; g: number; b: number }) {
+  const r = rgb.r / 255
+  const g = rgb.g / 255
+  const b = rgb.b / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  let h = 0
+  let s = 0
+  const l = (max + min) / 2
+
+  if (max !== min) {
+    const delta = max - min
+    s = l > 0.5 ? delta / (2 - max - min) : delta / (max + min)
+    switch (max) {
+      case r:
+        h = ((g - b) / delta + (g < b ? 6 : 0)) / 6
+        break
+      case g:
+        h = ((b - r) / delta + 2) / 6
+        break
+      case b:
+        h = ((r - g) / delta + 4) / 6
+        break
+    }
+  }
+
+  return {
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100),
+  }
+}
+
+export default function ImageColorPicker({
+  imageUrl,
+  onColorPicked,
+  onClose,
+}: ImageColorPickerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
-  const [hoveredColor, setHoveredColor] = useState<string>('#000000')
+  const [hoveredColor, setHoveredColor] = useState('#000000')
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [onClose])
-
-  useEffect(() => {
-    if (!canvasRef.current || !imageRef.current) return
-
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    const img = imageRef.current
+    const image = imageRef.current
+    if (!canvas || !image) return
+    const context = canvas.getContext('2d', { willReadFrequently: true })
 
     const loadImage = () => {
-      if (!ctx) return
-
-      // Set canvas size to match image
-      canvas.width = img.naturalWidth
-      canvas.height = img.naturalHeight
-
-      // Draw image on canvas
-      ctx.drawImage(img, 0, 0)
+      if (!context) return
+      canvas.width = image.naturalWidth
+      canvas.height = image.naturalHeight
+      context.drawImage(image, 0, 0)
     }
 
-    if (img.complete) {
-      loadImage()
-    } else {
-      img.addEventListener('load', loadImage)
-    }
-
-    return () => {
-      img.removeEventListener('load', loadImage)
-    }
+    if (image.complete) loadImage()
+    else image.addEventListener('load', loadImage)
+    return () => image.removeEventListener('load', loadImage)
   }, [imageUrl])
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!canvasRef.current || !imageRef.current) return
-
+  const colorAtPointer = (event: React.MouseEvent<HTMLDivElement>) => {
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    if (!ctx) return
+    const image = imageRef.current
+    const context = canvas?.getContext('2d', { willReadFrequently: true })
+    if (!canvas || !image || !context) return null
 
-    const rect = imageRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    const rect = image.getBoundingClientRect()
+    const x = Math.floor((event.clientX - rect.left) * (canvas.width / rect.width))
+    const y = Math.floor((event.clientY - rect.top) * (canvas.height / rect.height))
+    if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return null
 
-    // Convert to canvas coordinates
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-    const canvasX = Math.floor(x * scaleX)
-    const canvasY = Math.floor(y * scaleY)
-
-    // Get pixel color
-    if (canvasX >= 0 && canvasX < canvas.width && canvasY >= 0 && canvasY < canvas.height) {
-      const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data
-      const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1)}`
-      setHoveredColor(hex)
-    }
+    const pixel = context.getImageData(x, y, 1, 1).data
+    const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2])
+      .toString(16)
+      .slice(1)}`
+    return { hex, rgb: { r: pixel[0], g: pixel[1], b: pixel[2] } }
   }
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!canvasRef.current || !imageRef.current) return
-
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    if (!ctx) return
-
-    const rect = imageRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-
-    // Convert to canvas coordinates
-    const scaleX = canvas.width / rect.width
-    const scaleY = canvas.height / rect.height
-    const canvasX = Math.floor(x * scaleX)
-    const canvasY = Math.floor(y * scaleY)
-
-    // Get pixel color
-    if (canvasX >= 0 && canvasX < canvas.width && canvasY >= 0 && canvasY < canvas.height) {
-      const pixel = ctx.getImageData(canvasX, canvasY, 1, 1).data
-      const hex = `#${((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1)}`
-      
-      // Convert to Color object
-      const rgb = { r: pixel[0], g: pixel[1], b: pixel[2] }
-      const hsl = rgbToHsl(rgb)
-      
-      onColorPicked({ hex, rgb, hsl })
-      onClose()
-    }
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    const sampled = colorAtPointer(event)
+    if (sampled) setHoveredColor(sampled.hex)
   }
 
-  const rgbToHsl = (rgb: { r: number; g: number; b: number }) => {
-    const r = rgb.r / 255
-    const g = rgb.g / 255
-    const b = rgb.b / 255
-
-    const max = Math.max(r, g, b)
-    const min = Math.min(r, g, b)
-    let h = 0
-    let s = 0
-    const l = (max + min) / 2
-
-    if (max !== min) {
-      const d = max - min
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-
-      switch (max) {
-        case r:
-          h = ((g - b) / d + (g < b ? 6 : 0)) / 6
-          break
-        case g:
-          h = ((b - r) / d + 2) / 6
-          break
-        case b:
-          h = ((r - g) / d + 4) / 6
-          break
-      }
-    }
-
-    return {
-      h: Math.round(h * 360),
-      s: Math.round(s * 100),
-      l: Math.round(l * 100),
-    }
+  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const sampled = colorAtPointer(event)
+    if (!sampled) return
+    onColorPicked({ ...sampled, hsl: rgbToHsl(sampled.rgb) })
+    onClose()
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-8"
-      onClick={onClose}
-    >
-      <div className="relative max-w-6xl max-h-full" onClick={(e) => e.stopPropagation()}>
-        {/* Color Preview Box */}
-        <div className="absolute top-4 left-4 z-10 bg-dark-secondary border border-border-default rounded-lg p-3 shadow-lg">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-16 h-16 rounded-md border-2 border-white"
-              style={{ backgroundColor: hoveredColor }}
-            />
-            <div>
-              <div className="text-xs text-text-tertiary mb-1">Color</div>
-              <div className="text-sm font-mono text-text-primary">{hoveredColor}</div>
-              <div className="text-xs text-text-secondary mt-1">Click to select</div>
-            </div>
+    <Dialog open title="Pick a color from the image" onClose={onClose} className="picker-dialog">
+      <div className="picker-stage" onMouseMove={handleMouseMove} onClick={handleClick}>
+        <div className="picker-preview">
+          <div
+            className="picker-preview-swatch"
+            style={{ backgroundColor: hoveredColor }}
+          />
+          <div>
+            <span className="field-label">Color</span>
+            <code>{hoveredColor}</code>
+            <p className="field-help">Click the image to select.</p>
           </div>
         </div>
-
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 bg-dark-secondary hover:bg-dark-hover border border-border-default rounded-md p-2 text-text-primary transition-colors"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        {/* Image Container */}
-        <div
-          className="relative cursor-crosshair"
-          onMouseMove={handleMouseMove}
-          onClick={handleClick}
-        >
-          <img
-            ref={imageRef}
-            src={imageUrl}
-            alt="Pick a color"
-            className="max-w-full max-h-[80vh] rounded-lg"
-          />
-          <canvas ref={canvasRef} className="hidden" />
-        </div>
-
-        {/* Instructions */}
-        <div className="mt-4 text-center text-sm text-text-secondary">
-          Hover over the image to preview colors • Click to select • Press ESC to close
-        </div>
+        <img ref={imageRef} src={imageUrl} alt="Choose a color from this source" />
+        <canvas ref={canvasRef} className="visually-hidden" />
       </div>
-    </div>
+      <p className="dialog-instructions">
+        Hover to preview • Click to select • Press Escape to close
+      </p>
+    </Dialog>
   )
 }
-

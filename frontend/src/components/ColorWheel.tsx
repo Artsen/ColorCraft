@@ -64,8 +64,8 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
       .attr('data-layer', 'background')
       .append('circle')
       .attr('r', radius)
-      .attr('fill', 'var(--color-dark-tertiary, #242424)')
-      .attr('stroke', 'var(--color-border-default, #525252)')
+      .attr('fill', 'var(--color-wheel-stage)')
+      .attr('stroke', 'var(--color-border-strong)')
 
     // 2. Hue sectors.
     const sectors = stage.append('g').attr('data-layer', 'sectors')
@@ -152,7 +152,7 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
         .attr('cy', position.y)
         .attr('r', 20)
         .attr('fill', color.hex)
-        .attr('stroke', 'var(--color-text-primary, #fff)')
+        .attr('stroke', 'var(--color-preview-outline)')
         .attr('stroke-width', 3)
     })
 
@@ -183,7 +183,7 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
       .attr('y', -4)
       .attr('font-size', '24px')
       .attr('font-weight', 'bold')
-      .attr('fill', 'var(--color-accent, #8b5cf6)')
+      .attr('fill', 'var(--color-primary)')
       .text(analysis.colorTheory.relationshipFit)
     annotation
       .append('text')
@@ -211,18 +211,17 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
 
   return (
     <div>
-      <div className="flex justify-center">
+      <div className="wheel-stage">
         <svg
           ref={svgRef}
           role="img"
           aria-label="Color wheel showing palette markers and detected geometric relationships"
-          className="max-w-full h-auto text-text-secondary"
         />
       </div>
       <p className="sr-only" data-testid="wheel-summary">
         {relationshipSummary}
       </p>
-      <p className="mt-3 text-xs text-text-tertiary text-center">
+      <p className="wheel-caption">
         Lines use different dash patterns as well as colors. {relationships.length}{' '}
         detected relationship{relationships.length === 1 ? '' : 's'} shown.
       </p>

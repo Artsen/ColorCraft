@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
+import { ChevronDown, Lightbulb, Plus } from 'lucide-react'
 import { suggestColors } from '../api/client'
 import type {
   Color,
-  HarmonySuggestion,
   SuggestionColor,
   SuggestionResult,
 } from '../api/contracts'
 import { errorMessage } from '../api/errors'
 import InlineNotice, { type NoticeState } from './InlineNotice'
 import MiniColorWheel from './MiniColorWheel'
+import Button from './ui/Button'
+import Panel from './ui/Panel'
+import SectionHeader from './ui/SectionHeader'
 
 interface ColorSuggestionsProps {
   colors: Color[]
@@ -18,7 +21,7 @@ interface ColorSuggestionsProps {
 export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestionsProps) {
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<SuggestionResult[]>([])
-  const [selectedColorIndex, setSelectedColorIndex] = useState<number>(0)
+  const [selectedColorIndex, setSelectedColorIndex] = useState(0)
   const [expandedHarmony, setExpandedHarmony] = useState<string | null>(null)
   const [notice, setNotice] = useState<NoticeState | null>(null)
   const [suggestionsFingerprint, setSuggestionsFingerprint] = useState<string | null>(null)
@@ -37,9 +40,7 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
     setExpandedHarmony(null)
     setLoading(false)
     setNotice(null)
-    setSelectedColorIndex((current) =>
-      Math.max(0, Math.min(current, colors.length - 1)),
-    )
+    setSelectedColorIndex((current) => Math.max(0, Math.min(current, colors.length - 1)))
   }, [fingerprint, colors.length])
 
   useEffect(
@@ -61,83 +62,50 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
     const requestedFingerprint = fingerprint
     setLoading(true)
     setNotice(null)
+
     try {
       const data = await suggestColors(colors, controller.signal)
       if (
         requestId !== requestIdRef.current ||
         requestedFingerprint !== fingerprintRef.current
-      ) {
-        return
-      }
+      ) return
       setSuggestions(data.suggestions)
       setSuggestionsFingerprint(requestedFingerprint)
     } catch (error) {
       if (controller.signal.aborted) return
       console.error('Error fetching suggestions:', error)
-      setNotice({
-        message: errorMessage(error),
-        retry: () => void fetchSuggestions(),
-      })
+      setNotice({ message: errorMessage(error), retry: () => void fetchSuggestions() })
     } finally {
-      if (requestId === requestIdRef.current) {
-        setLoading(false)
-      }
+      if (requestId === requestIdRef.current) setLoading(false)
     }
   }
 
-  const handleAddSuggestion = (suggestion: SuggestionColor) => {
-    const newColor: Color = {
+  const addSuggestion = (suggestion: SuggestionColor) => {
+    onAddColor({
       hex: suggestion.hex,
       rgb: suggestion.rgb,
       hsl: suggestion.hsl,
-    }
-    onAddColor(newColor)
-  }
-
-  const toggleHarmony = (harmonyType: string) => {
-    setExpandedHarmony(expandedHarmony === harmonyType ? null : harmonyType)
+    })
   }
 
   const hasCurrentSuggestions =
     suggestions.length > 0 && suggestionsFingerprint === fingerprint
 
-  // Helper to extract angles and colors for mini wheel
-  const getHarmonyVisualization = (harmony: HarmonySuggestion, baseHue: number) => {
-    const angles = [baseHue]
-    const colors = [suggestions[selectedColorIndex].baseColor.hex]
-    
-    harmony.suggestions.forEach(sug => {
-      angles.push(sug.hsl.h)
-      colors.push(sug.hex)
-    })
-    
-    return { angles, colors }
-  }
-
   if (!hasCurrentSuggestions) {
     return (
-      <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
-        <div className="text-center">
-          <h2 className="text-lg font-medium text-text-primary mb-4">Color Suggestions</h2>
-          {notice && (
-            <div className="mb-4 text-left">
-              <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
-            </div>
-          )}
-          <button
-            onClick={fetchSuggestions}
-            disabled={loading || colors.length === 0}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-          >
-            {loading ? 'Generating...' : 'Suggest Harmonious Colors'}
-          </button>
-          {colors.length === 0 && (
-            <p className="text-xs text-text-tertiary mt-2">
-              Add colors to your palette first
-            </p>
-          )}
+      <Panel>
+        <SectionHeader
+          title="Color suggestions"
+          description="Generate geometric harmonies from the current palette."
+        />
+        {notice && <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />}
+        <div className="section-actions">
+          <Button variant="primary" onClick={fetchSuggestions} disabled={loading || colors.length === 0}>
+            {loading ? 'Generating…' : 'Suggest Harmonious Colors'}
+          </Button>
         </div>
-      </div>
+        {colors.length === 0 && <p className="helper-center">Add colors to your palette first.</p>}
+      </Panel>
     )
   }
 
@@ -149,182 +117,128 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
   const currentSuggestion = suggestions[safeSelectedIndex]
 
   return (
-    <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
-      <h2 className="text-lg font-medium text-text-primary mb-4">Color Suggestions & Harmony Guide</h2>
-      {notice && (
-        <div className="mb-4">
-          <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
-        </div>
-      )}
+    <Panel>
+      <SectionHeader
+        title="Color Suggestions & Harmony Guide"
+        description="Select a base color, then inspect each relationship."
+      />
+      {notice && <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />}
 
-      {/* Base Color Selector */}
-      <div className="mb-6">
-        <p className="text-sm text-text-secondary mb-3">Select a base color:</p>
-        <div className="flex flex-wrap gap-2">
-          {colors.map((color, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setSelectedColorIndex(index)
-                setExpandedHarmony(null)
-              }}
-              className={`w-12 h-12 rounded-md transition-all ${
-                safeSelectedIndex === index
-                  ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-dark-secondary'
-                  : 'hover:scale-105'
-              }`}
-              style={{ backgroundColor: color.hex }}
-              title={color.hex}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Harmony Types */}
-      <div className="space-y-3">
-        {currentSuggestion.harmonies.map((harmony) => {
-          const isExpanded = expandedHarmony === harmony.type
-          const { angles, colors: harmonyColors } = getHarmonyVisualization(
-            harmony,
-            currentSuggestion.baseColor.hsl.h
-          )
-
-          return (
-            <div
-              key={harmony.type}
-              className="border border-border-subtle rounded-lg overflow-hidden"
-            >
-              {/* Harmony Header */}
+      <div className="panel-stack">
+        <div>
+          <p className="field-label">Base color</p>
+          <div className="suggestion-selector">
+            {colors.map((color, index) => (
               <button
-                onClick={() => toggleHarmony(harmony.type)}
-                className="w-full px-4 py-3 flex items-center justify-between hover:bg-dark-hover transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-text-primary">
-                    {harmony.type}
-                  </span>
-                  <span className="text-xs text-text-tertiary">
-                    {harmony.angle}
-                  </span>
-                </div>
-                <svg
-                  className={`w-4 h-4 text-text-secondary transition-transform ${
-                    isExpanded ? 'rotate-180' : ''
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
+                type="button"
+                key={`${color.hex}-${index}`}
+                onClick={() => {
+                  setSelectedColorIndex(index)
+                  setExpandedHarmony(null)
+                }}
+                className="color-select"
+                style={{ backgroundColor: color.hex }}
+                title={color.hex}
+                aria-label={`Use ${color.hex} as the base color`}
+                aria-pressed={safeSelectedIndex === index}
+              />
+            ))}
+          </div>
+        </div>
 
-              {/* Harmony Content */}
-              {isExpanded && (
-                <div className="px-4 pb-4 border-t border-border-subtle bg-dark-tertiary">
-                  <div className="py-4 space-y-4">
-                    {/* Mini Color Wheel */}
-                    <div className="flex justify-center">
+        <div className="harmony-list">
+          {currentSuggestion.harmonies.map((harmony) => {
+            const isExpanded = expandedHarmony === harmony.type
+            const angles = [
+              currentSuggestion.baseColor.hsl.h,
+              ...harmony.suggestions.map((suggestion) => suggestion.hsl.h),
+            ]
+            const harmonyColors = [
+              currentSuggestion.baseColor.hex,
+              ...harmony.suggestions.map((suggestion) => suggestion.hex),
+            ]
+
+            return (
+              <div key={harmony.type} className="harmony-item">
+                <button
+                  type="button"
+                  onClick={() => setExpandedHarmony(isExpanded ? null : harmony.type)}
+                  className="harmony-trigger"
+                  aria-expanded={isExpanded}
+                >
+                  <span>
+                    <strong>{harmony.type}</strong>
+                    <small>{harmony.angle}</small>
+                  </span>
+                  <ChevronDown size={18} aria-hidden="true" />
+                </button>
+
+                {isExpanded && (
+                  <div className="harmony-content">
+                    <div className="harmony-detail">
                       <MiniColorWheel
                         baseHue={currentSuggestion.baseColor.hsl.h}
                         angles={angles}
                         colors={harmonyColors}
                         size={140}
                       />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <p className="text-sm text-text-secondary mb-2">
-                        {harmony.description}
-                      </p>
-                    </div>
-
-                    {/* Mood */}
-                    <div>
-                      <p className="text-xs text-text-tertiary mb-1">Mood & Feel:</p>
-                      <p className="text-sm text-text-secondary">{harmony.mood}</p>
-                    </div>
-
-                    {/* Examples */}
-                    <div>
-                      <p className="text-xs text-text-tertiary mb-1">Examples:</p>
-                      <p className="text-sm text-text-secondary">{harmony.examples}</p>
-                    </div>
-
-                    {/* Use Cases */}
-                    <div>
-                      <p className="text-xs text-text-tertiary mb-2">Best used for:</p>
-                      <ul className="space-y-1">
-                        {harmony.useCases.map((useCase, idx) => (
-                          <li key={idx} className="text-sm text-text-secondary flex items-start">
-                            <span className="text-purple-500 mr-2">•</span>
-                            <span>{useCase}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Suggested Colors */}
-                    <div>
-                      <p className="text-xs text-text-tertiary mb-3">Suggested colors:</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        {harmony.suggestions.map((suggestion, idx) => (
-                          <div
-                            key={idx}
-                            className="bg-dark-secondary rounded-lg p-3 border border-border-subtle"
-                          >
-                            <div className="flex items-center gap-3 mb-2">
-                              <div
-                                className="w-10 h-10 rounded-md flex-shrink-0"
-                                style={{ backgroundColor: suggestion.hex }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-text-primary truncate">
-                                  {suggestion.name}
-                                </p>
-                                <p className="text-xs text-text-tertiary">
-                                  {suggestion.hex}
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-xs text-text-secondary mb-2 line-clamp-2">
-                              {suggestion.description}
-                            </p>
-                            <button
-                              onClick={() => handleAddSuggestion(suggestion)}
-                              className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded transition-colors"
-                            >
-                              Add to Palette
-                            </button>
-                          </div>
-                        ))}
+                      <div className="harmony-copy">
+                        <p>{harmony.description}</p>
+                        <dl>
+                          <dt>Mood and feel</dt>
+                          <dd>{harmony.mood}</dd>
+                          <dt>Examples</dt>
+                          <dd>{harmony.examples}</dd>
+                          <dt>Best used for</dt>
+                          <dd>{harmony.useCases.join(', ')}</dd>
+                        </dl>
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
 
-      {/* Pro Tips */}
-      <div className="mt-6 p-4 bg-dark-tertiary rounded-lg border border-border-subtle">
-        <p className="text-xs font-medium text-text-primary mb-2">💡 Pro Tips</p>
-        <ul className="space-y-1 text-xs text-text-secondary">
-          <li>• Click any color above to see its harmony suggestions</li>
-          <li>• Expand harmony types to view detailed relationships</li>
-          <li>• Add suggested colors directly to your palette</li>
-          <li>• Combine multiple harmony types for rich palettes</li>
-        </ul>
+                    <div className="suggestion-grid">
+                      {harmony.suggestions.map((suggestion) => (
+                        <div key={`${harmony.type}-${suggestion.hex}`} className="suggestion-card">
+                          <div className="suggestion-card-header">
+                            <div
+                              className="suggestion-preview"
+                              style={{ backgroundColor: suggestion.hex }}
+                            />
+                            <div>
+                              <strong>{suggestion.name}</strong>
+                              <code>{suggestion.hex}</code>
+                            </div>
+                          </div>
+                          <p>{suggestion.description}</p>
+                          <Button
+                            variant="secondary"
+                            onClick={() => addSuggestion(suggestion)}
+                            icon={<Plus size={15} aria-hidden="true" />}
+                          >
+                            Add to Palette
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <aside className="tip-callout">
+          <Lightbulb size={18} aria-hidden="true" />
+          <div>
+            <strong>Working with suggestions</strong>
+            <ul className="tip-list">
+              <li>Change the base color to compare relationships.</li>
+              <li>Expand a harmony to inspect its geometry and use cases.</li>
+              <li>Add useful suggestions directly to the working palette.</li>
+            </ul>
+          </div>
+        </aside>
       </div>
-    </div>
+    </Panel>
   )
 }
 
@@ -337,4 +251,3 @@ export function paletteFingerprint(colors: Color[]): string {
     )
     .join('|')
 }
-

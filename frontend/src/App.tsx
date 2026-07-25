@@ -5,6 +5,11 @@ import ColorWheel from './components/ColorWheel'
 import AnalysisResults from './components/AnalysisResults'
 import ColorSuggestions from './components/ColorSuggestions'
 import InlineNotice, { type NoticeState } from './components/InlineNotice'
+import AppMark from './components/ui/AppMark'
+import Button from './components/ui/Button'
+import Panel from './components/ui/Panel'
+import SectionHeader from './components/ui/SectionHeader'
+import ThemeControl from './components/ui/ThemeControl'
 import { analyzeColors, extractColors } from './api/client'
 import { errorMessage } from './api/errors'
 import type { Analysis, Color } from './api/contracts'
@@ -168,18 +173,20 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-primary">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-3xl font-semibold text-text-primary mb-2">ColorCraft</h1>
-          <p className="text-text-secondary text-sm">
-            Intelligent color theory analysis and harmony detection
-          </p>
-        </div>
+    <div className="app-root">
+      <main className="workspace">
+        <header className="app-header">
+          <div className="brand-lockup">
+            <AppMark />
+            <div className="brand-copy">
+              <h1>ColorCraft</h1>
+              <p>Extract, refine, and inspect color relationships.</p>
+            </div>
+          </div>
+          <ThemeControl />
+        </header>
 
-        {/* Main Content */}
-        <div className="space-y-6">
+        <div className="content-stack">
           {notice && (
             <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
           )}
@@ -190,70 +197,55 @@ function App() {
             />
           ) : (
             <>
-              {/* Uploaded Image Preview */}
               {uploadedImage && (
-                <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-medium text-text-primary">Source Image</h2>
-                    <button
-                      onClick={handleReset}
-                      className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-                    >
-                      Change image
-                    </button>
-                  </div>
-
-                  <div className="space-y-4">
+                <Panel>
+                  <SectionHeader
+                    title="Source image"
+                    description="Adjust the extraction count without uploading the image again."
+                    action={<Button variant="quiet" onClick={handleReset}>Change image</Button>}
+                  />
+                  <div className="panel-stack">
+                    <div className="image-stage">
                     <img
                       src={uploadedImage.previewUrl}
-                      alt="Uploaded"
-                      className="max-h-48 mx-auto rounded-lg"
+                      alt="Uploaded source"
                     />
+                    </div>
 
-                    <div className="flex items-center justify-center gap-4 pt-4 border-t border-border-subtle">
-                      <div className="flex items-center gap-3">
-                        <label className="text-sm text-text-secondary">
-                          Colors:
+                    <div className="section-actions">
+                      <div className="inline-field">
+                        <label htmlFor="reextract-count">
+                          Colors
                         </label>
                         <input
+                          id="reextract-count"
                           type="range"
                           min="3"
                           max="10"
                           value={nColors}
                           onChange={(e) => setNColors(parseInt(e.target.value))}
-                          className="w-24"
                         />
-                        <span className="text-sm font-medium text-text-primary w-6">
-                          {nColors}
-                        </span>
+                        <output htmlFor="reextract-count">{nColors}</output>
                       </div>
 
-                      <button
+                      <Button
+                        variant="primary"
                         onClick={handleReExtract}
                         disabled={extracting}
-                        className="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {extracting ? 'Extracting...' : 'Re-extract'}
-                      </button>
+                        {extracting ? 'Extracting…' : 'Re-extract'}
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Panel>
               )}
 
-              {/* Color Palette */}
-              <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-medium text-text-primary">Color Palette</h2>
-                  {!uploadedImage && (
-                    <button
-                      onClick={handleReset}
-                      className="text-sm text-text-secondary hover:text-text-primary transition-colors"
-                    >
-                      Start over
-                    </button>
-                  )}
-                </div>
-
+              <Panel>
+                <SectionHeader
+                  title="Color palette"
+                  description="Edit samples directly or add up to ten colors."
+                  action={!uploadedImage ? <Button variant="quiet" onClick={handleReset}>Start over</Button> : undefined}
+                />
                 <ColorPalette
                   colors={colors}
                   onColorChange={handleColorChange}
@@ -262,24 +254,23 @@ function App() {
                   imageUrl={uploadedImage?.previewUrl}
                 />
 
-                <div className="mt-6 flex justify-center">
-                  <button
+                <div className="section-actions palette-actions">
+                  <Button
+                    variant="primary"
                     onClick={handleAnalyze}
                     disabled={loading || colors.length < 2}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                   >
-                    {loading ? 'Analyzing...' : 'Analyze Colors'}
-                  </button>
+                    {loading ? 'Analyzing…' : 'Analyze colors'}
+                  </Button>
                 </div>
                 
                 {colors.length < 2 && (
-                  <p className="text-xs text-text-tertiary text-center mt-2">
-                    Add at least 2 colors to analyze
+                  <p className="helper-center">
+                    Add at least two colors to analyze.
                   </p>
                 )}
-              </div>
+              </Panel>
 
-              {/* Color Suggestions */}
               {colors.length > 0 && (
                 <ColorSuggestions colors={colors} onAddColor={handleAddColor} />
               )}
@@ -287,22 +278,20 @@ function App() {
           )}
         </div>
 
-        {/* Analysis Results */}
         {analysis && (
-          <div className="mt-6 space-y-6">
-            {/* Color Wheel */}
-            <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
-              <h2 className="text-lg font-medium text-text-primary mb-6">
-                Color Wheel
-              </h2>
+          <div className="content-stack analysis-stack">
+            <Panel>
+              <SectionHeader
+                title="Color wheel"
+                description="The palette plotted by hue, saturation, and lightness."
+              />
               <ColorWheel colors={colors} analysis={analysis} />
-            </div>
+            </Panel>
 
-            {/* Analysis Details */}
             <AnalysisResults analysis={analysis} colors={colors} />
           </div>
         )}
-      </div>
+      </main>
     </div>
   )
 }

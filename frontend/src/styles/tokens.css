@@ -1,0 +1,151 @@
+:root {
+  color-scheme: dark;
+
+  --color-app-bg: #080c12;
+  --color-sidebar-bg: #090e15;
+  --color-workspace-bg: #0e151f;
+  --color-surface: #141d29;
+  --color-surface-elevated: #1a2533;
+  --color-surface-recessed: #0c121b;
+  --color-surface-hover: #202c3c;
+  --color-surface-selected: #1c2440;
+  --color-border-subtle: rgba(190, 205, 225, 0.1);
+  --color-border-strong: rgba(190, 205, 225, 0.18);
+  --color-border-emphasis: rgba(190, 205, 225, 0.28);
+  --color-primary: #6a5bcf;
+  --color-primary-bg: #6a5bcf;
+  --color-primary-hover: #5d4fc0;
+  --color-primary-pressed: #5144ae;
+  --color-primary-text: #ffffff;
+  --color-ember: #f2763f;
+  --color-ember-bright: #ff9664;
+  --color-success: #35c981;
+  --color-info: #5aa7ff;
+  --color-warning: #e8b44d;
+  --color-danger: #f06a72;
+  --color-text-primary: #f2f5f8;
+  --color-text-secondary: #b8c2cf;
+  --color-text-subtle: #7e8b9b;
+  --color-text-disabled: #5e6978;
+  --color-focus-ring: #9b8eff;
+  --color-overlay: rgba(0, 0, 0, 0.72);
+  --color-scrim: rgba(0, 0, 0, 0.62);
+
+  --color-image-stage: #06090e;
+  --color-wheel-stage: #0c121b;
+  --color-swatch-boundary: rgba(242, 245, 248, 0.26);
+  --color-preview-outline: #f2f5f8;
+  --transparency-checkerboard:
+    linear-gradient(45deg, #202a37 25%, transparent 25%),
+    linear-gradient(-45deg, #202a37 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #202a37 75%),
+    linear-gradient(-45deg, transparent 75%, #202a37 75%);
+
+  --gradient-brand-spectral: linear-gradient(120deg, #5f6fe5 0%, #765bc8 54%, #e66a3a 100%);
+  --gradient-ambient-field:
+    radial-gradient(circle at 24% 18%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 34%),
+    radial-gradient(circle at 82% 24%, color-mix(in srgb, var(--color-ember) 8%, transparent), transparent 30%);
+
+  --font-family-base: "Segoe UI Variable", "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  --font-product-title: 550 0.95rem/1.2 var(--font-family-base);
+  --font-page-title: 600 clamp(1.45rem, 2vw, 1.75rem) / 1.15 var(--font-family-base);
+  --font-section-title: 550 1.04rem/1.3 var(--font-family-base);
+  --font-card-title: 550 0.94rem/1.3 var(--font-family-base);
+  --font-body: 400 0.94rem/1.55 var(--font-family-base);
+  --font-body-compact: 400 0.85rem/1.45 var(--font-family-base);
+  --font-label: 500 0.76rem/1.25 var(--font-family-base);
+  --font-metadata: 400 0.78rem/1.35 var(--font-family-base);
+  --font-metric: 600 1.2rem/1.15 var(--font-family-base);
+  --font-code: 500 0.86rem/1.55 var(--font-family-mono);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+
+  --radius-control: 8px;
+  --radius-card: 10px;
+  --radius-dialog: 12px;
+  --radius-hero: 14px;
+  --radius-media: 8px;
+  --radius-pill: 999px;
+
+  --shadow-subtle: none;
+  --shadow-elevated: 0 10px 30px rgba(0, 0, 0, 0.18);
+  --shadow-dialog: 0 24px 80px rgba(0, 0, 0, 0.44);
+
+  --motion-fast: 120ms ease;
+  --motion-base: 180ms ease;
+  --motion-slow: 260ms ease;
+
+  --color-control-quiet: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
+  --color-control-quiet-hover: color-mix(in srgb, var(--color-text-primary) 13%, transparent);
+  --color-control-disabled: color-mix(in srgb, var(--color-text-disabled) 10%, transparent);
+  --color-border-interactive: color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --color-app-bg: #f2f4f7;
+  --color-sidebar-bg: #e9edf2;
+  --color-workspace-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-surface-recessed: #eef1f5;
+  --color-surface-hover: #e5eaf0;
+  --color-surface-selected: #eeeafe;
+  --color-border-subtle: rgba(18, 30, 48, 0.1);
+  --color-border-strong: rgba(18, 30, 48, 0.18);
+  --color-border-emphasis: rgba(18, 30, 48, 0.28);
+  --color-primary: #5848b8;
+  --color-primary-bg: #5848b8;
+  --color-primary-hover: #49399f;
+  --color-primary-pressed: #3f318a;
+  --color-primary-text: #ffffff;
+  --color-ember: #b84c1f;
+  --color-ember-bright: #ca5c2a;
+  --color-success: #187a4b;
+  --color-info: #2463c5;
+  --color-warning: #8b5c00;
+  --color-danger: #b72c3b;
+  --color-text-primary: #151b24;
+  --color-text-secondary: #465366;
+  --color-text-subtle: #536174;
+  --color-text-disabled: #7f8a9a;
+  --color-focus-ring: #6958ca;
+  --color-overlay: rgba(0, 0, 0, 0.62);
+  --color-scrim: rgba(0, 0, 0, 0.42);
+  --color-image-stage: #e8ecf1;
+  --color-wheel-stage: #eef1f5;
+  --color-swatch-boundary: rgba(18, 30, 48, 0.28);
+  --color-preview-outline: #ffffff;
+  --transparency-checkerboard:
+    linear-gradient(45deg, #d9dee5 25%, transparent 25%),
+    linear-gradient(-45deg, #d9dee5 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d9dee5 75%),
+    linear-gradient(-45deg, transparent 75%, #d9dee5 75%);
+  --gradient-ambient-field:
+    radial-gradient(circle at 24% 18%, color-mix(in srgb, var(--color-primary) 7%, transparent), transparent 34%),
+    radial-gradient(circle at 82% 24%, color-mix(in srgb, var(--color-ember) 5%, transparent), transparent 30%);
+  --color-control-quiet: rgba(18, 30, 48, 0.045);
+  --color-control-quiet-hover: rgba(18, 30, 48, 0.08);
+  --color-control-disabled: #f5f7fa;
+  --color-border-interactive: rgba(18, 30, 48, 0.18);
+  --shadow-elevated: 0 8px 22px rgba(18, 30, 48, 0.1);
+  --shadow-dialog: 0 24px 80px rgba(0, 0, 0, 0.24);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
+}
