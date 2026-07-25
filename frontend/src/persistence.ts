@@ -2,13 +2,16 @@ import { z } from 'zod'
 import { colorSchema } from './api/contracts'
 import type { RoleAssignments } from './contrast'
 import type { PaletteColor } from './workspace'
+import { clonePaletteColor, deterministicPaletteColorId } from './workspace'
 
-export const PALETTE_SCHEMA_VERSION = 1
+export const PALETTE_SCHEMA_VERSION = 2
 const DATABASE_NAME = 'colorcraft'
 const DATABASE_VERSION = 1
 const STORE_NAME = 'palettes'
 
 const storedColorSchema = colorSchema.extend({
+  id: z.string().min(1).max(120),
+  name: z.string().trim().min(1).max(80).optional(),
   population: z.number().min(0).max(1).optional(),
   pixelCount: z.number().int().positive().optional(),
 })
@@ -29,20 +32,28 @@ const roleAssignmentsSchema = z.record(
 
 const savedPaletteSchema = z
   .object({
-    schemaVersion: z.literal(PALETTE_SCHEMA_VERSION),
+    schemaVersion: z.literal(2),
     id: z.string().min(1).max(120),
     name: z.string().min(1).max(120),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
     sourceType: z.enum(['image', 'manual']),
     sourceFilename: z.string().min(1).max(255).optional(),
-    colors: z.array(storedColorSchema).min(1).max(10),
+    colors: z
+      .array(storedColorSchema)
+      .min(1)
+      .max(10)
+      .refine(
+        (colors) =>
+          new Set(colors.map((color) => color.id)).size === colors.length,
+        'Palette color IDs must be unique.',
+      ),
     roles: roleAssignmentsSchema,
   })
   .strict()
 
 export interface SavedPalette {
-  schemaVersion: 1
+  schemaVersion: 2
   id: string
   name: string
   createdAt: string
@@ -61,14 +72,13 @@ export interface PaletteDraft {
   roles: RoleAssignments
 }
 
-function cloneColors(colors: PaletteColor[]): PaletteColor[] {
-  return colors.map((color) => ({
-    hex: color.hex,
-    rgb: { ...color.rgb },
-    hsl: { ...color.hsl },
-    ...(color.population === undefined ? {} : { population: color.population }),
-    ...(color.pixelCount === undefined ? {} : { pixelCount: color.pixelCount }),
-  }))
+function cloneColors(
+  colors: PaletteColor[],
+  options: { newIds?: boolean } = {},
+): PaletteColor[] {
+  return colors.map((color) =>
+    clonePaletteColor(color, { newId: options.newIds }),
+  )
 }
 
 export function migratePaletteRecord(value: unknown): SavedPalette | null {
@@ -77,8 +87,26 @@ export function migratePaletteRecord(value: unknown): SavedPalette | null {
 
   if (!value || typeof value !== 'object') return null
   const legacy = value as Record<string, unknown>
-  if (legacy.schemaVersion !== undefined && legacy.schemaVersion !== 0)
+  if (
+    legacy.schemaVersion !== undefined &&
+    legacy.schemaVersion !== 0 &&
+    legacy.schemaVersion !== 1
+  )
     return null
+  const legacyColors = Array.isArray(legacy.colors)
+    ? legacy.colors.map((color, index) => {
+        if (!color || typeof color !== 'object') return color
+        const item = color as Record<string, unknown>
+        return {
+          ...item,
+          id: deterministicPaletteColorId(
+            typeof legacy.id === 'string' ? legacy.id : 'palette',
+            index,
+            typeof item.hex === 'string' ? item.hex : '',
+          ),
+        }
+      })
+    : legacy.colors
   const migrated = savedPaletteSchema.safeParse({
     schemaVersion: PALETTE_SCHEMA_VERSION,
     id: legacy.id,
@@ -87,7 +115,7 @@ export function migratePaletteRecord(value: unknown): SavedPalette | null {
     updatedAt: legacy.updatedAt ?? legacy.createdAt,
     sourceType: legacy.sourceType ?? 'manual',
     sourceFilename: legacy.sourceFilename,
-    colors: legacy.colors,
+    colors: legacyColors,
     roles: legacy.roles ?? {},
   })
   return migrated.success ? migrated.data : null
@@ -178,7 +206,7 @@ export async function duplicateSavedPalette(
   return savePalette({
     ...record,
     name: `${record.name} copy`,
-    colors: cloneColors(record.colors),
+    colors: cloneColors(record.colors, { newIds: true }),
     roles: { ...record.roles },
   })
 }

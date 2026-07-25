@@ -72,11 +72,15 @@ describe('PaletteItem HEX draft behavior', () => {
 
   it('runs duplicate and remove actions from a labeled context menu', () => {
     const props = renderItem()
-    fireEvent.click(screen.getByRole('button', { name: 'Actions for color 1' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Actions for Color 1 · #FF0000' }),
+    )
     fireEvent.click(screen.getByRole('menuitem', { name: 'Duplicate color' }))
     expect(props.onDuplicate).toHaveBeenCalledOnce()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Actions for color 1' }))
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Actions for Color 1 · #FF0000' }),
+    )
     fireEvent.click(screen.getByRole('menuitem', { name: 'Remove color' }))
     expect(props.onRemove).toHaveBeenCalledOnce()
   })

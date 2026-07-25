@@ -67,7 +67,13 @@ describe('ColorSuggestions palette lifecycle', () => {
     )
     await loadSuggestions([red])
     fireEvent.click(screen.getByRole('button', { name: 'Add #0000ff' }))
-    expect(onAddColor).toHaveBeenCalledWith(expect.objectContaining(blue))
+    expect(onAddColor).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hex: blue.hex,
+        rgb: blue.rgb,
+        hsl: blue.hsl,
+      }),
+    )
     expect(screen.getByRole('button', { name: 'Added #0000ff' })).toBeDisabled()
 
     view.rerender(

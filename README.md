@@ -20,8 +20,8 @@ contrast, proposes optional colors, and generates browser-side exports.
 
 ## Current workflow
 
-1. Create a palette from a JPG, PNG, or WebP source image, or select **Start manually**.
-2. Edit, add, duplicate, remove, or sample palette colors.
+1. Create a palette from a JPG, PNG, or WebP source image, select **Start manually**, or import a ColorCraft JSON file.
+2. Edit, name, reorder, add, duplicate, remove, or sample palette colors.
 3. Select **Analyze palette**.
 4. Use **Overview**, **Harmony**, **Contrast**, and **Suggestions** in Review.
 5. Assign color roles and evaluate the applicable contrast pairs.
@@ -36,6 +36,13 @@ conformance.
 The API accepts a source image up to 10 MB and 40 million decoded pixels. Extraction returns 3–10 requested colors, or fewer for a limited processing sample. **Save palette** stores a versioned record in IndexedDB. The Library can open, search, rename, duplicate, and delete saved palettes.
 
 ColorCraft has no accounts or cloud synchronization. Source-image bytes and unsaved changes remain session-only. Browser history stores the active view and Review tab, not palette data. Export generation runs in the browser.
+
+ColorCraft JSON import is also browser-only. It accepts ColorCraft portable
+schema versions 1 and 2, validates the complete file before changing the
+workspace, and leaves an imported palette unsaved until **Save palette** is
+selected.
+
+![Named and reordered ColorCraft palette](./docs/assets/screenshots/palette-organization-light.png)
 
 The shell reports **Loopback only** or **LAN enabled** from runtime metadata.
 SVG exports select black or white swatch labels by measured contrast.

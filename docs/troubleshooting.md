@@ -139,6 +139,17 @@ Palette Library.
 **Recovery:** Return to the original browser profile and origin. ColorCraft does
 not have cloud recovery.
 
+## A ColorCraft JSON file will not import
+
+**Cause:** The file is larger than 1 MB, is not valid UTF-8 JSON, uses an
+unsupported schema or format, contains unknown fields, or has inconsistent
+color or role data.
+
+**Recovery:** Export the palette again from ColorCraft when possible. Confirm
+that the file is a single ColorCraft palette using portable schema version 1 or
+2. ColorCraft validates the complete file and does not partially import invalid
+colors or roles.
+
 ## Browser history does not restore a palette
 
 **Cause:** The URL stores only the application view and Review tab. It does not

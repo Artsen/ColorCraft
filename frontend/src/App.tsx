@@ -16,6 +16,7 @@ import ColorPalette from './components/ColorPalette'
 import ExportWorkspace from './components/ExportWorkspace'
 import ImageColorPicker from './components/ImageColorPicker'
 import ImageUpload, { validateImageFile } from './components/ImageUpload'
+import JsonImportButton from './components/JsonImportButton'
 import InlineNotice, { type NoticeState } from './components/InlineNotice'
 import PaletteLibrary from './components/PaletteLibrary'
 import ReviewWorkspace from './components/ReviewWorkspace'
@@ -38,7 +39,10 @@ import {
   type SavedPalette,
 } from './persistence'
 import {
+  clonePaletteColor,
   colorFromHex,
+  paletteColorFromApi,
+  replacePaletteColorValue,
   type PaletteColor,
   type ReviewView,
   type WorkspaceView,
@@ -47,6 +51,7 @@ import {
   urlForView,
   viewFromLocation,
 } from './workspace'
+import type { ImportedPalette } from './portablePalette'
 
 interface SourceImage {
   file: File
@@ -70,7 +75,7 @@ function App() {
   >(null)
   const [sourceFilename, setSourceFilename] = useState<string | undefined>()
   const [colors, setColors] = useState<PaletteColor[]>([])
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [selectedColorId, setSelectedColorId] = useState<string | null>(null)
   const [requestedColors, setRequestedColors] = useState(6)
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [analysisStale, setAnalysisStale] = useState(false)
@@ -81,7 +86,7 @@ function App() {
     state: 'loading',
   })
   const [confirmNewPalette, setConfirmNewPalette] = useState(false)
-  const [pickerTarget, setPickerTarget] = useState<number | 'add' | null>(null)
+  const [pickerTarget, setPickerTarget] = useState<string | 'add' | null>(null)
   const [reviewTab, setReviewTab] = useState<ReviewView>(() =>
     reviewFromLocation(),
   )
@@ -93,6 +98,9 @@ function App() {
   const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null)
   const [pendingOpenPalette, setPendingOpenPalette] =
     useState<SavedPalette | null>(null)
+  const [pendingImport, setPendingImport] = useState<ImportedPalette | null>(
+    null,
+  )
   const [deleteTarget, setDeleteTarget] = useState<SavedPalette | null>(null)
   const changeImageInputRef = useRef<HTMLInputElement>(null)
   const sourceUrlRef = useRef<string | null>(null)
@@ -257,8 +265,9 @@ function App() {
     try {
       const data = await extractColors(file, count, controller.signal)
       if (requestId !== extractionRequestRef.current) return
-      setColors(data.colors)
-      setSelectedIndex(data.colors.length ? 0 : null)
+      const extracted = data.colors.map((color) => paletteColorFromApi(color))
+      setColors(extracted)
+      setSelectedColorId(extracted[0]?.id ?? null)
       invalidateAnalysis()
       setNotice({
         variant: data.count < count ? 'information' : 'success',
@@ -292,7 +301,7 @@ function App() {
     setActivePaletteId(null)
     setSavedFingerprint(null)
     setColors([])
-    setSelectedIndex(null)
+    setSelectedColorId(null)
     setAnalysis(null)
     setAnalysisStale(false)
     navigate('create')
@@ -307,8 +316,9 @@ function App() {
     setSourceFilename(undefined)
     setActivePaletteId(null)
     setSavedFingerprint(null)
-    setColors([manualStarter])
-    setSelectedIndex(0)
+    const starter = paletteColorFromApi(manualStarter)
+    setColors([starter])
+    setSelectedColorId(starter.id)
     setAnalysis(null)
     setAnalysisStale(false)
     setNotice(null)
@@ -328,7 +338,7 @@ function App() {
     setPaletteSourceType(null)
     setSourceFilename(undefined)
     setColors([])
-    setSelectedIndex(null)
+    setSelectedColorId(null)
     setAnalysis(null)
     setAnalysisStale(false)
     setRoles({})
@@ -348,9 +358,11 @@ function App() {
     else resetPalette()
   }
 
-  const updateColor = (index: number, color: Color) => {
+  const updateColor = (id: string, color: Color) => {
     setColors((current) =>
-      current.map((item, itemIndex) => (itemIndex === index ? color : item)),
+      current.map((item) =>
+        item.id === id ? replacePaletteColorValue(item, color) : item,
+      ),
     )
     invalidateAnalysis()
   }
@@ -363,12 +375,14 @@ function App() {
       })
       return
     }
-    setColors((current) => [...current, color])
-    setSelectedIndex(colors.length)
+    const added = paletteColorFromApi(color)
+    setColors((current) => [...current, added])
+    setSelectedColorId(added.id)
     invalidateAnalysis()
   }
 
-  const duplicateColor = (index: number) => {
+  const duplicateColor = (id: string) => {
+    const index = colors.findIndex((color) => color.id === id)
     const sourceColor = colors[index]
     if (!sourceColor || colors.length >= 10) {
       if (colors.length >= 10) {
@@ -379,31 +393,81 @@ function App() {
       }
       return
     }
-    const duplicate: Color = {
-      hex: sourceColor.hex,
-      rgb: { ...sourceColor.rgb },
-      hsl: { ...sourceColor.hsl },
-    }
+    const duplicate = clonePaletteColor(sourceColor, {
+      newId: true,
+      copyName: true,
+    })
     setColors((current) => [
       ...current.slice(0, index + 1),
       duplicate,
       ...current.slice(index + 1),
     ])
-    setSelectedIndex(index + 1)
+    setSelectedColorId(duplicate.id)
     invalidateAnalysis()
   }
 
-  const removeColor = (index: number) => {
-    setColors((current) =>
-      current.filter((_, itemIndex) => itemIndex !== index),
-    )
-    setSelectedIndex((current) => {
-      if (current === null) return null
-      if (colors.length <= 1) return null
-      if (current > index) return current - 1
-      return Math.min(current, colors.length - 2)
+  const removeColor = (id: string) => {
+    const index = colors.findIndex((color) => color.id === id)
+    const next = colors.filter((color) => color.id !== id)
+    setColors(next)
+    if (selectedColorId === id) {
+      setSelectedColorId(next[Math.min(index, next.length - 1)]?.id ?? null)
+    }
+    invalidateAnalysis()
+  }
+
+  const moveColor = (id: string, direction: -1 | 1) => {
+    setColors((current) => {
+      const index = current.findIndex((color) => color.id === id)
+      const destination = index + direction
+      if (index < 0 || destination < 0 || destination >= current.length)
+        return current
+      const next = [...current]
+      ;[next[index], next[destination]] = [next[destination], next[index]]
+      return next
     })
     invalidateAnalysis()
+  }
+
+  const updateColorName = (id: string, name?: string) => {
+    setColors((current) =>
+      current.map((color) =>
+        color.id === id
+          ? { ...color, ...(name ? { name } : { name: undefined }) }
+          : color,
+      ),
+    )
+  }
+
+  const activateImport = (palette: ImportedPalette) => {
+    analysisRequestRef.current += 1
+    extractionRequestRef.current += 1
+    analysisControllerRef.current?.abort()
+    extractionControllerRef.current?.abort()
+    revokeSource()
+    setSource(null)
+    setManualPalette(true)
+    setPaletteSourceType('manual')
+    setSourceFilename(undefined)
+    setPaletteName(palette.name)
+    setColors(palette.colors)
+    setRoles(palette.roles)
+    setSelectedColorId(palette.colors[0]?.id ?? null)
+    setAnalysis(null)
+    setAnalysisStale(false)
+    setActivePaletteId(null)
+    setSavedFingerprint(null)
+    setPendingImport(null)
+    setNotice({
+      variant: 'success',
+      message: `${palette.name} was imported locally and remains unsaved.`,
+    })
+    navigate('create')
+  }
+
+  const requestImport = (palette: ImportedPalette) => {
+    if (hasPendingChanges) setPendingImport(palette)
+    else activateImport(palette)
   }
 
   const handleAnalyze = async () => {
@@ -464,7 +528,7 @@ function App() {
     setPaletteName(palette.name)
     setColors(palette.colors)
     setRoles(palette.roles)
-    setSelectedIndex(palette.colors.length ? 0 : null)
+    setSelectedColorId(palette.colors[0]?.id ?? null)
     setAnalysis(null)
     setAnalysisStale(false)
     setActivePaletteId(palette.id)
@@ -584,6 +648,8 @@ function App() {
     <ImageUpload
       onImageSelected={beginImagePalette}
       onStartManual={startManualPalette}
+      onImport={requestImport}
+      onImportError={(message) => setNotice({ variant: 'error', message })}
     />
   ) : (
     <div
@@ -600,7 +666,7 @@ function App() {
               <Button
                 variant="secondary"
                 icon={<Pipette size={16} aria-hidden="true" />}
-                onClick={() => setPickerTarget(selectedIndex ?? 'add')}
+                onClick={() => setPickerTarget(selectedColorId ?? 'add')}
               >
                 Pick from image
               </Button>
@@ -706,13 +772,15 @@ function App() {
 
         <ColorPalette
           colors={colors}
-          selectedIndex={selectedIndex}
+          selectedColorId={selectedColorId}
           sourceAvailable={Boolean(source)}
-          onSelect={setSelectedIndex}
+          onSelect={setSelectedColorId}
           onColorChange={updateColor}
+          onNameChange={updateColorName}
           onAddColor={() => addColor()}
           onDuplicateColor={duplicateColor}
           onRemoveColor={removeColor}
+          onMoveColor={moveColor}
           onPickFromImage={setPickerTarget}
         />
 
@@ -778,6 +846,13 @@ function App() {
 
   const headerActions = paletteDraft ? (
     <div className="save-controls">
+      {view === 'create' && (
+        <JsonImportButton
+          compact
+          onImport={requestImport}
+          onError={(message) => setNotice({ variant: 'error', message })}
+        />
+      )}
       <StatusBadge
         variant={
           saveState === 'saved'
@@ -921,6 +996,28 @@ function App() {
             onClick={() => void confirmDeletePalette()}
           >
             Delete palette
+          </Button>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(pendingImport)}
+        title="Import another palette?"
+        onClose={() => setPendingImport(null)}
+      >
+        <p>
+          Your current {saveState === 'modified' ? 'modified' : 'unsaved'}{' '}
+          palette changes will be discarded.
+        </p>
+        <div className="dialog-actions">
+          <Button variant="quiet" onClick={() => setPendingImport(null)}>
+            Keep working
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => pendingImport && activateImport(pendingImport)}
+          >
+            Discard changes and import
           </Button>
         </div>
       </Dialog>

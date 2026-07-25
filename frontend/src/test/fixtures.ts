@@ -1,12 +1,15 @@
-import type { Analysis, Color } from '../api/contracts'
+import type { Analysis } from '../api/contracts'
+import type { PaletteColor } from '../workspace'
 
-export const red: Color = {
+export const red: PaletteColor = {
+  id: 'color-red',
   hex: '#ff0000',
   rgb: { r: 255, g: 0, b: 0 },
   hsl: { h: 0, s: 100, l: 50 },
 }
 
-export const blue: Color = {
+export const blue: PaletteColor = {
+  id: 'color-blue',
   hex: '#0000ff',
   rgb: { r: 0, g: 0, b: 255 },
   hsl: { h: 240, s: 100, l: 50 },

@@ -6,7 +6,7 @@ import PaletteLibrary from './PaletteLibrary'
 
 const palettes: SavedPalette[] = [
   {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'newer',
     name: 'Ocean launch',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -17,7 +17,7 @@ const palettes: SavedPalette[] = [
     roles: {},
   },
   {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: 'older',
     name: 'Ember notes',
     createdAt: '2026-01-01T00:00:00.000Z',

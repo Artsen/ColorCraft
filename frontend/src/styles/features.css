@@ -238,8 +238,13 @@
 .palette-row-editor input {
   width: 100%;
   min-width: 0;
+}
+.palette-row-editor .palette-hex-input {
   font: var(--font-code);
   text-transform: uppercase;
+}
+.palette-row-editor .palette-name-input {
+  font: var(--font-body-compact);
 }
 .palette-row-metadata {
   display: grid;

@@ -38,6 +38,20 @@ that is within the byte and decoded-pixel limits.
 
 The palette can contain at most 10 colors.
 
+## Import a ColorCraft JSON palette
+
+1. In empty Create, or from the active Create header, select **Import ColorCraft JSON**.
+2. Choose a ColorCraft JSON file that is 1 MB or smaller.
+3. If the current palette has unsaved or modified work, confirm whether to
+   discard it.
+
+Import runs entirely in the browser. ColorCraft accepts portable schema version
+1 and version 2 files, validates the whole file before changing the workspace,
+and never imports arbitrary JSON. The imported palette retains its name, color
+order, optional color names, extraction metadata when present, and valid role
+assignments. It has no source image and remains **Unsaved** until you select
+**Save palette**.
+
 ## Edit a palette color
 
 Use one of these controls:
@@ -48,7 +62,14 @@ Use one of these controls:
 - Select **Remove color**.
 - For an active source image, select **Pick color _n_ from image**.
 
-ColorCraft does not currently provide a palette-reorder control.
+Enter an optional name in **Name for color N**. A name can contain at most 80
+trimmed characters. Blur the field or press Enter to save it. Press Escape to
+restore the previous name. Empty input clears the name.
+
+Open the color actions menu and select **Move up** or **Move down** to reorder a
+color. The first and last unavailable directions are disabled. Reordering
+preserves the logical color, its name, and extraction metadata, and invalidates
+the current analysis.
 
 ## Sample a color from the source image
 
@@ -173,11 +194,20 @@ stated in percentage points.
    - **JSON**
    - **Tailwind theme colors**
    - **SVG swatch sheet**
+
+Named colors produce safe ASCII keys in CSS and Tailwind output and visible
+labels in SVG. Unnamed colors keep the `palette-1`, `palette-2` numeric pattern.
+ColorCraft JSON schema version 2 preserves Unicode names, exact order,
+extraction metadata, and roles. It does not contain internal workspace IDs.
 4. Select **Copy** or **Download**.
 
 **Copy** places the generated text on the clipboard. **Download** creates an
 exported file through the browser. Export does not create or update a saved
 palette record.
+
+Role assignments currently reference HEX values. Duplicate colors with the same
+HEX value therefore share a role association even when their internal IDs or
+names differ.
 
 For SVG output, ColorCraft measures each swatch against black and white. It uses
 the text color with the higher contrast ratio.

@@ -1,4 +1,5 @@
 import { Plus } from 'lucide-react'
+import { useState } from 'react'
 import type { Color } from '../api/contracts'
 import type { PaletteColor } from '../workspace'
 import PaletteItem from './PaletteItem'
@@ -6,42 +7,62 @@ import Button from './ui/Button'
 
 interface ColorPaletteProps {
   colors: PaletteColor[]
-  selectedIndex: number | null
+  selectedColorId: string | null
   sourceAvailable: boolean
-  onSelect: (index: number) => void
-  onColorChange: (index: number, color: Color) => void
+  onSelect: (id: string) => void
+  onColorChange: (id: string, color: Color) => void
+  onNameChange: (id: string, name?: string) => void
   onAddColor: () => void
-  onDuplicateColor: (index: number) => void
-  onRemoveColor: (index: number) => void
-  onPickFromImage: (index: number) => void
+  onDuplicateColor: (id: string) => void
+  onRemoveColor: (id: string) => void
+  onMoveColor: (id: string, direction: -1 | 1) => void
+  onPickFromImage: (id: string) => void
 }
 
 export default function ColorPalette({
   colors,
-  selectedIndex,
+  selectedColorId,
   sourceAvailable,
   onSelect,
   onColorChange,
+  onNameChange,
   onAddColor,
   onDuplicateColor,
   onRemoveColor,
+  onMoveColor,
   onPickFromImage,
 }: ColorPaletteProps) {
+  const [moveStatus, setMoveStatus] = useState('')
+  const moveColor = (color: PaletteColor, index: number, direction: -1 | 1) => {
+    onMoveColor(color.id, direction)
+    setMoveStatus(
+      `Moved ${color.name ?? `Color ${index + 1}`} to position ${index + direction + 1} of ${colors.length}.`,
+    )
+  }
+
   return (
     <div className="palette-editor">
+      <p className="visually-hidden" aria-live="polite">
+        {moveStatus}
+      </p>
       <div className="palette-list">
         {colors.map((color, index) => (
           <PaletteItem
-            key={`${index}-${color.hex}`}
+            key={color.id}
             color={color}
             index={index}
-            selected={selectedIndex === index}
+            selected={selectedColorId === color.id}
             sourceAvailable={sourceAvailable}
-            onSelect={() => onSelect(index)}
-            onChange={(next) => onColorChange(index, next)}
-            onDuplicate={() => onDuplicateColor(index)}
-            onRemove={() => onRemoveColor(index)}
-            onPickFromImage={() => onPickFromImage(index)}
+            onSelect={() => onSelect(color.id)}
+            onChange={(next) => onColorChange(color.id, next)}
+            onNameChange={(name) => onNameChange(color.id, name)}
+            onDuplicate={() => onDuplicateColor(color.id)}
+            onRemove={() => onRemoveColor(color.id)}
+            onMoveUp={() => moveColor(color, index, -1)}
+            onMoveDown={() => moveColor(color, index, 1)}
+            canMoveUp={index > 0}
+            canMoveDown={index < colors.length - 1}
+            onPickFromImage={() => onPickFromImage(color.id)}
           />
         ))}
       </div>

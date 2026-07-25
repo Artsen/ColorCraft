@@ -1,15 +1,18 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import type { Analysis, Color } from '../api/contracts'
+import type { Analysis } from '../api/contracts'
 import { analysis as baseAnalysis, blue, red } from '../test/fixtures'
+import type { PaletteColor } from '../workspace'
 import ReviewWorkspace, { orderedRelationships } from './ReviewWorkspace'
 
-const white: Color = {
+const white: PaletteColor = {
+  id: 'color-white',
   hex: '#FFFFFF',
   rgb: { r: 255, g: 255, b: 255 },
   hsl: { h: 0, s: 0, l: 100 },
 }
-const black: Color = {
+const black: PaletteColor = {
+  id: 'color-black',
   hex: '#000000',
   rgb: { r: 0, g: 0, b: 0 },
   hsl: { h: 0, s: 0, l: 0 },

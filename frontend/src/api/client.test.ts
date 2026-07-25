@@ -25,7 +25,9 @@ describe('ColorCraft API client', () => {
       jsonResponse({
         success: true,
         colors: [red, blue, red].map((color, index) => ({
-          ...color,
+          hex: color.hex,
+          rgb: color.rgb,
+          hsl: color.hsl,
           population: 1 / 3,
           pixelCount: 10 - index,
         })),
@@ -37,7 +39,11 @@ describe('ColorCraft API client', () => {
     const result = await extractColors(new File(['image'], 'image.png'), 3)
 
     expect(result.count).toBe(3)
-    expect(result.colors[0]).toMatchObject(red)
+    expect(result.colors[0]).toMatchObject({
+      hex: red.hex,
+      rgb: red.rgb,
+      hsl: red.hsl,
+    })
     expect(result.colors[0].population).toBeCloseTo(1 / 3)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
@@ -167,7 +173,13 @@ describe('ColorCraft API client', () => {
     for (const call of fetchMock.mock.calls) {
       const request = call[1] as RequestInit
       const payload = JSON.parse(String(request.body))
-      expect(payload.colors[0]).toEqual(red)
+      expect(payload.colors[0]).toEqual({
+        hex: red.hex,
+        rgb: red.rgb,
+        hsl: red.hsl,
+      })
+      expect(payload.colors[0]).not.toHaveProperty('id')
+      expect(payload.colors[0]).not.toHaveProperty('name')
       expect(payload.colors[0]).not.toHaveProperty('population')
       expect(payload.colors[0]).not.toHaveProperty('pixelCount')
     }

@@ -2,6 +2,7 @@ import { Check, Plus, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { suggestColors } from '../api/client'
 import type { Color, SuggestionColor, SuggestionResult } from '../api/contracts'
+import { paletteColorLabel, type PaletteColor } from '../workspace'
 import { errorMessage } from '../api/errors'
 import InlineNotice, { type NoticeState } from './InlineNotice'
 import MiniColorWheel from './MiniColorWheel'
@@ -11,7 +12,7 @@ import Panel from './ui/Panel'
 import SectionHeader from './ui/SectionHeader'
 
 interface ColorSuggestionsProps {
-  colors: Color[]
+  colors: PaletteColor[]
   onAddColor: (color?: Color) => void
 }
 
@@ -26,7 +27,7 @@ export default function ColorSuggestions({
 }: ColorSuggestionsProps) {
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<SuggestionResult[]>([])
-  const [selectedColorIndex, setSelectedColorIndex] = useState(0)
+  const [selectedColorId, setSelectedColorId] = useState(colors[0]?.id ?? null)
   const [showAll, setShowAll] = useState(false)
   const [addedHexes, setAddedHexes] = useState<Set<string>>(new Set())
   const [notice, setNotice] = useState<NoticeState | null>(null)
@@ -36,6 +37,8 @@ export default function ColorSuggestions({
   const requestIdRef = useRef(0)
   const controllerRef = useRef<AbortController | null>(null)
   const fingerprint = paletteFingerprint(colors)
+  const colorIds = colors.map((color) => color.id).join('|')
+  const firstColorId = colors[0]?.id ?? null
   const fingerprintRef = useRef(fingerprint)
   fingerprintRef.current = fingerprint
 
@@ -49,10 +52,10 @@ export default function ColorSuggestions({
     setAddedHexes(new Set())
     setLoading(false)
     setNotice(null)
-    setSelectedColorIndex((current) =>
-      Math.max(0, Math.min(current, colors.length - 1)),
+    setSelectedColorId((current) =>
+      current && colorIds.split('|').includes(current) ? current : firstColorId,
     )
-  }, [fingerprint, colors.length])
+  }, [fingerprint, colorIds, firstColorId])
 
   useEffect(
     () => () => {
@@ -144,16 +147,16 @@ export default function ColorSuggestions({
             {colors.map((color, index) => (
               <button
                 type="button"
-                key={`${color.hex}-${index}`}
+                key={color.id}
                 onClick={() => {
-                  setSelectedColorIndex(index)
+                  setSelectedColorId(color.id)
                   setShowAll(false)
                 }}
                 className="color-select"
                 style={{ backgroundColor: color.hex }}
                 title={color.hex}
-                aria-label={`Use ${color.hex} as the base color`}
-                aria-pressed={selectedColorIndex === index}
+                aria-label={`Use ${paletteColorLabel(color, index)} as the base color`}
+                aria-pressed={selectedColorId === color.id}
               />
             ))}
           </div>
@@ -176,7 +179,15 @@ export default function ColorSuggestions({
         ) : (
           <SuggestionResults
             result={
-              suggestions[Math.min(selectedColorIndex, suggestions.length - 1)]
+              suggestions[
+                Math.min(
+                  suggestions.length - 1,
+                  Math.max(
+                    0,
+                    colors.findIndex((color) => color.id === selectedColorId),
+                  ),
+                )
+              ]
             }
             paletteHexes={paletteHexes}
             addedHexes={addedHexes}

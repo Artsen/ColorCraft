@@ -15,19 +15,28 @@ The frontend uses:
 ## Saved palette records
 
 The `colorcraft` IndexedDB database contains the `palettes` object store. A
-schema-version-1 record contains:
+schema-version-2 record contains:
 
 - Record ID and palette name
 - Created and updated timestamps
 - Manual or image source type
 - Optional source filename
-- 1–10 normalized palette colors
+- 1–10 ordered normalized palette colors with stable internal IDs and optional names
 - Optional population and `pixelCount`
 - Color-role assignments
 
-The frontend validates each record with Zod. It can migrate an unversioned or
-version-0 record to the current shape. The next save writes schema version 1.
+The frontend validates each record with Zod. It can migrate a schema-version-1,
+version-0, or unversioned record to the current shape.
+Legacy colors receive deterministic IDs, so repeatedly opening a migrated
+record does not create a false modified state. Listing the Library does not
+rewrite records. The next save writes schema version 2.
 The frontend ignores malformed records and unknown future schema versions.
+
+Portable ColorCraft JSON is not an IndexedDB record. Portable schema version 2
+uses `format: "colorcraft-palette"` and excludes internal IDs. Import supports
+portable versions 1 and 2, reads at most 1 MB, validates the complete file
+locally, and does not send its contents to the API. An imported palette remains
+session-only until the user selects **Save palette**.
 
 ## Source images
 

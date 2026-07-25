@@ -1,10 +1,6 @@
 import type { PaletteColor } from './workspace'
-import {
-  contrastRatio,
-  paletteRoles,
-  roleLabels,
-  type RoleAssignments,
-} from './contrast'
+import { serializePortablePalette } from './portablePalette'
+import { contrastRatio, type RoleAssignments } from './contrast'
 
 export type ExportFormat = 'css' | 'json' | 'tailwind' | 'svg'
 
@@ -57,49 +53,25 @@ function safeComment(value: string): string {
 }
 
 export function generateCss({ name, colors }: PaletteExport): string {
+  const tokens = exportTokens(colors)
   return `/* Palette: ${safeComment(name)} */\n:root {\n${colors
     .map(
       (color, index) =>
-        `  --color-palette-${index + 1}: ${color.hex.toLowerCase()};`,
+        `  --color-${tokens[index]}: ${color.hex.toLowerCase()};`,
     )
     .join('\n')}\n}\n`
 }
 
 export function generateJson({ name, colors, roles }: PaletteExport): string {
-  return JSON.stringify(
-    {
-      schemaVersion: 1,
-      paletteName: name,
-      colors: colors.map((color, index) => ({
-        order: index + 1,
-        hex: color.hex.toUpperCase(),
-        rgb: color.rgb,
-        hsl: color.hsl,
-        ...(color.population === undefined
-          ? {}
-          : { population: color.population }),
-        roles: paletteRoles
-          .filter(
-            (role) => roles[role]?.toLowerCase() === color.hex.toLowerCase(),
-          )
-          .map((role) => ({ id: role, label: roleLabels[role] })),
-      })),
-      roleAssignments: Object.fromEntries(
-        paletteRoles
-          .filter((role) => roles[role])
-          .map((role) => [role, roles[role]]),
-      ),
-    },
-    null,
-    2,
-  )
+  return serializePortablePalette(name, colors, roles)
 }
 
 export function generateTailwind({ name, colors }: PaletteExport): string {
+  const tokens = exportTokens(colors)
   return `/* Palette: ${safeComment(name)} */\nexport default {\n  theme: {\n    extend: {\n      colors: {\n${colors
     .map(
       (color, index) =>
-        `        'palette-${index + 1}': '${color.hex.toLowerCase()}',`,
+        `        '${tokens[index]}': '${color.hex.toLowerCase()}',`,
     )
     .join('\n')}\n      },\n    },\n  },\n}\n`
 }
@@ -117,9 +89,12 @@ export function generateSvg({ name, colors }: PaletteExport): string {
         contrastRatio(color, black) >= contrastRatio(color, white)
           ? '#000000'
           : '#ffffff'
-      return `  <g aria-label="Color ${index + 1}: ${escapeXml(color.hex.toUpperCase())}">
+      const label = color.name
+        ? `${color.name} · ${color.hex.toUpperCase()}`
+        : color.hex.toUpperCase()
+      return `  <g aria-label="Color ${index + 1}: ${escapeXml(label)}">
     <rect x="24" y="${y}" width="672" height="56" rx="8" fill="${escapeXml(color.hex)}"/>
-    <text x="44" y="${y + 35}" fill="${labelColor}" font-family="system-ui, sans-serif" font-size="18" font-weight="700">${index + 1}. ${escapeXml(color.hex.toUpperCase())}</text>
+    <text x="44" y="${y + 35}" fill="${labelColor}" font-family="system-ui, sans-serif" font-size="18" font-weight="700">${index + 1}. ${escapeXml(label)}</text>
   </g>`
     })
     .join('\n')
@@ -129,6 +104,27 @@ export function generateSvg({ name, colors }: PaletteExport): string {
   <text x="24" y="42" fill="#111827" font-family="system-ui, sans-serif" font-size="24" font-weight="700">${escapeXml(name)}</text>
 ${rows}
 </svg>\n`
+}
+
+export function exportToken(value: string, fallback: string): string {
+  return (
+    value
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || fallback
+  )
+}
+
+export function exportTokens(colors: PaletteColor[]): string[] {
+  const counts = new Map<string, number>()
+  return colors.map((color, index) => {
+    const base = exportToken(color.name ?? '', `palette-${index + 1}`)
+    const count = (counts.get(base) ?? 0) + 1
+    counts.set(base, count)
+    return count === 1 ? base : `${base}-${count}`
+  })
 }
 
 export function generateExport(
