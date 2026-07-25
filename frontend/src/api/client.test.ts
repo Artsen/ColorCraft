@@ -19,7 +19,11 @@ describe('ColorCraft API client', () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({
         success: true,
-        colors: [red, blue, red],
+        colors: [red, blue, red].map((color, index) => ({
+          ...color,
+          population: 1 / 3,
+          pixelCount: 10 - index,
+        })),
         count: 3,
       }),
     )
@@ -28,7 +32,8 @@ describe('ColorCraft API client', () => {
     const result = await extractColors(new File(['image'], 'image.png'), 3)
 
     expect(result.count).toBe(3)
-    expect(result.colors[0]).toEqual(red)
+    expect(result.colors[0]).toMatchObject(red)
+    expect(result.colors[0].population).toBeCloseTo(1 / 3)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 

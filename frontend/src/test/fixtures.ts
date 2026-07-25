@@ -20,7 +20,7 @@ export const analysis: Analysis = {
       triadic: [],
       tetradic: [],
       splitComplementary: [],
-      monochromatic: false,
+      monochromatic: [],
     },
     temperatureBalance: {
       balance: 'balanced',
@@ -29,7 +29,9 @@ export const analysis: Analysis = {
       warmRatio: 0.5,
       coolRatio: 0.5,
     },
-    score: 50,
+    relationshipFit: 50,
+    relationshipSummary: 'Moderate geometric relationship',
+    relationshipFactors: ['A complementary pair was measured.'],
     tags: ['Balanced Temperature'],
     metrics: {
       hueDiversity: 120,

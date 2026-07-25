@@ -170,11 +170,14 @@ export default function ColorPalette({
           {/* Add Color Button */}
           <button
             onClick={onAddColor}
-            className="bg-dark-tertiary border border-dashed border-border-default rounded-lg p-3 hover:border-purple-500 hover:bg-dark-hover transition-all flex items-center justify-center min-h-[140px]"
+            disabled={colors.length >= 10}
+            className="bg-dark-tertiary border border-dashed border-border-default rounded-lg p-3 hover:border-purple-500 hover:bg-dark-hover transition-all flex items-center justify-center min-h-[140px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="text-center">
               <div className="text-3xl text-text-tertiary mb-1">+</div>
-              <div className="text-xs text-text-secondary">Add Color</div>
+              <div className="text-xs text-text-secondary">
+                {colors.length >= 10 ? '10 color maximum' : 'Add Color'}
+              </div>
             </div>
           </button>
         </div>

@@ -1,306 +1,441 @@
-"""
-Color theory analysis and harmony detection.
-"""
+"""Circular color-theory analysis with explainable relationship evidence."""
+
+from __future__ import annotations
+
+from itertools import combinations
 import math
+from typing import Iterable
+
 import numpy as np
 
 
-def normalize_hue(hue):
-    """Normalize hue to 0-360 range."""
-    while hue < 0:
-        hue += 360
-    while hue >= 360:
-        hue -= 360
-    return hue
+MIN_MEANINGFUL_SATURATION = 10
+COMPLEMENTARY_TOLERANCE = 12.0
+ANALOGOUS_EXPECTED_ANGLE = 30.0
+ANALOGOUS_TOLERANCE = 15.0
+TRIADIC_TOLERANCE = 12.0
+TETRADIC_TOLERANCE = 10.0
+SPLIT_COMPLEMENTARY_TOLERANCE = 12.0
+MONOCHROMATIC_TOLERANCE = 10.0
 
 
-def hue_distance(h1, h2):
-    """Calculate shortest distance between two hues on color wheel."""
-    diff = abs(h1 - h2)
-    return min(diff, 360 - diff)
+def normalize_hue(hue: float) -> float:
+    """Normalize any hue to the half-open [0, 360) interval."""
+    normalized = float(hue) % 360.0
+    return 0.0 if math.isclose(normalized, 360.0, abs_tol=1e-10) else normalized
 
 
-def detect_complementary(hues, tolerance=30):
-    """Detect complementary color pairs (180° apart)."""
-    pairs = []
-    for i, h1 in enumerate(hues):
-        for j, h2 in enumerate(hues):
-            if i >= j:
-                continue
-            dist = hue_distance(h1, h2)
-            if abs(dist - 180) <= tolerance:
-                pairs.append((i, j))
-    return pairs
+def hue_distance(first: float, second: float) -> float:
+    """Return the shortest circular distance between two hues."""
+    difference = abs(normalize_hue(first) - normalize_hue(second))
+    return min(difference, 360.0 - difference)
 
 
-def detect_analogous(hues, tolerance=30):
-    """Detect analogous colors (30-60° apart)."""
-    groups = []
-    for i, h1 in enumerate(hues):
-        for j, h2 in enumerate(hues):
-            if i >= j:
-                continue
-            dist = hue_distance(h1, h2)
-            if 30 - tolerance <= dist <= 60 + tolerance:
-                groups.append((i, j))
-    return groups
+def circular_mean(hues: Iterable[float]) -> float | None:
+    """Return the circular mean hue, or None for empty/fully opposed data."""
+    values = list(hues)
+    if not values:
+        return None
+    radians = np.radians([normalize_hue(value) for value in values])
+    sine = float(np.mean(np.sin(radians)))
+    cosine = float(np.mean(np.cos(radians)))
+    if math.hypot(sine, cosine) < 1e-12:
+        return None
+    return normalize_hue(math.degrees(math.atan2(sine, cosine)))
 
 
-def detect_triadic(hues, tolerance=30):
-    """Detect triadic harmony (120° apart)."""
-    triads = []
-    n = len(hues)
-    for i in range(n):
-        for j in range(i + 1, n):
-            for k in range(j + 1, n):
-                h1, h2, h3 = hues[i], hues[j], hues[k]
-                
-                # Check if roughly 120° apart
-                d12 = hue_distance(h1, h2)
-                d23 = hue_distance(h2, h3)
-                d31 = hue_distance(h3, h1)
-                
-                if (abs(d12 - 120) <= tolerance and 
-                    abs(d23 - 120) <= tolerance and 
-                    abs(d31 - 120) <= tolerance):
-                    triads.append((i, j, k))
-    
-    return triads
+def circular_dispersion(hues: Iterable[float]) -> float:
+    """Return circular standard deviation in degrees, capped at 180."""
+    values = list(hues)
+    if len(values) < 2:
+        return 0.0
+    radians = np.radians([normalize_hue(value) for value in values])
+    resultant = math.hypot(
+        float(np.mean(np.sin(radians))),
+        float(np.mean(np.cos(radians))),
+    )
+    if resultant < 1e-12:
+        return 180.0
+    return min(180.0, math.degrees(math.sqrt(-2.0 * math.log(resultant))))
 
 
-def detect_tetradic(hues, tolerance=30):
-    """Detect tetradic/square harmony (90° apart)."""
-    tetrads = []
-    n = len(hues)
-    for i in range(n):
-        for j in range(i + 1, n):
-            for k in range(j + 1, n):
-                for l in range(k + 1, n):
-                    h_list = sorted([hues[i], hues[j], hues[k], hues[l]])
-                    
-                    # Check if roughly 90° apart
-                    distances = [
-                        hue_distance(h_list[0], h_list[1]),
-                        hue_distance(h_list[1], h_list[2]),
-                        hue_distance(h_list[2], h_list[3]),
-                        hue_distance(h_list[3], h_list[0])
-                    ]
-                    
-                    if all(abs(d - 90) <= tolerance for d in distances):
-                        tetrads.append((i, j, k, l))
-    
-    return tetrads
+def _confidence(deviation: float, tolerance: float) -> float:
+    return round(max(0.0, 1.0 - deviation / (tolerance * 1.5)), 3)
 
 
-def detect_split_complementary(hues, tolerance=30):
-    """Detect split-complementary (base + two colors adjacent to complement)."""
-    groups = []
-    for i, base_hue in enumerate(hues):
-        complement = normalize_hue(base_hue + 180)
-        
-        # Find colors near the complement
-        split_colors = []
-        for j, h in enumerate(hues):
-            if i == j:
-                continue
-            
-            # Check if within 30° of complement (but not exactly complementary)
-            dist_to_comp = hue_distance(h, complement)
-            if 20 <= dist_to_comp <= 40:
-                split_colors.append(j)
-        
-        if len(split_colors) >= 2:
-            groups.append((i, split_colors[0], split_colors[1]))
-    
-    return groups
+def _relationship(
+    relationship_type: str,
+    indexes: Iterable[int],
+    expected: Iterable[float],
+    measured: Iterable[float],
+    tolerance: float,
+) -> dict[str, object]:
+    expected_angles = [round(value, 2) for value in expected]
+    measured_angles = [round(value, 2) for value in measured]
+    deviation = max(
+        abs(actual - target)
+        for actual, target in zip(measured_angles, expected_angles)
+    )
+    return {
+        "type": relationship_type,
+        "color_indexes": list(indexes),
+        "expected_angles": expected_angles,
+        "measured_angles": measured_angles,
+        "deviation": round(deviation, 2),
+        "confidence": _confidence(deviation, tolerance),
+    }
 
 
-def detect_monochromatic(colors):
-    """Detect monochromatic scheme (same hue, different saturation/lightness)."""
-    if len(colors) < 2:
-        return False
-    
-    hues = [c['hsl']['h'] for c in colors]
-    
-    # Check if all hues are similar (within 15°)
-    base_hue = hues[0]
-    for hue in hues[1:]:
-        if hue_distance(base_hue, hue) > 15:
-            return False
-    
-    # Check if there's variation in saturation or lightness
-    saturations = [c['hsl']['s'] for c in colors]
-    lightnesses = [c['hsl']['l'] for c in colors]
-    
-    sat_range = max(saturations) - min(saturations)
-    light_range = max(lightnesses) - min(lightnesses)
-    
-    return sat_range > 10 or light_range > 10
+def _chromatic_hues(colors: list[dict[str, object]]) -> list[tuple[int, float]]:
+    """Return meaningful, de-duplicated hue evidence.
+
+    Near-neutral colors do not provide meaningful hue evidence. Repeated hues
+    are represented once so duplicates cannot manufacture relationships.
+    """
+    evidence: list[tuple[int, float]] = []
+    for index, color in enumerate(colors):
+        hsl = color["hsl"]
+        saturation = float(hsl["s"])
+        hue = normalize_hue(float(hsl["h"]))
+        if saturation < MIN_MEANINGFUL_SATURATION:
+            continue
+        if any(hue_distance(hue, existing) < 1.0 for _, existing in evidence):
+            continue
+        evidence.append((index, hue))
+    return evidence
 
 
-def analyze_warm_cool_balance(colors):
-    """Analyze warm vs cool color balance."""
+def detect_complementary(
+    evidence: list[tuple[int, float]],
+    tolerance: float = COMPLEMENTARY_TOLERANCE,
+) -> list[dict[str, object]]:
+    relationships = []
+    for (first_index, first), (second_index, second) in combinations(evidence, 2):
+        measured = hue_distance(first, second)
+        if abs(measured - 180.0) <= tolerance:
+            relationships.append(
+                _relationship(
+                    "complementary",
+                    [first_index, second_index],
+                    [180.0],
+                    [measured],
+                    tolerance,
+                )
+            )
+    return relationships
+
+
+def detect_analogous(
+    evidence: list[tuple[int, float]],
+    tolerance: float = ANALOGOUS_TOLERANCE,
+) -> list[dict[str, object]]:
+    relationships = []
+    for (first_index, first), (second_index, second) in combinations(evidence, 2):
+        measured = hue_distance(first, second)
+        if abs(measured - ANALOGOUS_EXPECTED_ANGLE) <= tolerance:
+            relationships.append(
+                _relationship(
+                    "analogous",
+                    [first_index, second_index],
+                    [ANALOGOUS_EXPECTED_ANGLE],
+                    [measured],
+                    tolerance,
+                )
+            )
+    return relationships
+
+
+def _circular_gaps(hues: Iterable[float]) -> list[float]:
+    ordered = sorted(normalize_hue(hue) for hue in hues)
+    return [
+        normalize_hue(ordered[(index + 1) % len(ordered)] - hue)
+        for index, hue in enumerate(ordered)
+    ]
+
+
+def detect_triadic(
+    evidence: list[tuple[int, float]],
+    tolerance: float = TRIADIC_TOLERANCE,
+) -> list[dict[str, object]]:
+    relationships = []
+    for group in combinations(evidence, 3):
+        gaps = _circular_gaps(hue for _, hue in group)
+        deviation = max(abs(gap - 120.0) for gap in gaps)
+        if deviation <= tolerance:
+            relationships.append(
+                _relationship(
+                    "triadic",
+                    [index for index, _ in group],
+                    [120.0, 120.0, 120.0],
+                    gaps,
+                    tolerance,
+                )
+            )
+    return relationships
+
+
+def detect_tetradic(
+    evidence: list[tuple[int, float]],
+    tolerance: float = TETRADIC_TOLERANCE,
+) -> list[dict[str, object]]:
+    """Detect square tetrads in bounded O(n^4), with palette size capped at 10."""
+    relationships = []
+    for group in combinations(evidence, 4):
+        gaps = _circular_gaps(hue for _, hue in group)
+        deviation = max(abs(gap - 90.0) for gap in gaps)
+        if deviation <= tolerance:
+            relationships.append(
+                _relationship(
+                    "tetradic",
+                    [index for index, _ in group],
+                    [90.0] * 4,
+                    gaps,
+                    tolerance,
+                )
+            )
+    return relationships
+
+
+def detect_split_complementary(
+    evidence: list[tuple[int, float]],
+    tolerance: float = SPLIT_COMPLEMENTARY_TOLERANCE,
+) -> list[dict[str, object]]:
+    relationships = []
+    seen: set[tuple[int, int, int]] = set()
+    for base_index, base_hue in evidence:
+        others = [
+            (index, hue)
+            for index, hue in evidence
+            if index != base_index
+        ]
+        for (first_index, first), (second_index, second) in combinations(others, 2):
+            measured = [
+                hue_distance(base_hue, first),
+                hue_distance(base_hue, second),
+                hue_distance(first, second),
+            ]
+            expected = [150.0, 150.0, 60.0]
+            deviation = max(
+                abs(actual - target)
+                for actual, target in zip(measured, expected)
+            )
+            key = (base_index, *sorted((first_index, second_index)))
+            if deviation <= tolerance and key not in seen:
+                seen.add(key)
+                relationships.append(
+                    _relationship(
+                        "split_complementary",
+                        key,
+                        expected,
+                        measured,
+                        tolerance,
+                    )
+                )
+    return relationships
+
+
+def detect_monochromatic(
+    colors: list[dict[str, object]],
+    tolerance: float = MONOCHROMATIC_TOLERANCE,
+) -> list[dict[str, object]]:
+    distinct: list[tuple[int, dict[str, float]]] = []
+    seen: set[tuple[float, float, float]] = set()
+    for index, color in enumerate(colors):
+        hsl = color["hsl"]
+        values = (
+            normalize_hue(float(hsl["h"])),
+            float(hsl["s"]),
+            float(hsl["l"]),
+        )
+        if values[1] < MIN_MEANINGFUL_SATURATION or values in seen:
+            continue
+        seen.add(values)
+        distinct.append(
+            (index, {"h": values[0], "s": values[1], "l": values[2]})
+        )
+    if len(distinct) < 2:
+        return []
+
+    mean_hue = circular_mean(item["h"] for _, item in distinct)
+    if mean_hue is None:
+        return []
+    measured = [
+        hue_distance(item["h"], mean_hue) for _, item in distinct
+    ]
+    deviation = max(measured)
+    saturation_range = max(item["s"] for _, item in distinct) - min(
+        item["s"] for _, item in distinct
+    )
+    lightness_range = max(item["l"] for _, item in distinct) - min(
+        item["l"] for _, item in distinct
+    )
+    if (
+        deviation > tolerance
+        or (saturation_range <= 10 and lightness_range <= 10)
+    ):
+        return []
+    return [
+        _relationship(
+            "monochromatic",
+            [index for index, _ in distinct],
+            [0.0] * len(distinct),
+            measured,
+            tolerance,
+        )
+    ]
+
+
+def analyze_warm_cool_balance(colors: list[dict[str, object]]) -> dict[str, object]:
     warm_count = 0
     cool_count = 0
-    
     for color in colors:
-        hue = color['hsl']['h']
-        
-        # Warm: red to yellow (0-60, 300-360)
-        # Cool: cyan to blue (120-300)
-        if (0 <= hue <= 60) or (300 <= hue <= 360):
+        hsl = color["hsl"]
+        if float(hsl["s"]) < MIN_MEANINGFUL_SATURATION:
+            continue
+        hue = normalize_hue(float(hsl["h"]))
+        if hue <= 60 or hue >= 300:
             warm_count += 1
         elif 120 <= hue <= 300:
             cool_count += 1
-    
-    total = warm_count + cool_count
-    if total == 0:
+
+    categorized = warm_count + cool_count
+    if categorized == 0:
         return {
-            'balance': 'neutral',
-            'warm_count': 0,
-            'cool_count': 0,
-            'warm_ratio': 0,
-            'cool_ratio': 0
+            "balance": "neutral",
+            "warm_count": 0,
+            "cool_count": 0,
+            "warm_ratio": 0.0,
+            "cool_ratio": 0.0,
         }
-    
-    warm_ratio = warm_count / len(colors)
-    cool_ratio = cool_count / len(colors)
-    
-    if warm_ratio > 0.7:
-        balance = 'warm'
-    elif cool_ratio > 0.7:
-        balance = 'cool'
-    else:
-        balance = 'balanced'
-    
+    warm_ratio = warm_count / categorized
+    cool_ratio = cool_count / categorized
+    balance = (
+        "warm"
+        if warm_ratio > 0.7
+        else "cool"
+        if cool_ratio > 0.7
+        else "balanced"
+    )
     return {
-        'balance': balance,
-        'warm_count': warm_count,
-        'cool_count': cool_count,
-        'warm_ratio': round(warm_ratio, 2),
-        'cool_ratio': round(cool_ratio, 2)
+        "balance": balance,
+        "warm_count": warm_count,
+        "cool_count": cool_count,
+        "warm_ratio": round(warm_ratio, 2),
+        "cool_ratio": round(cool_ratio, 2),
     }
 
 
-def calculate_harmony_score(colors, harmonies):
-    """Calculate overall harmony score (0-100)."""
-    score = 50  # Base score
-    
-    # Bonus for detected harmonies
-    if harmonies['complementary']:
-        score += 15
-    if harmonies['triadic']:
-        score += 20
-    if harmonies['tetradic']:
-        score += 20
-    if harmonies['analogous']:
-        score += 10
-    if harmonies['split_complementary']:
-        score += 15
-    if harmonies['monochromatic']:
-        score += 10
-    
-    # Analyze saturation balance
-    saturations = [c['hsl']['s'] for c in colors]
-    sat_std = np.std(saturations)
-    if sat_std < 15:  # Low variation is good for harmony
-        score += 5
-    
-    # Analyze lightness balance
-    lightnesses = [c['hsl']['l'] for c in colors]
-    light_std = np.std(lightnesses)
-    if 15 < light_std < 30:  # Moderate variation is good
-        score += 5
-    
-    # Penalize if too many colors with no clear harmony
-    if len(colors) > 6 and not any([
-        harmonies['complementary'],
-        harmonies['triadic'],
-        harmonies['tetradic']
-    ]):
-        score -= 10
-    
-    return min(100, max(0, score))
+def calculate_relationship_fit(
+    harmonies: dict[str, list[dict[str, object]]],
+    chromatic_color_count: int,
+) -> tuple[int, str, list[str]]:
+    """Score detected geometry, without making an aesthetic-quality claim."""
+    detected = [
+        relationship
+        for relationships in harmonies.values()
+        for relationship in relationships
+    ]
+    if not detected or chromatic_color_count == 0:
+        return (
+            0,
+            "No strong geometric relationship detected",
+            ["No relationship met the documented angular tolerances."],
+        )
+
+    best_by_type: dict[str, dict[str, object]] = {}
+    involved: set[int] = set()
+    for relationship in detected:
+        relationship_type = str(relationship["type"])
+        if (
+            relationship_type not in best_by_type
+            or float(relationship["confidence"])
+            > float(best_by_type[relationship_type]["confidence"])
+        ):
+            best_by_type[relationship_type] = relationship
+        involved.update(int(index) for index in relationship["color_indexes"])
+
+    mean_best_confidence = sum(
+        float(item["confidence"]) for item in best_by_type.values()
+    ) / len(best_by_type)
+    coverage = min(1.0, len(involved) / chromatic_color_count)
+    fit = round(70 * mean_best_confidence + 30 * coverage)
+    strength = (
+        "Strong geometric relationship"
+        if fit >= 75
+        else "Moderate geometric relationship"
+        if fit >= 45
+        else "Limited geometric relationship"
+    )
+    labels = {
+        "complementary": "complementary pair",
+        "analogous": "analogous pair",
+        "triadic": "triadic structure",
+        "tetradic": "square tetradic structure",
+        "split_complementary": "split-complementary structure",
+        "monochromatic": "monochromatic structure",
+    }
+    factors = [
+        (
+            f"Best {labels[relationship_type]} deviation: "
+            f"{relationship['deviation']:.1f}° "
+            f"(confidence {float(relationship['confidence']):.0%})."
+        )
+        for relationship_type, relationship in best_by_type.items()
+    ]
+    factors.append(
+        f"Detected relationships involve {len(involved)} of "
+        f"{chromatic_color_count} meaningful hues."
+    )
+    return fit, strength, factors
 
 
-def analyze_color_theory(colors):
-    """
-    Perform comprehensive color theory analysis.
-    
-    Args:
-        colors: List of color dictionaries with hex, rgb, and hsl values
-        
-    Returns:
-        Dictionary with harmony analysis, tags, and score
-    """
-    hues = [c['hsl']['h'] for c in colors]
-    
-    # Detect harmonies
+def analyze_color_theory(colors: list[dict[str, object]]) -> dict[str, object]:
+    """Analyze explainable geometric color relationships."""
+    evidence = _chromatic_hues(colors)
     harmonies = {
-        'complementary': detect_complementary(hues),
-        'analogous': detect_analogous(hues),
-        'triadic': detect_triadic(hues),
-        'tetradic': detect_tetradic(hues),
-        'split_complementary': detect_split_complementary(hues),
-        'monochromatic': detect_monochromatic(colors)
+        "complementary": detect_complementary(evidence),
+        "analogous": detect_analogous(evidence),
+        "triadic": detect_triadic(evidence),
+        "tetradic": detect_tetradic(evidence),
+        "split_complementary": detect_split_complementary(evidence),
+        "monochromatic": detect_monochromatic(colors),
     }
-    
-    # Analyze warm/cool balance
-    temp_balance = analyze_warm_cool_balance(colors)
-    
-    # Calculate harmony score
-    score = calculate_harmony_score(colors, harmonies)
-    
-    # Generate harmony tags
-    tags = []
-    
-    if harmonies['complementary']:
-        tags.append('Complementary Harmony Detected')
-    if harmonies['triadic']:
-        tags.append('Triadic Harmony Detected')
-    if harmonies['tetradic']:
-        tags.append('Tetradic Harmony Detected')
-    if harmonies['analogous']:
-        tags.append('Analogous Colors Present')
-    if harmonies['split_complementary']:
-        tags.append('Split-Complementary Scheme')
-    if harmonies['monochromatic']:
-        tags.append('Monochromatic Palette')
-    
-    if temp_balance['balance'] == 'warm':
-        tags.append('Warm Color Palette')
-    elif temp_balance['balance'] == 'cool':
-        tags.append('Cool Color Palette')
-    else:
-        tags.append('Balanced Temperature')
-    
-    # Analyze saturation
-    saturations = [c['hsl']['s'] for c in colors]
-    avg_sat = np.mean(saturations)
-    if avg_sat > 70:
-        tags.append('High Saturation')
-    elif avg_sat < 30:
-        tags.append('Low Saturation')
-    else:
-        tags.append('Balanced Saturation')
-    
-    # Analyze contrast
-    lightnesses = [c['hsl']['l'] for c in colors]
-    light_range = max(lightnesses) - min(lightnesses)
-    if light_range > 60:
-        tags.append('High Contrast')
-    elif light_range < 20:
-        tags.append('Low Contrast')
-    
-    return {
-        'harmonies': harmonies,
-        'temperature_balance': temp_balance,
-        'score': score,
-        'tags': tags,
-        'metrics': {
-            'hue_diversity': round(np.std(hues), 2),
-            'saturation_avg': round(avg_sat, 2),
-            'lightness_range': light_range
-        }
-    }
+    relationship_fit, relationship_summary, factors = (
+        calculate_relationship_fit(harmonies, len(evidence))
+    )
+    temperature_balance = analyze_warm_cool_balance(colors)
 
+    labels = {
+        "complementary": "Complementary Relationship Detected",
+        "analogous": "Analogous Relationship Detected",
+        "triadic": "Triadic Relationship Detected",
+        "tetradic": "Tetradic Relationship Detected",
+        "split_complementary": "Split-Complementary Relationship Detected",
+        "monochromatic": "Monochromatic Relationship Detected",
+    }
+    tags = [
+        labels[name] for name, relationships in harmonies.items() if relationships
+    ]
+    balance = temperature_balance["balance"]
+    tags.append(
+        "Neutral Palette"
+        if balance == "neutral"
+        else f"{str(balance).title()} Temperature"
+    )
+
+    saturations = [float(color["hsl"]["s"]) for color in colors]
+    lightnesses = [int(color["hsl"]["l"]) for color in colors]
+    meaningful_hues = [hue for _, hue in evidence]
+    return {
+        "harmonies": harmonies,
+        "temperature_balance": temperature_balance,
+        "relationship_fit": relationship_fit,
+        "relationship_summary": relationship_summary,
+        "relationship_factors": factors,
+        "tags": tags,
+        "metrics": {
+            "hue_diversity": round(circular_dispersion(meaningful_hues), 2),
+            "saturation_avg": round(float(np.mean(saturations)), 2),
+            "lightness_range": max(lightnesses) - min(lightnesses),
+        },
+    }

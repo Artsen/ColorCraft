@@ -4,7 +4,7 @@
 
 [![ColorCraft Badge](https://img.shields.io/badge/ColorCraft-Color_Theory_Analysis-purple?style=for-the-badge)](https://github.com/Artsen/ColorCraft)
 
-ColorCraft is an intelligent visual design companion that transforms images into actionable color insights. Upload a photo, extract dominant colors using perceptual clustering, and instantly analyze color harmonies, accessibility compliance, and aesthetic balance. Whether you're a designer seeking palette validation, a developer ensuring WCAG compliance, or an artist exploring color relationships, ColorCraft provides the data-driven feedback you need.
+ColorCraft is an intelligent visual design companion that transforms images into actionable color insights. Upload a photo, extract dominant colors using perceptual clustering, and analyze geometric color relationships and WCAG contrast. Relationship fit describes angular structure; it is not an objective judgment of aesthetic quality.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -45,7 +45,7 @@ ColorCraft bridges the gap between subjective color choices and objective color 
 - **Manual-only workflow**: Skip image upload entirely and start with custom colors using the "Skip & Add Colors Manually" button
 - **IPv4 proxy fix**: Explicit 127.0.0.1 targeting for Windows Node.js compatibility
 - **Start Over functionality**: Reset and try different images or workflows without page reload
-- **LAB color space clustering**: Direct KMeans clustering in perceptual LAB space with 20 initializations for stable, accurate results
+- **LAB color space clustering**: Deterministic clustering with a seeded sample and processed-sample medoid representatives
 - **Default starter palette**: Beautiful gradient colors (#667eea, #764ba2, #f093fb) when skipping upload
 - **Enhanced UX flow**: Seamless transitions between upload and manual workflows
 
@@ -60,8 +60,8 @@ Think of ColorCraft as your color theory assistant. Here's the journey without j
    - **Harmony patterns**: Complementary pairs, triadic triangles, analogous neighbors, split-complementary schemes, tetradic squares, and monochromatic variations
    - **Temperature balance**: Warm vs. cool color distribution
    - **Accessibility**: WCAG AA/AAA contrast ratios for every color pair
-   - **Aesthetic metrics**: Hue diversity, saturation balance, lightness range
-5. **Explore the color wheel.** See your colors plotted on an interactive D3.js color wheel with visual connections showing detected harmonies. The center displays your harmony score (0-100).
+   - **Palette metrics**: Circular hue diversity, average saturation, and lightness range
+5. **Explore the color wheel.** See every palette color and detected geometric relationship. The center displays relationship fit (0-100), not an aesthetic rating.
 6. **Review detailed insights.** Scroll down to see harmony tags, temperature analysis, accessibility warnings, and a complete contrast ratio table.
 
 If you remember only one thing: ColorCraft turns subjective color choices into objective, measurable insights.
@@ -101,14 +101,14 @@ If you remember only one thing: ColorCraft turns subjective color choices into o
 ### Backend
 
 - **Perceptual color extraction**: Converts RGB to LAB color space for human-vision-aligned clustering
-- **KMeans clustering**: 20 initializations for stable, deterministic color extraction
+- **KMeans clustering**: Seeded clustering and sampling with an effective cluster count based on usable unique pixels
 - **LAB ↔ RGB conversion**: High-precision color space transformations with D65 white point
 - **Color theory engine**: Hue angle mathematics for harmony detection with configurable tolerance
 - **Harmony detection**: Complementary (180°), analogous (30-60°), triadic (120°), tetradic (90°), split-complementary, and monochromatic patterns
 - **Temperature analysis**: Warm vs. cool color classification and ratio calculation
 - **WCAG 2.1 compliance**: Relative luminance calculation and contrast ratio formulas
 - **Accessibility validation**: AA/AAA compliance checking for normal and large text
-- **Harmony scoring**: Multi-factor scoring algorithm (0-100) based on detected harmonies, saturation balance, and lightness distribution
+- **Relationship fit**: Explainable 0-100 fit based on measured angular deviation, confidence, and meaningful-hue coverage
 - **FastAPI framework**: RESTful API with automatic OpenAPI documentation
 - **CORS support**: Configured for local development and production deployment
 
@@ -118,8 +118,8 @@ If you remember only one thing: ColorCraft turns subjective color choices into o
 - **Interactive color editing**: Click-to-edit swatches with native color picker
 - **HEX input validation**: Real-time validation and RGB/HSL conversion
 - **D3.js color wheel**: Interactive visualization with harmony connections and hover effects
-- **Harmony visualization**: Visual lines connecting complementary pairs, triadic triangles, and tetradic squares
-- **Dynamic harmony score**: Central display of 0-100 harmony score with visual prominence
+- **Harmony visualization**: Pattern-distinguished geometry for every detected relationship type, with an accessible text summary
+- **Relationship fit**: Compact geometric-fit display with contributing factors and an explicit non-aesthetic disclaimer
 - **Responsive design**: Tailwind CSS with mobile-first approach
 - **State management**: React hooks for efficient re-rendering
 - **Color format conversion**: Seamless HEX ↔ RGB ↔ HSL transformations
@@ -402,7 +402,7 @@ corepack pnpm@9.15.9 dev
 - **Harmony connections**: Look for colored lines on the color wheel showing detected relationships
 - **Accessibility focus**: Red ✗ marks in the contrast table indicate potential issues
 - **Temperature balance**: Check if your palette skews warm, cool, or balanced
-- **Harmony score**: Higher scores (70+) indicate strong harmonic relationships
+- **Relationship fit**: Higher values mean detected hue geometry more closely matches the documented structures; this is not an aesthetic rating
 
 ## Color Extraction Algorithm
 
@@ -411,8 +411,8 @@ ColorCraft uses a sophisticated perceptual color extraction pipeline:
 ### Step 1: Image Preprocessing
 ```python
 # Resize to max 400px for performance
-# Convert to RGB if needed (handles RGBA, grayscale, etc.)
-# Sample up to 10,000 pixels for large images
+# Ignore fully transparent pixels; composite partial alpha over white
+# Sample up to 10,000 pixels with a seeded generator
 ```
 
 ### Step 2: RGB → LAB Conversion
@@ -426,7 +426,8 @@ ColorCraft uses a sophisticated perceptual color extraction pipeline:
 
 ### Step 3: KMeans Clustering
 ```python
-# 20 initializations for stability
+# Effective clusters = min(requested colors, usable unique sampled pixels)
+# Seeded initialization for deterministic output
 # 300 max iterations for convergence
 # Clusters directly in LAB space
 # No dimensionality reduction needed
@@ -434,17 +435,16 @@ ColorCraft uses a sophisticated perceptual color extraction pipeline:
 
 ### Step 4: Representative Selection
 ```python
-# Use median color from each cluster
-# More robust than mean (outlier-resistant)
-# Ensures colors are actually present in image
+# Select the sampled RGB pixel nearest each LAB cluster center (a medoid)
+# Sort representatives by sampled population, largest first
+# Report population ratio and sampled pixel count
 ```
 
-### Step 5: LAB → RGB Conversion
-```python
-# Reverse transformation back to RGB
-# Clipping to valid RGB range [0, 255]
-# Conversion to HEX and HSL formats
-```
+### Step 5: Output Validation
+
+Representatives are processed-sample RGB values, so conversion cannot create
+NaN-derived or malformed HEX values. The API returns the actual number of
+colors found, which can be lower than the requested maximum.
 
 **Why LAB instead of RGB?**
 - RGB distances don't match perceived color differences
@@ -460,12 +460,12 @@ ColorCraft detects multiple harmony patterns using hue angle mathematics:
 
 | Harmony Type | Hue Relationship | Tolerance | Visual Pattern |
 |--------------|------------------|-----------|----------------|
-| **Complementary** | 180° apart | ±30° | Opposite sides of wheel |
-| **Analogous** | 30-60° apart | ±30° | Adjacent neighbors |
-| **Triadic** | 120° apart | ±30° | Equilateral triangle |
-| **Tetradic** | 90° apart | ±30° | Square or rectangle |
-| **Split-Complementary** | Base + 2 near complement | ±20-40° | Y-shape pattern |
-| **Monochromatic** | Same hue, varied S/L | ±15° hue | Single color family |
+| **Complementary** | 180° apart | ±12° | Opposite sides of wheel |
+| **Analogous** | 30° apart | ±15° | Adjacent neighbors |
+| **Triadic** | Three 120° gaps | ±12° per gap | Equilateral triangle |
+| **Tetradic** | Four 90° gaps | ±10° per gap | Square |
+| **Split-Complementary** | 150°, 150°, and 60° | ±12° | Y-shape pattern |
+| **Monochromatic** | Same meaningful hue, varied S/L | ±10° hue | Single color family |
 
 ### Temperature Analysis
 
@@ -481,29 +481,14 @@ ColorCraft detects multiple harmony patterns using hue angle mathematics:
 - Yellow-greens, chartreuse
 - Transitional colors
 
-### Harmony Scoring Algorithm
+### Geometric relationship fit
 
-```python
-score = 50  # Base score
-
-# Harmony bonuses
-if complementary_detected: score += 15
-if triadic_detected:       score += 20
-if tetradic_detected:      score += 20
-if analogous_detected:     score += 10
-if split_comp_detected:    score += 15
-if monochromatic:          score += 10
-
-# Balance bonuses
-if saturation_std < 15:           score += 5  # Consistent saturation
-if 15 < lightness_std < 30:       score += 5  # Good contrast
-
-# Penalties
-if many_colors and no_harmony:    score -= 10
-
-# Clamp to 0-100
-return min(100, max(0, score))
-```
+Relationship fit combines the best measured confidence for each detected
+relationship type with the share of meaningful, chromatic hues involved.
+Every relationship reports expected angles, measured angles, deviation, and
+confidence. Colors below 10% saturation do not count as hue evidence, and
+duplicate hues cannot manufacture a relationship. This metric describes
+geometry only—not whether a palette is attractive or suitable for a design.
 
 ## Accessibility Analysis
 
@@ -578,8 +563,8 @@ Content-Type: multipart/form-data
 file: <image_file>
 ```
 **Parameters:**
-- `n_colors` (query): Number of colors to extract (3-10)
-- `file` (form): Image file (JPG, PNG, WebP)
+- `n_colors` (query): Maximum number of colors to extract (3-10)
+- `file` (form): Image file (JPG, PNG, WebP), up to 10 MB and 40 million decoded pixels
 
 **Response:**
 ```json
@@ -589,17 +574,23 @@ file: <image_file>
     {
       "hex": "#667eea",
       "rgb": {"r": 102, "g": 126, "b": 234},
-      "hsl": {"h": 229, "s": 75, "l": 66}
+      "hsl": {"h": 229, "s": 75, "l": 66},
+      "population": 0.52,
+      "pixelCount": 5200
     },
     {
       "hex": "#f093fb",
       "rgb": {"r": 240, "g": 147, "b": 251},
-      "hsl": {"h": 294, "s": 92, "l": 78}
+      "hsl": {"h": 294, "s": 92, "l": 78},
+      "population": 0.31,
+      "pixelCount": 3100
     },
     {
       "hex": "#764ba2",
       "rgb": {"r": 118, "g": 75, "b": 162},
-      "hsl": {"h": 270, "s": 37, "l": 46}
+      "hsl": {"h": 270, "s": 37, "l": 46},
+      "population": 0.17,
+      "pixelCount": 1700
     }
   ],
   "count": 3
@@ -634,12 +625,19 @@ Content-Type: application/json
   "analysis": {
     "colorTheory": {
       "harmonies": {
-        "complementary": [[0, 1]],
-        "triadic": [[0, 1, 2]],
-        "analogous": [[1, 2]],
+        "complementary": [{
+          "type": "complementary",
+          "colorIndexes": [0, 1],
+          "expectedAngles": [180.0],
+          "measuredAngles": [178.0],
+          "deviation": 2.0,
+          "confidence": 0.889
+        }],
+        "triadic": [],
+        "analogous": [],
         "tetradic": [],
         "splitComplementary": [],
-        "monochromatic": false
+        "monochromatic": []
       },
       "temperatureBalance": {
         "balance": "cool",
@@ -648,7 +646,9 @@ Content-Type: application/json
         "warmRatio": 0.2,
         "coolRatio": 0.8
       },
-      "score": 75,
+      "relationshipFit": 75,
+      "relationshipSummary": "Strong geometric relationship",
+      "relationshipFactors": ["Best complementary pair deviation: 2.0 degrees."],
       "tags": [
         "Complementary Harmony Detected",
         "Triadic Harmony Detected",
@@ -731,7 +731,7 @@ graph TD
     H --> K
     I --> K
     J --> K
-    K --> L[Compute Harmony Score]
+    K --> L[Compute Relationship Fit]
     L --> M[Calculate WCAG Ratios]
     M --> N[Generate Tags & Metrics]
     N --> O[Return Analysis Object]
@@ -746,7 +746,7 @@ graph LR
     C --> D[Plot Color Points by Hue]
     D --> E[Draw Harmony Connections]
     E --> F[Add Hover Interactions]
-    F --> G[Display Harmony Score Center]
+    F --> G[Display Relationship Fit]
     G --> H[Render Complete Wheel]
 ```
 
@@ -829,10 +829,10 @@ corepack pnpm@9.15.9 dev
 - **Solution**: Add more colors using the "+" button
 - Or extract colors from an image first
 
-**Problem: Low harmony score despite good-looking palette**
-- **Explanation**: Harmony score is based on mathematical relationships
-- Beautiful palettes may not have strict geometric harmonies
-- Focus on accessibility and temperature balance instead
+**Problem: Low relationship fit despite a good-looking palette**
+- **Explanation**: Relationship fit measures angular geometry, not aesthetics
+- Beautiful palettes may intentionally avoid strict geometric relationships
+- Treat the measured factors, accessibility, and intended use as separate evidence
 
 **Problem: All contrast ratios fail AA/AAA**
 - **Solution**: Your colors may be too similar in lightness
@@ -973,7 +973,7 @@ sequenceDiagram
     
     KM->>KM: KMeans fit (20 inits, 300 iters)
     KM->>KM: Assign cluster labels
-    KM->>KM: Select median LAB per cluster
+    KM->>KM: Select nearest sampled RGB medoid
     KM-->>Conv: LAB cluster colors
     
     Conv->>Conv: LAB → XYZ → RGB
@@ -1011,7 +1011,7 @@ sequenceDiagram
     Theory->>Theory: Detect split-complementary
     Theory->>Theory: Detect monochromatic (±15° hue)
     Theory->>Theory: Analyze temperature (warm/cool)
-    Theory->>Theory: Calculate harmony score (0-100)
+    Theory->>Theory: Calculate geometric relationship fit (0-100)
     Theory->>Theory: Generate harmony tags
     Theory-->>API: Color theory analysis
     
@@ -1027,7 +1027,7 @@ sequenceDiagram
     Wheel->>Wheel: Draw 360° wheel background
     Wheel->>Wheel: Plot colors by hue angle
     Wheel->>Wheel: Draw harmony connections
-    Wheel->>Wheel: Add harmony score center
+    Wheel->>Wheel: Add compact relationship-fit annotation
     Wheel-->>UI: Interactive visualization
     
     UI-->>User: Display analysis results
@@ -1052,7 +1052,7 @@ erDiagram
         array split_complementary
         boolean monochromatic
         object temperature_balance
-        int harmony_score
+        int relationship_fit
         array tags
         object metrics
     }

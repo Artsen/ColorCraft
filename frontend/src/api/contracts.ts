@@ -26,27 +26,37 @@ export const colorSchema = z
   })
   .strict()
 
-const pairSchema = z.tuple([z.number().int().nonnegative(), z.number().int().nonnegative()])
-const triadSchema = z.tuple([
-  z.number().int().nonnegative(),
-  z.number().int().nonnegative(),
-  z.number().int().nonnegative(),
-])
-const tetradSchema = z.tuple([
-  z.number().int().nonnegative(),
-  z.number().int().nonnegative(),
-  z.number().int().nonnegative(),
-  z.number().int().nonnegative(),
-])
+export const extractedColorSchema = colorSchema.extend({
+  population: z.number().min(0).max(1),
+  pixelCount: z.number().int().positive(),
+})
+
+export const harmonyRelationshipSchema = z
+  .object({
+    type: z.enum([
+      'complementary',
+      'analogous',
+      'triadic',
+      'tetradic',
+      'split_complementary',
+      'monochromatic',
+    ]),
+    colorIndexes: z.array(z.number().int().nonnegative()).min(2).max(10),
+    expectedAngles: z.array(z.number().min(0).max(360)).min(1).max(10),
+    measuredAngles: z.array(z.number().min(0).max(360)).min(1).max(10),
+    deviation: z.number().min(0).max(180),
+    confidence: z.number().min(0).max(1),
+  })
+  .strict()
 
 export const harmonyResultsSchema = z
   .object({
-    complementary: z.array(pairSchema),
-    analogous: z.array(pairSchema),
-    triadic: z.array(triadSchema),
-    tetradic: z.array(tetradSchema),
-    splitComplementary: z.array(triadSchema),
-    monochromatic: z.boolean(),
+    complementary: z.array(harmonyRelationshipSchema),
+    analogous: z.array(harmonyRelationshipSchema),
+    triadic: z.array(harmonyRelationshipSchema),
+    tetradic: z.array(harmonyRelationshipSchema),
+    splitComplementary: z.array(harmonyRelationshipSchema),
+    monochromatic: z.array(harmonyRelationshipSchema),
   })
   .strict()
 
@@ -115,7 +125,9 @@ export const analysisSchema = z
       .object({
         harmonies: harmonyResultsSchema,
         temperatureBalance: temperatureResultsSchema,
-        score: z.number().int().min(0).max(100),
+        relationshipFit: z.number().int().min(0).max(100),
+        relationshipSummary: z.string(),
+        relationshipFactors: z.array(z.string()),
         tags: z.array(z.string()),
         metrics: metricsSchema,
       })
@@ -127,8 +139,8 @@ export const analysisSchema = z
 export const extractionResponseSchema = z
   .object({
     success: z.literal(true),
-    colors: z.array(colorSchema).min(3).max(10),
-    count: z.number().int().min(3).max(10),
+    colors: z.array(extractedColorSchema).min(1).max(10),
+    count: z.number().int().min(1).max(10),
   })
   .strict()
 
@@ -193,6 +205,8 @@ export const errorResponseSchema = z
 export type RGB = z.infer<typeof rgbSchema>
 export type HSL = z.infer<typeof hslSchema>
 export type Color = z.infer<typeof colorSchema>
+export type ExtractedColor = z.infer<typeof extractedColorSchema>
+export type HarmonyRelationship = z.infer<typeof harmonyRelationshipSchema>
 export type HarmonyResults = z.infer<typeof harmonyResultsSchema>
 export type TemperatureResults = z.infer<typeof temperatureResultsSchema>
 export type ColorMetrics = z.infer<typeof metricsSchema>
