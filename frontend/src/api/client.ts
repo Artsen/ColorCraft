@@ -21,6 +21,14 @@ function apiUrl(path: string): string {
   return `${configuredBaseUrl}${path}`
 }
 
+function canonicalColors(colors: Color[]): Color[] {
+  return colors.map((color) => ({
+    hex: color.hex,
+    rgb: color.rgb,
+    hsl: color.hsl,
+  }))
+}
+
 async function readJson(response: Response): Promise<unknown> {
   try {
     return await response.json()
@@ -73,7 +81,7 @@ export function analyzeColors(
   return request('/api/analyze-colors', analysisResponseSchema, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ colors }),
+    body: JSON.stringify({ colors: canonicalColors(colors) }),
     signal,
   })
 }
@@ -85,7 +93,7 @@ export function suggestColors(
   return request('/api/suggest-colors', suggestionResponseSchema, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ colors }),
+    body: JSON.stringify({ colors: canonicalColors(colors) }),
     signal,
   })
 }
