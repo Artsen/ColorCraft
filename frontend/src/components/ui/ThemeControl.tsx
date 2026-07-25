@@ -8,7 +8,9 @@ import {
 
 export default function ThemeControl() {
   const inputId = useId()
-  const [preference, setPreference] = useState<ThemePreference>(() => storedTheme())
+  const [preference, setPreference] = useState<ThemePreference>(() =>
+    storedTheme(),
+  )
 
   useEffect(() => {
     applyTheme(preference)
@@ -25,14 +27,17 @@ export default function ThemeControl() {
       setPreference((event as CustomEvent<ThemePreference>).detail)
     }
     window.addEventListener('colorcraft-theme-change', syncPreference)
-    return () => window.removeEventListener('colorcraft-theme-change', syncPreference)
+    return () =>
+      window.removeEventListener('colorcraft-theme-change', syncPreference)
   }, [])
 
   const changeTheme = (next: ThemePreference) => {
     persistTheme(next)
     setPreference(next)
     window.dispatchEvent(
-      new CustomEvent<ThemePreference>('colorcraft-theme-change', { detail: next }),
+      new CustomEvent<ThemePreference>('colorcraft-theme-change', {
+        detail: next,
+      }),
     )
   }
 

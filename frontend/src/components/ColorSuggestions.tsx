@@ -20,14 +20,19 @@ function oneSentence(value: string): string {
   return match?.[0].trim() ?? value.trim()
 }
 
-export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestionsProps) {
+export default function ColorSuggestions({
+  colors,
+  onAddColor,
+}: ColorSuggestionsProps) {
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<SuggestionResult[]>([])
   const [selectedColorIndex, setSelectedColorIndex] = useState(0)
   const [showAll, setShowAll] = useState(false)
   const [addedHexes, setAddedHexes] = useState<Set<string>>(new Set())
   const [notice, setNotice] = useState<NoticeState | null>(null)
-  const [suggestionsFingerprint, setSuggestionsFingerprint] = useState<string | null>(null)
+  const [suggestionsFingerprint, setSuggestionsFingerprint] = useState<
+    string | null
+  >(null)
   const requestIdRef = useRef(0)
   const controllerRef = useRef<AbortController | null>(null)
   const fingerprint = paletteFingerprint(colors)
@@ -44,7 +49,9 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
     setAddedHexes(new Set())
     setLoading(false)
     setNotice(null)
-    setSelectedColorIndex((current) => Math.max(0, Math.min(current, colors.length - 1)))
+    setSelectedColorIndex((current) =>
+      Math.max(0, Math.min(current, colors.length - 1)),
+    )
   }, [fingerprint, colors.length])
 
   useEffect(
@@ -73,13 +80,17 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
       if (
         requestId !== requestIdRef.current ||
         requestedFingerprint !== fingerprintRef.current
-      ) return
+      )
+        return
       setSuggestions(data.suggestions)
       setSuggestionsFingerprint(requestedFingerprint)
     } catch (error) {
       if (controller.signal.aborted) return
       console.error('Error fetching suggestions:', error)
-      setNotice({ message: errorMessage(error), retry: () => void fetchSuggestions() })
+      setNotice({
+        message: errorMessage(error),
+        retry: () => void fetchSuggestions(),
+      })
     } finally {
       if (requestId === requestIdRef.current) setLoading(false)
     }
@@ -88,7 +99,11 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
   const addSuggestion = (suggestion: SuggestionColor) => {
     const key = suggestion.hex.toLowerCase()
     setAddedHexes((current) => new Set(current).add(key))
-    onAddColor({ hex: suggestion.hex, rgb: suggestion.rgb, hsl: suggestion.hsl })
+    onAddColor({
+      hex: suggestion.hex,
+      rgb: suggestion.rgb,
+      hsl: suggestion.hsl,
+    })
   }
 
   const paletteHexes = new Set(colors.map((color) => color.hex.toLowerCase()))
@@ -100,18 +115,22 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
       <SectionHeader
         title="Palette suggestions"
         description="Choose a base color, then compare a few useful geometric approaches."
-        action={hasCurrentSuggestions ? (
-          <Button
-            variant="secondary"
-            icon={<RefreshCw size={16} aria-hidden="true" />}
-            onClick={() => void fetchSuggestions()}
-            disabled={loading}
-          >
-            {loading ? 'Regenerating…' : 'Regenerate'}
-          </Button>
-        ) : undefined}
+        action={
+          hasCurrentSuggestions ? (
+            <Button
+              variant="secondary"
+              icon={<RefreshCw size={16} aria-hidden="true" />}
+              onClick={() => void fetchSuggestions()}
+              disabled={loading}
+            >
+              {loading ? 'Regenerating…' : 'Regenerate'}
+            </Button>
+          ) : undefined
+        }
       />
-      {notice && <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />}
+      {notice && (
+        <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
+      )}
 
       <div className="panel-stack">
         <div>
@@ -137,14 +156,23 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
 
         {!hasCurrentSuggestions ? (
           <div className="suggestion-empty">
-            <p>Generate relationship ideas for the current palette. Results are discarded whenever a palette color changes.</p>
-            <Button variant="primary" onClick={() => void fetchSuggestions()} disabled={loading || colors.length === 0}>
+            <p>
+              Generate relationship ideas for the current palette. Results are
+              discarded whenever a palette color changes.
+            </p>
+            <Button
+              variant="primary"
+              onClick={() => void fetchSuggestions()}
+              disabled={loading || colors.length === 0}
+            >
               {loading ? 'Generating…' : 'Generate suggestions'}
             </Button>
           </div>
         ) : (
           <SuggestionResults
-            result={suggestions[Math.min(selectedColorIndex, suggestions.length - 1)]}
+            result={
+              suggestions[Math.min(selectedColorIndex, suggestions.length - 1)]
+            }
             paletteHexes={paletteHexes}
             addedHexes={addedHexes}
             showAll={showAll}
@@ -188,14 +216,25 @@ function SuggestionResults({
                 const duplicate = paletteHexes.has(key)
                 const added = addedHexes.has(key)
                 return (
-                  <div className="compact-suggestion" key={`${harmony.type}-${suggestion.hex}`}>
-                    <span className="suggestion-preview" style={{ backgroundColor: suggestion.hex }} aria-label={`Suggested color ${suggestion.hex}`} />
+                  <div
+                    className="compact-suggestion"
+                    key={`${harmony.type}-${suggestion.hex}`}
+                  >
+                    <span
+                      className="suggestion-preview"
+                      style={{ backgroundColor: suggestion.hex }}
+                      aria-label={`Suggested color ${suggestion.hex}`}
+                    />
                     <code>{suggestion.hex}</code>
                     <Button
                       variant="quiet"
-                      icon={added || duplicate
-                        ? <Check size={15} aria-hidden="true" />
-                        : <Plus size={15} aria-hidden="true" />}
+                      icon={
+                        added || duplicate ? (
+                          <Check size={15} aria-hidden="true" />
+                        ) : (
+                          <Plus size={15} aria-hidden="true" />
+                        )
+                      }
                       onClick={() => onAdd(suggestion)}
                       disabled={duplicate || added}
                       aria-label={`${added ? 'Added' : duplicate ? 'Already in palette' : 'Add'} ${suggestion.hex}`}
@@ -218,24 +257,43 @@ function SuggestionResults({
             <article key={harmony.type}>
               <MiniColorWheel
                 baseHue={result.baseColor.hsl.h}
-                angles={[result.baseColor.hsl.h, ...harmony.suggestions.map((item) => item.hsl.h)]}
-                colors={[result.baseColor.hex, ...harmony.suggestions.map((item) => item.hex)]}
+                angles={[
+                  result.baseColor.hsl.h,
+                  ...harmony.suggestions.map((item) => item.hsl.h),
+                ]}
+                colors={[
+                  result.baseColor.hex,
+                  ...harmony.suggestions.map((item) => item.hex),
+                ]}
                 size={120}
               />
               <div>
-                <h3>{harmony.type} · {harmony.angle}</h3>
+                <h3>
+                  {harmony.type} · {harmony.angle}
+                </h3>
                 <p>{harmony.description}</p>
                 <dl>
-                  <div><dt>Mood</dt><dd>{harmony.mood}</dd></div>
-                  <div><dt>Examples</dt><dd>{harmony.examples}</dd></div>
-                  <div><dt>Useful for</dt><dd>{harmony.useCases.join(', ')}</dd></div>
+                  <div>
+                    <dt>Mood</dt>
+                    <dd>{harmony.mood}</dd>
+                  </div>
+                  <div>
+                    <dt>Examples</dt>
+                    <dd>{harmony.examples}</dd>
+                  </div>
+                  <div>
+                    <dt>Useful for</dt>
+                    <dd>{harmony.useCases.join(', ')}</dd>
+                  </div>
                 </dl>
               </div>
             </article>
           ))}
         </div>
       )}
-      {visibleHarmonies.length === 0 && <Notice>No suggestions were returned for this base color.</Notice>}
+      {visibleHarmonies.length === 0 && (
+        <Notice>No suggestions were returned for this base color.</Notice>
+      )}
     </>
   )
 }

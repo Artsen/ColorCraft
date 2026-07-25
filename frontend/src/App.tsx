@@ -1,4 +1,11 @@
-import { Pipette, RefreshCw, Upload } from 'lucide-react'
+import {
+  CheckCircle2,
+  CircleDotDashed,
+  Pipette,
+  RefreshCw,
+  Save,
+  Upload,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { analyzeColors, extractColors } from './api/client'
 import type { Analysis, Color } from './api/contracts'
@@ -9,14 +16,26 @@ import ExportWorkspace from './components/ExportWorkspace'
 import ImageColorPicker from './components/ImageColorPicker'
 import ImageUpload, { validateImageFile } from './components/ImageUpload'
 import InlineNotice, { type NoticeState } from './components/InlineNotice'
+import PaletteLibrary from './components/PaletteLibrary'
 import ReviewWorkspace from './components/ReviewWorkspace'
 import Button from './components/ui/Button'
 import Dialog from './components/ui/Dialog'
+import StatusBadge from './components/ui/StatusBadge'
 import {
   pruneRoleAssignments,
   type PaletteRole,
   type RoleAssignments,
 } from './contrast'
+import {
+  deleteSavedPalette,
+  duplicateSavedPalette,
+  listSavedPalettes,
+  paletteSnapshotFingerprint,
+  renameSavedPalette,
+  savePalette,
+  type PaletteDraft,
+  type SavedPalette,
+} from './persistence'
 import {
   colorFromHex,
   type PaletteColor,
@@ -45,6 +64,10 @@ function App() {
   const [view, setView] = useState<WorkspaceView>(() => viewFromLocation())
   const [source, setSource] = useState<SourceImage | null>(null)
   const [manualPalette, setManualPalette] = useState(false)
+  const [paletteSourceType, setPaletteSourceType] = useState<
+    'image' | 'manual' | null
+  >(null)
+  const [sourceFilename, setSourceFilename] = useState<string | undefined>()
   const [colors, setColors] = useState<PaletteColor[]>([])
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [requestedColors, setRequestedColors] = useState(6)
@@ -55,9 +78,18 @@ function App() {
   const [notice, setNotice] = useState<NoticeState | null>(null)
   const [confirmNewPalette, setConfirmNewPalette] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<number | 'add' | null>(null)
-  const [reviewTab, setReviewTab] = useState<ReviewView>(() => reviewFromLocation())
+  const [reviewTab, setReviewTab] = useState<ReviewView>(() =>
+    reviewFromLocation(),
+  )
   const [roles, setRoles] = useState<RoleAssignments>({})
   const [paletteName, setPaletteName] = useState('Untitled palette')
+  const [savedPalettes, setSavedPalettes] = useState<SavedPalette[]>([])
+  const [libraryLoading, setLibraryLoading] = useState(true)
+  const [activePaletteId, setActivePaletteId] = useState<string | null>(null)
+  const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null)
+  const [pendingOpenPalette, setPendingOpenPalette] =
+    useState<SavedPalette | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<SavedPalette | null>(null)
   const changeImageInputRef = useRef<HTMLInputElement>(null)
   const sourceUrlRef = useRef<string | null>(null)
   const analysisRequestRef = useRef(0)
@@ -67,11 +99,32 @@ function App() {
 
   const reviewAvailable = colors.length >= 2
   const exportAvailable = colors.length >= 1
-  const hasUnsavedWork = Boolean(source || manualPalette || colors.length)
   const paletteActive = Boolean(source || manualPalette)
+  const paletteDraft: PaletteDraft | null =
+    paletteActive && colors.length && paletteSourceType
+      ? {
+          name: paletteName,
+          sourceType: paletteSourceType,
+          ...(sourceFilename ? { sourceFilename } : {}),
+          colors,
+          roles,
+        }
+      : null
+  const currentFingerprint = paletteDraft
+    ? paletteSnapshotFingerprint(paletteDraft)
+    : null
+  const saveState = !paletteDraft
+    ? null
+    : !activePaletteId
+      ? 'unsaved'
+      : currentFingerprint === savedFingerprint
+        ? 'saved'
+        : 'modified'
+  const hasPendingChanges = saveState === 'unsaved' || saveState === 'modified'
 
   const canOpenView = (target: WorkspaceView) =>
     target === 'create' ||
+    target === 'library' ||
     (target === 'review' && reviewAvailable) ||
     (target === 'export' && exportAvailable)
 
@@ -81,14 +134,22 @@ function App() {
   ) => {
     if (!canOpenView(target)) return
     const method = options.replace ? 'replaceState' : 'pushState'
-    const url = target === 'review' ? urlForReview(reviewTab) : urlForView(target)
+    const url =
+      target === 'review' ? urlForReview(reviewTab) : urlForView(target)
     window.history[method]({ view: target, review: reviewTab }, '', url)
     setView(target)
   }
 
-  const navigateReview = (target: ReviewView, options: { replace?: boolean } = {}) => {
+  const navigateReview = (
+    target: ReviewView,
+    options: { replace?: boolean } = {},
+  ) => {
     const method = options.replace ? 'replaceState' : 'pushState'
-    window.history[method]({ view: 'review', review: target }, '', urlForReview(target))
+    window.history[method](
+      { view: 'review', review: target },
+      '',
+      urlForReview(target),
+    )
     setReviewTab(target)
     setView('review')
   }
@@ -111,8 +172,7 @@ function App() {
       if (canOpenView(target)) {
         setView(target)
         setReviewTab(targetReview)
-      }
-      else navigate('create', { replace: true })
+      } else navigate('create', { replace: true })
     }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
@@ -125,6 +185,24 @@ function App() {
   useEffect(() => {
     setRoles((current) => pruneRoleAssignments(current, colors))
   }, [colors])
+
+  const refreshLibrary = async () => {
+    try {
+      setSavedPalettes(await listSavedPalettes())
+    } catch (error) {
+      console.error('Could not load saved palettes:', error)
+      setNotice({
+        variant: 'error',
+        message: 'Saved palettes could not be read from this browser.',
+      })
+    } finally {
+      setLibraryLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void refreshLibrary()
+  }, [])
 
   useEffect(
     () => () => {
@@ -190,6 +268,10 @@ function App() {
     setSource({ file, previewUrl, width: null, height: null })
     setPaletteName(file.name.replace(/\.[^.]+$/, '') || 'Untitled palette')
     setManualPalette(false)
+    setPaletteSourceType('image')
+    setSourceFilename(file.name)
+    setActivePaletteId(null)
+    setSavedFingerprint(null)
     setColors([])
     setSelectedIndex(null)
     setAnalysis(null)
@@ -202,6 +284,10 @@ function App() {
     revokeSource()
     setSource(null)
     setManualPalette(true)
+    setPaletteSourceType('manual')
+    setSourceFilename(undefined)
+    setActivePaletteId(null)
+    setSavedFingerprint(null)
     setColors([manualStarter])
     setSelectedIndex(0)
     setAnalysis(null)
@@ -210,7 +296,7 @@ function App() {
     navigate('create')
   }
 
-  const resetPalette = () => {
+  const resetPalette = (target: WorkspaceView = 'create') => {
     analysisRequestRef.current += 1
     extractionRequestRef.current += 1
     analysisControllerRef.current?.abort()
@@ -220,35 +306,42 @@ function App() {
     revokeSource()
     setSource(null)
     setManualPalette(false)
+    setPaletteSourceType(null)
+    setSourceFilename(undefined)
     setColors([])
     setSelectedIndex(null)
     setAnalysis(null)
     setAnalysisStale(false)
     setRoles({})
     setPaletteName('Untitled palette')
+    setActivePaletteId(null)
+    setSavedFingerprint(null)
     setAnalyzing(false)
     setExtracting(false)
     setNotice(null)
     setPickerTarget(null)
     setConfirmNewPalette(false)
-    navigate('create')
+    navigate(target)
   }
 
   const requestNewPalette = () => {
-    if (hasUnsavedWork) setConfirmNewPalette(true)
+    if (hasPendingChanges) setConfirmNewPalette(true)
     else resetPalette()
   }
 
   const updateColor = (index: number, color: Color) => {
-    setColors((current) => current.map((item, itemIndex) => (
-      itemIndex === index ? color : item
-    )))
+    setColors((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? color : item)),
+    )
     invalidateAnalysis()
   }
 
   const addColor = (color: Color = manualStarter) => {
     if (colors.length >= 10) {
-      setNotice({ variant: 'warning', message: 'A palette can contain at most 10 colors.' })
+      setNotice({
+        variant: 'warning',
+        message: 'A palette can contain at most 10 colors.',
+      })
       return
     }
     setColors((current) => [...current, color])
@@ -260,7 +353,10 @@ function App() {
     const sourceColor = colors[index]
     if (!sourceColor || colors.length >= 10) {
       if (colors.length >= 10) {
-        setNotice({ variant: 'warning', message: 'A palette can contain at most 10 colors.' })
+        setNotice({
+          variant: 'warning',
+          message: 'A palette can contain at most 10 colors.',
+        })
       }
       return
     }
@@ -279,7 +375,9 @@ function App() {
   }
 
   const removeColor = (index: number) => {
-    setColors((current) => current.filter((_, itemIndex) => itemIndex !== index))
+    setColors((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    )
     setSelectedIndex((current) => {
       if (current === null) return null
       if (colors.length <= 1) return null
@@ -334,22 +432,144 @@ function App() {
     void beginImagePalette(file)
   }
 
-  const headerTitle = paletteActive ? 'Current palette' : 'ColorCraft'
-  const headerSource = source
-    ? source.file.name
-    : manualPalette
-      ? 'Untitled palette'
-      : 'Local color utility'
-  const headerSummary = source
-    ? `${colorCountLabel(colors.length)} · extracted from image`
-    : manualPalette
-      ? `${colorCountLabel(colors.length)} · created manually`
-      : 'Extract, refine, and validate color palettes from images.'
+  const openPalette = (palette: SavedPalette) => {
+    analysisRequestRef.current += 1
+    extractionRequestRef.current += 1
+    analysisControllerRef.current?.abort()
+    extractionControllerRef.current?.abort()
+    revokeSource()
+    setSource(null)
+    setManualPalette(true)
+    setPaletteSourceType(palette.sourceType)
+    setSourceFilename(palette.sourceFilename)
+    setPaletteName(palette.name)
+    setColors(palette.colors)
+    setRoles(palette.roles)
+    setSelectedIndex(palette.colors.length ? 0 : null)
+    setAnalysis(null)
+    setAnalysisStale(false)
+    setActivePaletteId(palette.id)
+    setSavedFingerprint(paletteSnapshotFingerprint(palette))
+    setNotice(null)
+    setPendingOpenPalette(null)
+    navigate('create')
+  }
+
+  const requestOpenPalette = (palette: SavedPalette) => {
+    if (hasPendingChanges && palette.id !== activePaletteId) {
+      setPendingOpenPalette(palette)
+    } else {
+      openPalette(palette)
+    }
+  }
+
+  const saveCurrentPalette = async () => {
+    if (!paletteDraft) return
+    try {
+      const existing = activePaletteId
+        ? savedPalettes.find((palette) => palette.id === activePaletteId)
+        : undefined
+      const saved = await savePalette(paletteDraft, existing)
+      setActivePaletteId(saved.id)
+      setPaletteName(saved.name)
+      setSavedFingerprint(paletteSnapshotFingerprint(saved))
+      await refreshLibrary()
+      setNotice({
+        variant: 'success',
+        message: existing
+          ? 'Palette changes saved locally.'
+          : 'Palette saved locally.',
+      })
+    } catch (error) {
+      console.error('Could not save palette:', error)
+      setNotice({
+        variant: 'error',
+        message: 'The palette could not be saved in this browser.',
+        retry: () => void saveCurrentPalette(),
+      })
+    }
+  }
+
+  const handleRenamePalette = async (palette: SavedPalette, name: string) => {
+    try {
+      const renamed = await renameSavedPalette(palette.id, name)
+      if (palette.id === activePaletteId) {
+        setPaletteName(renamed.name)
+        setSavedFingerprint(paletteSnapshotFingerprint(renamed))
+      }
+      await refreshLibrary()
+    } catch (error) {
+      console.error('Could not rename palette:', error)
+      setNotice({
+        variant: 'error',
+        message: 'The saved palette could not be renamed.',
+      })
+    }
+  }
+
+  const handleDuplicatePalette = async (palette: SavedPalette) => {
+    try {
+      await duplicateSavedPalette(palette)
+      await refreshLibrary()
+      setNotice({
+        variant: 'success',
+        message: `${palette.name} was duplicated.`,
+      })
+    } catch (error) {
+      console.error('Could not duplicate palette:', error)
+      setNotice({
+        variant: 'error',
+        message: 'The saved palette could not be duplicated.',
+      })
+    }
+  }
+
+  const confirmDeletePalette = async () => {
+    if (!deleteTarget) return
+    const palette = deleteTarget
+    try {
+      await deleteSavedPalette(palette.id)
+      setDeleteTarget(null)
+      if (palette.id === activePaletteId) resetPalette('library')
+      await refreshLibrary()
+      setNotice({ variant: 'success', message: `${palette.name} was deleted.` })
+    } catch (error) {
+      console.error('Could not delete palette:', error)
+      setNotice({
+        variant: 'error',
+        message: 'The saved palette could not be deleted.',
+      })
+    }
+  }
+
+  const headerTitle =
+    view === 'library'
+      ? 'Palette Library'
+      : paletteActive
+        ? 'Current palette'
+        : 'ColorCraft'
+  const headerSource =
+    view === 'library'
+      ? 'Local palette storage'
+      : paletteActive
+        ? paletteName
+        : 'Local color utility'
+  const headerSummary =
+    view === 'library'
+      ? `${savedPalettes.length} saved ${savedPalettes.length === 1 ? 'palette' : 'palettes'} · stored in this browser`
+      : paletteActive
+        ? `${colorCountLabel(colors.length)} · ${paletteSourceType === 'image' ? 'created from an image' : 'created manually'}`
+        : 'Extract, refine, and validate color palettes from images.'
 
   const createView = !paletteActive ? (
-    <ImageUpload onImageSelected={beginImagePalette} onStartManual={startManualPalette} />
+    <ImageUpload
+      onImageSelected={beginImagePalette}
+      onStartManual={startManualPalette}
+    />
   ) : (
-    <div className={`source-palette-workspace ${source ? '' : 'manual-workspace'}`.trim()}>
+    <div
+      className={`source-palette-workspace ${source ? '' : 'manual-workspace'}`.trim()}
+    >
       {source && (
         <section className="source-panel" aria-labelledby="source-heading">
           <div className="feature-heading">
@@ -380,19 +600,35 @@ function App() {
               alt={`Source ${source.file.name}`}
               onLoad={(event) => {
                 const image = event.currentTarget
-                setSource((current) => current && current.previewUrl === source.previewUrl
-                  ? { ...current, width: image.naturalWidth, height: image.naturalHeight }
-                  : current)
+                setSource((current) =>
+                  current && current.previewUrl === source.previewUrl
+                    ? {
+                        ...current,
+                        width: image.naturalWidth,
+                        height: image.naturalHeight,
+                      }
+                    : current,
+                )
               }}
             />
           </div>
           <dl className="source-metadata">
-            <div><dt>File</dt><dd>{source.file.name}</dd></div>
+            <div>
+              <dt>File</dt>
+              <dd>{source.file.name}</dd>
+            </div>
             <div>
               <dt>Dimensions</dt>
-              <dd>{source.width && source.height ? `${source.width} × ${source.height}` : 'Reading…'}</dd>
+              <dd>
+                {source.width && source.height
+                  ? `${source.width} × ${source.height}`
+                  : 'Reading…'}
+              </dd>
             </div>
-            <div><dt>Size</dt><dd>{(source.file.size / 1024 / 1024).toFixed(2)} MB</dd></div>
+            <div>
+              <dt>Size</dt>
+              <dd>{(source.file.size / 1024 / 1024).toFixed(2)} MB</dd>
+            </div>
           </dl>
         </section>
       )}
@@ -400,7 +636,13 @@ function App() {
       <section className="palette-panel" aria-labelledby="palette-heading">
         <div className="feature-heading">
           <div>
-            <p className="workspace-kicker">{source ? 'Extracted palette' : 'Manual palette'}</p>
+            <p className="workspace-kicker">
+              {source
+                ? 'Extracted palette'
+                : paletteSourceType === 'image'
+                  ? 'Saved image palette'
+                  : 'Manual palette'}
+            </p>
             <h2 id="palette-heading">Palette</h2>
           </div>
           {source && (
@@ -415,6 +657,13 @@ function App() {
           )}
         </div>
 
+        {!source && paletteSourceType === 'image' && (
+          <p className="source-retention-note">
+            Source: {sourceFilename ?? 'image'} · The source image itself was
+            not retained.
+          </p>
+        )}
+
         {source && (
           <div className="extraction-controls">
             <label htmlFor="requested-colors">Requested colors</label>
@@ -424,11 +673,14 @@ function App() {
               min="3"
               max="10"
               value={requestedColors}
-              onChange={(event) => setRequestedColors(Number(event.target.value))}
+              onChange={(event) =>
+                setRequestedColors(Number(event.target.value))
+              }
             />
             <output htmlFor="requested-colors">{requestedColors}</output>
             <span>
-              Actual returned: {colors.length} · Distinct colors may be fewer than requested.
+              Actual returned: {colors.length} · Distinct colors may be fewer
+              than requested.
             </span>
           </div>
         )}
@@ -453,7 +705,9 @@ function App() {
           >
             {analyzing ? 'Analyzing…' : 'Analyze palette'}
           </Button>
-          {!reviewAvailable && <span>Add one more valid color to enable analysis.</span>}
+          {!reviewAvailable && (
+            <span>Add one more valid color to enable analysis.</span>
+          )}
         </div>
       </section>
     </div>
@@ -490,6 +744,52 @@ function App() {
     />
   )
 
+  const libraryView = (
+    <PaletteLibrary
+      palettes={savedPalettes}
+      activePaletteId={activePaletteId}
+      loading={libraryLoading}
+      onCreate={requestNewPalette}
+      onOpen={requestOpenPalette}
+      onRename={(palette, name) => void handleRenamePalette(palette, name)}
+      onDuplicate={(palette) => void handleDuplicatePalette(palette)}
+      onDelete={setDeleteTarget}
+    />
+  )
+
+  const headerActions = paletteDraft ? (
+    <div className="save-controls">
+      <StatusBadge
+        variant={
+          saveState === 'saved'
+            ? 'success'
+            : saveState === 'modified'
+              ? 'warning'
+              : 'information'
+        }
+      >
+        {saveState === 'saved' ? (
+          <CheckCircle2 size={14} aria-hidden="true" />
+        ) : (
+          <CircleDotDashed size={14} aria-hidden="true" />
+        )}
+        {saveState === 'saved'
+          ? 'Saved'
+          : saveState === 'modified'
+            ? 'Modified'
+            : 'Unsaved'}
+      </StatusBadge>
+      <Button
+        variant={saveState === 'saved' ? 'quiet' : 'primary'}
+        icon={<Save size={16} aria-hidden="true" />}
+        onClick={() => void saveCurrentPalette()}
+        disabled={saveState === 'saved'}
+      >
+        {activePaletteId ? 'Save changes' : 'Save palette'}
+      </Button>
+    </div>
+  ) : undefined
+
   return (
     <>
       <AppShell
@@ -509,6 +809,12 @@ function App() {
         summary={headerSummary}
         onNavigate={navigate}
         onNewPalette={requestNewPalette}
+        recentPalettes={savedPalettes.map(({ id, name }) => ({ id, name }))}
+        onOpenRecent={(id) => {
+          const palette = savedPalettes.find((item) => item.id === id)
+          if (palette) requestOpenPalette(palette)
+        }}
+        headerActions={headerActions}
       >
         {notice && (
           <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
@@ -516,9 +822,12 @@ function App() {
         {view === 'create' && createView}
         {view === 'review' && reviewView}
         {view === 'export' && exportView}
+        {view === 'library' && libraryView}
       </AppShell>
 
-      <label className="visually-hidden" htmlFor="change-source-image">Change source image</label>
+      <label className="visually-hidden" htmlFor="change-source-image">
+        Change source image
+      </label>
       <input
         ref={changeImageInputRef}
         id="change-source-image"
@@ -536,10 +845,63 @@ function App() {
         title="Start a new palette?"
         onClose={() => setConfirmNewPalette(false)}
       >
-        <p>Your current unsaved palette will be cleared from this browser session.</p>
+        <p>
+          Your current {saveState === 'modified' ? 'modified' : 'unsaved'}{' '}
+          palette changes will be cleared from this browser session.
+        </p>
         <div className="dialog-actions">
-          <Button variant="quiet" onClick={() => setConfirmNewPalette(false)}>Keep working</Button>
-          <Button variant="destructive" onClick={resetPalette}>Discard and start new</Button>
+          <Button variant="quiet" onClick={() => setConfirmNewPalette(false)}>
+            Keep working
+          </Button>
+          <Button variant="destructive" onClick={() => resetPalette()}>
+            Discard and start new
+          </Button>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(pendingOpenPalette)}
+        title="Open another palette?"
+        onClose={() => setPendingOpenPalette(null)}
+      >
+        <p>
+          Your current {saveState === 'modified' ? 'modified' : 'unsaved'}{' '}
+          palette changes will be discarded.
+        </p>
+        <div className="dialog-actions">
+          <Button variant="quiet" onClick={() => setPendingOpenPalette(null)}>
+            Keep working
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() =>
+              pendingOpenPalette && openPalette(pendingOpenPalette)
+            }
+          >
+            Discard changes and open
+          </Button>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(deleteTarget)}
+        title="Delete saved palette?"
+        onClose={() => setDeleteTarget(null)}
+      >
+        <p>
+          {deleteTarget?.name} will be removed from this browser. This cannot be
+          undone.
+        </p>
+        <div className="dialog-actions">
+          <Button variant="quiet" onClick={() => setDeleteTarget(null)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => void confirmDeletePalette()}
+          >
+            Delete palette
+          </Button>
         </div>
       </Dialog>
 

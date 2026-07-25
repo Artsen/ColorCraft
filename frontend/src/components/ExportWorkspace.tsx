@@ -36,7 +36,8 @@ async function copyText(value: string): Promise<void> {
   document.body.appendChild(fallback)
   fallback.select()
   try {
-    if (!document.execCommand('copy')) throw new Error('Copy command was declined.')
+    if (!document.execCommand('copy'))
+      throw new Error('Copy command was declined.')
   } finally {
     fallback.remove()
   }
@@ -61,11 +62,15 @@ export default function ExportWorkspace({
   const handleCopy = async () => {
     try {
       await copyText(output)
-      setStatus({ variant: 'success', message: `${metadata.label} copied to the clipboard.` })
+      setStatus({
+        variant: 'success',
+        message: `${metadata.label} copied to the clipboard.`,
+      })
     } catch {
       setStatus({
         variant: 'error',
-        message: 'Clipboard permission was denied. Select the preview and copy it manually.',
+        message:
+          'Clipboard permission was denied. Select the preview and copy it manually.',
       })
     }
   }
@@ -73,14 +78,19 @@ export default function ExportWorkspace({
   const handleDownload = () => {
     let url: string | null = null
     try {
-      url = URL.createObjectURL(new Blob([output], { type: `${metadata.mime};charset=utf-8` }))
+      url = URL.createObjectURL(
+        new Blob([output], { type: `${metadata.mime};charset=utf-8` }),
+      )
       const link = document.createElement('a')
       link.href = url
       link.download = filename
       link.click()
       setStatus({ variant: 'success', message: `${filename} downloaded.` })
     } catch {
-      setStatus({ variant: 'error', message: 'The download could not be created. Copy the preview instead.' })
+      setStatus({
+        variant: 'error',
+        message: 'The download could not be created. Copy the preview instead.',
+      })
     } finally {
       if (url) URL.revokeObjectURL(url)
     }
@@ -147,20 +157,27 @@ export default function ExportWorkspace({
         {status && (
           <Notice
             variant={status.variant}
-            actions={status.variant === 'error' ? (
-              <Button variant="quiet" onClick={() => {
-                previewRef.current?.focus()
-                previewRef.current?.select()
-              }}>
-                Select preview
-              </Button>
-            ) : undefined}
+            actions={
+              status.variant === 'error' ? (
+                <Button
+                  variant="quiet"
+                  onClick={() => {
+                    previewRef.current?.focus()
+                    previewRef.current?.select()
+                  }}
+                >
+                  Select preview
+                </Button>
+              ) : undefined
+            }
           >
             {status.message}
           </Notice>
         )}
         <label className="generated-preview">
-          <span className="visually-hidden">Generated {metadata.label} preview</span>
+          <span className="visually-hidden">
+            Generated {metadata.label} preview
+          </span>
           <textarea
             ref={previewRef}
             value={output}

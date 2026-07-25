@@ -3,10 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from config import ConfigurationError, RuntimeSettings
+
 from dev import (
     create_development_plan,
+    metadata_url,
     readiness_url,
     unexpected_exit_code,
     wait_for_readiness,
@@ -22,6 +23,7 @@ def test_default_resolved_ports():
     assert settings.api_port == 4100
     assert settings.allowed_origins == ("http://127.0.0.1:5174",)
     assert readiness_url(settings) == "http://127.0.0.1:4100/ready"
+    assert metadata_url(settings) == "http://127.0.0.1:4100/metadata"
 
 
 def test_environment_overrides():

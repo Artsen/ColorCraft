@@ -13,9 +13,15 @@ export default function Field({
   const helpId = help ? `${inputId}-help` : undefined
   return (
     <div className="field">
-      <label className="field-label" htmlFor={inputId}>{label}</label>
+      <label className="field-label" htmlFor={inputId}>
+        {label}
+      </label>
       {children({ inputId, helpId })}
-      {help && <p className="field-help" id={helpId}>{help}</p>}
+      {help && (
+        <p className="field-help" id={helpId}>
+          {help}
+        </p>
+      )}
     </div>
   )
 }

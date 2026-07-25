@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
-export type StatusVariant = 'neutral' | 'information' | 'success' | 'warning' | 'error'
+export type StatusVariant =
+  'neutral' | 'information' | 'success' | 'warning' | 'error'
 
 export default function StatusBadge({
   children,

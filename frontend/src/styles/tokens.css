@@ -41,15 +41,32 @@
     linear-gradient(45deg, transparent 75%, #202a37 75%),
     linear-gradient(-45deg, transparent 75%, #202a37 75%);
 
-  --gradient-brand-spectral: linear-gradient(120deg, #5f6fe5 0%, #765bc8 54%, #e66a3a 100%);
+  --gradient-brand-spectral: linear-gradient(
+    120deg,
+    #5f6fe5 0%,
+    #765bc8 54%,
+    #e66a3a 100%
+  );
   --gradient-ambient-field:
-    radial-gradient(circle at 24% 18%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 34%),
-    radial-gradient(circle at 82% 24%, color-mix(in srgb, var(--color-ember) 8%, transparent), transparent 30%);
+    radial-gradient(
+      circle at 24% 18%,
+      color-mix(in srgb, var(--color-primary) 10%, transparent),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 82% 24%,
+      color-mix(in srgb, var(--color-ember) 8%, transparent),
+      transparent 30%
+    );
 
-  --font-family-base: "Segoe UI Variable", "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif;
-  --font-family-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  --font-family-base:
+    'Segoe UI Variable', 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui,
+    sans-serif;
+  --font-family-mono:
+    ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
   --font-product-title: 550 0.95rem/1.2 var(--font-family-base);
-  --font-page-title: 600 clamp(1.45rem, 2vw, 1.75rem) / 1.15 var(--font-family-base);
+  --font-page-title: 600 clamp(1.45rem, 2vw, 1.75rem) / 1.15
+    var(--font-family-base);
   --font-section-title: 550 1.04rem/1.3 var(--font-family-base);
   --font-card-title: 550 0.94rem/1.3 var(--font-family-base);
   --font-body: 400 0.94rem/1.55 var(--font-family-base);
@@ -84,13 +101,29 @@
   --motion-base: 180ms ease;
   --motion-slow: 260ms ease;
 
-  --color-control-quiet: color-mix(in srgb, var(--color-text-primary) 8%, transparent);
-  --color-control-quiet-hover: color-mix(in srgb, var(--color-text-primary) 13%, transparent);
-  --color-control-disabled: color-mix(in srgb, var(--color-text-disabled) 10%, transparent);
-  --color-border-interactive: color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+  --color-control-quiet: color-mix(
+    in srgb,
+    var(--color-text-primary) 8%,
+    transparent
+  );
+  --color-control-quiet-hover: color-mix(
+    in srgb,
+    var(--color-text-primary) 13%,
+    transparent
+  );
+  --color-control-disabled: color-mix(
+    in srgb,
+    var(--color-text-disabled) 10%,
+    transparent
+  );
+  --color-border-interactive: color-mix(
+    in srgb,
+    var(--color-text-primary) 18%,
+    transparent
+  );
 }
 
-:root[data-theme="light"] {
+:root[data-theme='light'] {
   color-scheme: light;
 
   --color-app-bg: #f2f4f7;
@@ -132,8 +165,16 @@
     linear-gradient(45deg, transparent 75%, #d9dee5 75%),
     linear-gradient(-45deg, transparent 75%, #d9dee5 75%);
   --gradient-ambient-field:
-    radial-gradient(circle at 24% 18%, color-mix(in srgb, var(--color-primary) 7%, transparent), transparent 34%),
-    radial-gradient(circle at 82% 24%, color-mix(in srgb, var(--color-ember) 5%, transparent), transparent 30%);
+    radial-gradient(
+      circle at 24% 18%,
+      color-mix(in srgb, var(--color-primary) 7%, transparent),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 82% 24%,
+      color-mix(in srgb, var(--color-ember) 5%, transparent),
+      transparent 30%
+    );
   --color-control-quiet: rgba(18, 30, 48, 0.045);
   --color-control-quiet-hover: rgba(18, 30, 48, 0.08);
   --color-control-disabled: #f5f7fa;

@@ -1,7 +1,19 @@
 import { Copy, Pipette, SwatchBook, Trash2 } from 'lucide-react'
-import { useEffect, useId, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react'
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type KeyboardEvent,
+} from 'react'
 import type { Color } from '../api/contracts'
-import { colorFromHex, isValidHex, normalizeHexDraft, type PaletteColor } from '../workspace'
+import {
+  colorFromHex,
+  isValidHex,
+  normalizeHexDraft,
+  type PaletteColor,
+} from '../workspace'
 import ContextMenu from './ui/ContextMenu'
 import IconButton from './ui/IconButton'
 
@@ -80,7 +92,10 @@ export default function PaletteItem({
       onFocusCapture={onSelect}
       aria-label={`Palette color ${index + 1}`}
     >
-      <div className="palette-row-swatch" style={{ backgroundColor: color.hex }} />
+      <div
+        className="palette-row-swatch"
+        style={{ backgroundColor: color.hex }}
+      />
       <div className="palette-row-editor">
         <label htmlFor={inputId}>Color {index + 1}</label>
         <input
@@ -104,10 +119,23 @@ export default function PaletteItem({
         )}
       </div>
       <dl className="palette-row-metadata">
-        <div><dt>RGB</dt><dd>{color.rgb.r}, {color.rgb.g}, {color.rgb.b}</dd></div>
-        <div><dt>HSL</dt><dd>{color.hsl.h}°, {color.hsl.s}%, {color.hsl.l}%</dd></div>
+        <div>
+          <dt>RGB</dt>
+          <dd>
+            {color.rgb.r}, {color.rgb.g}, {color.rgb.b}
+          </dd>
+        </div>
+        <div>
+          <dt>HSL</dt>
+          <dd>
+            {color.hsl.h}°, {color.hsl.s}%, {color.hsl.l}%
+          </dd>
+        </div>
         {color.population !== undefined && (
-          <div><dt>Population</dt><dd>{(color.population * 100).toFixed(1)}%</dd></div>
+          <div>
+            <dt>Population</dt>
+            <dd>{(color.population * 100).toFixed(1)}%</dd>
+          </div>
         )}
       </dl>
       <div className="palette-row-actions">

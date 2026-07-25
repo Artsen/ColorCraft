@@ -28,6 +28,8 @@ class ContractModel(BaseModel):
 
 
 HexColor = Annotated[str, StringConstraints(pattern=r"^#[0-9A-Fa-f]{6}$")]
+
+
 class RGB(ContractModel):
     r: int = Field(ge=0, le=255)
     g: int = Field(ge=0, le=255)
@@ -68,9 +70,7 @@ class ColorInput(ColorValue):
             **dict(
                 zip(
                     ("h", "s", "l"),
-                    rgb_to_hsl(
-                        [expected_rgb.r, expected_rgb.g, expected_rgb.b]
-                    ),
+                    rgb_to_hsl([expected_rgb.r, expected_rgb.g, expected_rgb.b]),
                 )
             )
         )
@@ -102,6 +102,20 @@ class ReadinessResponse(ContractModel):
     status: Literal["ready", "not_ready"]
     service: str
     version: str
+    capabilities: list[str]
+
+
+class ApplicationMetadata(ContractModel):
+    schema_version: Literal[1]
+    id: Literal["colorcraft"]
+    name: Literal["ColorCraft"]
+    descriptor: Literal["Local color utility"]
+    version: str
+    icon: str
+    web_url: str
+    api_url: str
+    health_url: str
+    readiness_url: str
     capabilities: list[str]
 
 

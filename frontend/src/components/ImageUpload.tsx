@@ -8,7 +8,10 @@ const acceptedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 export function validateImageFile(file: File): string | null {
   const supportedExtension = /\.(?:jpe?g|png|webp)$/i.test(file.name)
-  if (!acceptedTypes.has(file.type) && !(file.type === '' && supportedExtension)) {
+  if (
+    !acceptedTypes.has(file.type) &&
+    !(file.type === '' && supportedExtension)
+  ) {
     return 'Choose a JPG, PNG, or WebP image.'
   }
   if (file.size > MAX_IMAGE_BYTES) {
@@ -88,18 +91,24 @@ export default function ImageUpload({
           setDragReady(true)
         }}
         onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          if (
+            !event.currentTarget.contains(event.relatedTarget as Node | null)
+          ) {
             setDragReady(false)
           }
         }}
         onDrop={handleDrop}
       >
         <ImagePlus className="drop-zone-icon" size={42} aria-hidden="true" />
-        <strong>{dragReady ? 'Release to use this image' : 'Drop an image here'}</strong>
+        <strong>
+          {dragReady ? 'Release to use this image' : 'Drop an image here'}
+        </strong>
         <span>JPG, PNG, or WebP · up to 15 MB</span>
       </div>
 
-      <label className="visually-hidden" htmlFor="source-image">Source image</label>
+      <label className="visually-hidden" htmlFor="source-image">
+        Source image
+      </label>
       <input
         ref={inputRef}
         id="source-image"
@@ -121,7 +130,9 @@ export default function ImageUpload({
         >
           {loading ? 'Reading image…' : 'Choose image'}
         </Button>
-        <Button variant="secondary" onClick={onStartManual}>Start manually</Button>
+        <Button variant="secondary" onClick={onStartManual}>
+          Start manually
+        </Button>
       </div>
       <p className="create-metadata">
         JPG, PNG, or WebP · Processed by the local ColorCraft API

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "colorcraft",
+  "name": "ColorCraft",
+  "descriptor": "Local color utility",
+  "version": "1.0.0",
+  "icon": "/colorcraft-mark.svg",
+  "defaults": {
+    "webAddress": "http://127.0.0.1:5174",
+    "apiAddress": "http://127.0.0.1:4100"
+  },
+  "endpoints": {
+    "metadata": "/metadata",
+    "health": "/health",
+    "readiness": "/ready"
+  },
+  "capabilities": [
+    "image-color-extraction",
+    "palette-editing",
+    "harmony-analysis",
+    "contrast-review",
+    "palette-export",
+    "local-palette-library"
+  ]
+}

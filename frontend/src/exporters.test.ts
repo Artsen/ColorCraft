@@ -42,7 +42,7 @@ describe('browser palette exporters', () => {
 
   it('generates a usable ordered Tailwind configuration fragment', () => {
     const output = generateTailwind(palette)
-    expect(output).toContain("colors: {")
+    expect(output).toContain('colors: {')
     expect(output).toContain("'palette-1': '#ff0000'")
     expect(output).toContain("'palette-2': '#0000ff'")
   })

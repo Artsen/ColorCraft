@@ -40,7 +40,8 @@ export default function ImageColorPicker({
       if (!image.naturalWidth || !image.naturalHeight) return
       const scale = Math.min(
         1,
-        MAX_SAMPLE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight),
+        MAX_SAMPLE_DIMENSION /
+          Math.max(image.naturalWidth, image.naturalHeight),
       )
       canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
       canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
@@ -61,7 +62,9 @@ export default function ImageColorPicker({
     }
   }, [imageUrl])
 
-  const samplePointer = (event: PointerEvent<HTMLDivElement>): Sample | null => {
+  const samplePointer = (
+    event: PointerEvent<HTMLDivElement>,
+  ): Sample | null => {
     const canvas = canvasRef.current
     const image = imageRef.current
     const context = contextRef.current
@@ -69,8 +72,12 @@ export default function ImageColorPicker({
 
     const rect = image.getBoundingClientRect()
     if (!rect.width || !rect.height) return null
-    const x = Math.floor((event.clientX - rect.left) * (canvas.width / rect.width))
-    const y = Math.floor((event.clientY - rect.top) * (canvas.height / rect.height))
+    const x = Math.floor(
+      (event.clientX - rect.left) * (canvas.width / rect.width),
+    )
+    const y = Math.floor(
+      (event.clientY - rect.top) * (canvas.height / rect.height),
+    )
     if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return null
 
     const pixel = context.getImageData(x, y, 1, 1).data
@@ -86,11 +93,17 @@ export default function ImageColorPicker({
       hoverSwatchRef.current.style.backgroundColor = sample.color.hex
     }
     if (hoverHexRef.current) hoverHexRef.current.textContent = sample.color.hex
-    if (coordinateRef.current) coordinateRef.current.textContent = `${sample.x}, ${sample.y}`
+    if (coordinateRef.current)
+      coordinateRef.current.textContent = `${sample.x}, ${sample.y}`
   }
 
   return (
-    <Dialog open title="Pick a color from the image" onClose={onClose} className="picker-dialog">
+    <Dialog
+      open
+      title="Pick a color from the image"
+      onClose={onClose}
+      className="picker-dialog"
+    >
       <div className="picker-layout">
         <div
           className="picker-stage"
@@ -106,7 +119,11 @@ export default function ImageColorPicker({
             }
           }}
         >
-          <img ref={imageRef} src={imageUrl} alt="Source image for color sampling" />
+          <img
+            ref={imageRef}
+            src={imageUrl}
+            alt="Source image for color sampling"
+          />
           <canvas ref={canvasRef} className="visually-hidden" />
         </div>
 
@@ -119,9 +136,12 @@ export default function ImageColorPicker({
             />
             <div>
               <span className="field-label">Pointer</span>
-              <code ref={hoverHexRef}>{selected?.color.hex ?? 'Move over the image'}</code>
+              <code ref={hoverHexRef}>
+                {selected?.color.hex ?? 'Move over the image'}
+              </code>
               <p className="field-help">
-                Coordinate <span ref={coordinateRef}>
+                Coordinate{' '}
+                <span ref={coordinateRef}>
                   {selected ? `${selected.x}, ${selected.y}` : '—'}
                 </span>
               </p>
@@ -138,13 +158,16 @@ export default function ImageColorPicker({
             </div>
           </div>
           <p className="field-help">
-            Point, touch, or click the image to select a pixel. Confirm when the color is ready.
+            Point, touch, or click the image to select a pixel. Confirm when the
+            color is ready.
           </p>
         </aside>
       </div>
 
       <div className="dialog-actions">
-        <Button variant="quiet" onClick={onClose}>Cancel</Button>
+        <Button variant="quiet" onClick={onClose}>
+          Cancel
+        </Button>
         <Button
           variant="primary"
           disabled={!selected}

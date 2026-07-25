@@ -2,7 +2,9 @@ export const THEME_STORAGE_KEY = 'colorcraft-theme'
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
 
-export function storedTheme(storage: Pick<Storage, 'getItem'> = localStorage): ThemePreference {
+export function storedTheme(
+  storage: Pick<Storage, 'getItem'> = localStorage,
+): ThemePreference {
   const value = storage.getItem(THEME_STORAGE_KEY)
   return value === 'light' || value === 'dark' || value === 'system'
     ? value

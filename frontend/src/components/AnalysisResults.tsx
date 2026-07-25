@@ -24,7 +24,11 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
         />
 
         <div className="tag-list">
-          {colorTheory.tags.map((tag) => <span key={tag} className="analysis-tag">{tag}</span>)}
+          {colorTheory.tags.map((tag) => (
+            <span key={tag} className="analysis-tag">
+              {tag}
+            </span>
+          ))}
         </div>
 
         <div className="relationship-fit">
@@ -43,13 +47,19 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
             aria-valuemax={100}
             aria-valuenow={colorTheory.relationshipFit}
           >
-            <div className="fit-bar" style={{ width: `${colorTheory.relationshipFit}%` }} />
+            <div
+              className="fit-bar"
+              style={{ width: `${colorTheory.relationshipFit}%` }}
+            />
           </div>
           <ul className="factor-list">
-            {colorTheory.relationshipFactors.map((factor) => <li key={factor}>{factor}</li>)}
+            {colorTheory.relationshipFactors.map((factor) => (
+              <li key={factor}>{factor}</li>
+            ))}
           </ul>
           <p className="field-help">
-            This measures geometric color relationships, not subjective design quality.
+            This measures geometric color relationships, not subjective design
+            quality.
           </p>
         </div>
 
@@ -57,23 +67,43 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
           <section className="analysis-section">
             <h3>Temperature balance</h3>
             <div className="detail-list">
-              <div className="detail-row"><span>Balance</span><strong>{colorTheory.temperatureBalance.balance}</strong></div>
+              <div className="detail-row">
+                <span>Balance</span>
+                <strong>{colorTheory.temperatureBalance.balance}</strong>
+              </div>
               <div className="detail-row">
                 <span>Warm colors</span>
-                <strong>{colorTheory.temperatureBalance.warmCount} ({(colorTheory.temperatureBalance.warmRatio * 100).toFixed(0)}%)</strong>
+                <strong>
+                  {colorTheory.temperatureBalance.warmCount} (
+                  {(colorTheory.temperatureBalance.warmRatio * 100).toFixed(0)}
+                  %)
+                </strong>
               </div>
               <div className="detail-row">
                 <span>Cool colors</span>
-                <strong>{colorTheory.temperatureBalance.coolCount} ({(colorTheory.temperatureBalance.coolRatio * 100).toFixed(0)}%)</strong>
+                <strong>
+                  {colorTheory.temperatureBalance.coolCount} (
+                  {(colorTheory.temperatureBalance.coolRatio * 100).toFixed(0)}
+                  %)
+                </strong>
               </div>
             </div>
           </section>
           <section className="analysis-section">
             <h3>Color metrics</h3>
             <div className="detail-list">
-              <div className="detail-row"><span>Hue diversity</span><strong>{colorTheory.metrics.hueDiversity}°</strong></div>
-              <div className="detail-row"><span>Average saturation</span><strong>{colorTheory.metrics.saturationAvg}%</strong></div>
-              <div className="detail-row"><span>Lightness range</span><strong>{colorTheory.metrics.lightnessRange}%</strong></div>
+              <div className="detail-row">
+                <span>Hue diversity</span>
+                <strong>{colorTheory.metrics.hueDiversity}°</strong>
+              </div>
+              <div className="detail-row">
+                <span>Average saturation</span>
+                <strong>{colorTheory.metrics.saturationAvg}%</strong>
+              </div>
+              <div className="detail-row">
+                <span>Lightness range</span>
+                <strong>{colorTheory.metrics.lightnessRange}%</strong>
+              </div>
             </div>
           </section>
         </div>
@@ -87,11 +117,26 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
         />
 
         <div className="metric-grid">
-          <Metric label="Total Pairs" value={accessibility.summary.totalPairs} />
-          <Metric label="AA Normal" value={accessibility.summary.aaNormalPasses} />
-          <Metric label="AA Large" value={accessibility.summary.aaLargePasses} />
-          <Metric label="AAA Normal" value={accessibility.summary.aaaNormalPasses} />
-          <Metric label="AAA Large" value={accessibility.summary.aaaLargePasses} />
+          <Metric
+            label="Total Pairs"
+            value={accessibility.summary.totalPairs}
+          />
+          <Metric
+            label="AA Normal"
+            value={accessibility.summary.aaNormalPasses}
+          />
+          <Metric
+            label="AA Large"
+            value={accessibility.summary.aaLargePasses}
+          />
+          <Metric
+            label="AAA Normal"
+            value={accessibility.summary.aaaNormalPasses}
+          />
+          <Metric
+            label="AAA Large"
+            value={accessibility.summary.aaaLargePasses}
+          />
         </div>
 
         {accessibility.issues.length > 0 && (
@@ -99,10 +144,14 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
             <h3>Issues found</h3>
             <div className="issue-list">
               {accessibility.issues.map((issue) => (
-                <Notice key={`${issue.color1}-${issue.color2}`} variant="warning">
+                <Notice
+                  key={`${issue.color1}-${issue.color2}`}
+                  variant="warning"
+                >
                   <p>{issue.message}</p>
                   <small>
-                    {issue.color1} + {issue.color2} • Ratio: {issue.ratio?.toFixed(2) ?? 'N/A'}
+                    {issue.color1} + {issue.color2} • Ratio:{' '}
+                    {issue.ratio?.toFixed(2) ?? 'N/A'}
                   </small>
                 </Notice>
               ))}
@@ -114,20 +163,37 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
           <h3>Color pair contrast</h3>
           <div className="contrast-list">
             {accessibility.pairs.map((pair) => (
-              <div key={`${pair.color1}-${pair.color2}`} className="contrast-row">
+              <div
+                key={`${pair.color1}-${pair.color2}`}
+                className="contrast-row"
+              >
                 <div className="contrast-row-header">
                   <div className="contrast-swatches">
-                    <span className="contrast-swatch" style={{ backgroundColor: pair.color1 }} />
+                    <span
+                      className="contrast-swatch"
+                      style={{ backgroundColor: pair.color1 }}
+                    />
                     <span aria-hidden="true">+</span>
-                    <span className="contrast-swatch" style={{ backgroundColor: pair.color2 }} />
+                    <span
+                      className="contrast-swatch"
+                      style={{ backgroundColor: pair.color2 }}
+                    />
                   </div>
                   <strong>{pair.ratio?.toFixed(2) ?? 'N/A'}:1</strong>
                 </div>
                 <div className="badge-row">
-                  <StatusBadge variant={pair.aaNormal ? 'success' : 'error'}>AA Normal</StatusBadge>
-                  <StatusBadge variant={pair.aaLarge ? 'success' : 'error'}>AA Large</StatusBadge>
-                  <StatusBadge variant={pair.aaaNormal ? 'success' : 'error'}>AAA Normal</StatusBadge>
-                  <StatusBadge variant={pair.aaaLarge ? 'success' : 'error'}>AAA Large</StatusBadge>
+                  <StatusBadge variant={pair.aaNormal ? 'success' : 'error'}>
+                    AA Normal
+                  </StatusBadge>
+                  <StatusBadge variant={pair.aaLarge ? 'success' : 'error'}>
+                    AA Large
+                  </StatusBadge>
+                  <StatusBadge variant={pair.aaaNormal ? 'success' : 'error'}>
+                    AAA Normal
+                  </StatusBadge>
+                  <StatusBadge variant={pair.aaaLarge ? 'success' : 'error'}>
+                    AAA Large
+                  </StatusBadge>
                 </div>
               </div>
             ))}

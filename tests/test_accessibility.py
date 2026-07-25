@@ -1,5 +1,4 @@
 import pytest
-
 from accessibility import contrast_ratio, relative_luminance, wcag_rating
 
 

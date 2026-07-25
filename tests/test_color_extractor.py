@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from io import BytesIO
 import re
-
-from PIL import Image
-import pytest
+from io import BytesIO
 
 import color_extractor
+import pytest
 from color_extractor import (
     ImageDimensionError,
     NoUsablePixelsError,
     extract_colors,
 )
+from PIL import Image
 
 
 def image_bytes(
@@ -81,12 +80,9 @@ def test_extraction_is_deterministic_for_large_sample():
 def test_representatives_are_valid_processing_sample_colors():
     source = [(10, 20, 30)] * 5 + [(200, 210, 220)] * 5
     colors = extract_colors(image_bytes("RGB", (10, 1), source), 2)
-    assert all(
-        re.fullmatch(r"#[0-9a-f]{6}", str(color["hex"])) for color in colors
-    )
+    assert all(re.fullmatch(r"#[0-9a-f]{6}", str(color["hex"])) for color in colors)
     assert {
-        tuple(color["rgb"][channel] for channel in ("r", "g", "b"))
-        for color in colors
+        tuple(color["rgb"][channel] for channel in ("r", "g", "b")) for color in colors
     }.issubset(set(source))
 
 

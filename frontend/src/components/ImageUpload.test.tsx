@@ -9,8 +9,12 @@ function imageFile(name = 'source.png', type = 'image/png') {
 describe('ImageUpload', () => {
   it('accepts a valid image through drag and drop', async () => {
     const onImageSelected = vi.fn()
-    render(<ImageUpload onImageSelected={onImageSelected} onStartManual={vi.fn()} />)
-    const zone = screen.getByRole('button', { name: 'Choose or drop a source image' })
+    render(
+      <ImageUpload onImageSelected={onImageSelected} onStartManual={vi.fn()} />,
+    )
+    const zone = screen.getByRole('button', {
+      name: 'Choose or drop a source image',
+    })
     const file = imageFile()
 
     fireEvent.dragEnter(zone, { dataTransfer: { files: [file] } })
@@ -24,7 +28,8 @@ describe('ImageUpload', () => {
     const { container } = render(
       <ImageUpload onImageSelected={vi.fn()} onStartManual={vi.fn()} />,
     )
-    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!
+    const input =
+      container.querySelector<HTMLInputElement>('input[type="file"]')!
     const click = vi.spyOn(input, 'click')
     fireEvent.keyDown(
       screen.getByRole('button', { name: 'Choose or drop a source image' }),
@@ -38,15 +43,22 @@ describe('ImageUpload', () => {
     const { container } = render(
       <ImageUpload onImageSelected={onImageSelected} onStartManual={vi.fn()} />,
     )
-    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!
+    const input =
+      container.querySelector<HTMLInputElement>('input[type="file"]')!
 
-    fireEvent.change(input, { target: { files: [imageFile('notes.txt', 'text/plain')] } })
-    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a JPG, PNG, or WebP image.')
+    fireEvent.change(input, {
+      target: { files: [imageFile('notes.txt', 'text/plain')] },
+    })
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Choose a JPG, PNG, or WebP image.',
+    )
 
     const oversized = imageFile()
     Object.defineProperty(oversized, 'size', { value: MAX_IMAGE_BYTES + 1 })
     fireEvent.change(input, { target: { files: [oversized] } })
-    expect(await screen.findByRole('alert')).toHaveTextContent('Choose an image smaller than 15 MB.')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Choose an image smaller than 15 MB.',
+    )
     expect(onImageSelected).not.toHaveBeenCalled()
   })
 })

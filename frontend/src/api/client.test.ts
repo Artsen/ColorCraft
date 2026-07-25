@@ -106,7 +106,10 @@ describe('ColorCraft API client', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
-        jsonResponse({ success: true, analysis: { ...analysis, accessibility: {} } }),
+        jsonResponse({
+          success: true,
+          analysis: { ...analysis, accessibility: {} },
+        }),
       ),
     )
 
@@ -118,12 +121,8 @@ describe('ColorCraft API client', () => {
   it('strips extraction metadata from strict palette requests', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        jsonResponse({ success: true, analysis }),
-      )
-      .mockResolvedValueOnce(
-        jsonResponse({ success: true, suggestions: [] }),
-      )
+      .mockResolvedValueOnce(jsonResponse({ success: true, analysis }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, suggestions: [] }))
     vi.stubGlobal('fetch', fetchMock)
     const extractedColor = {
       ...red,

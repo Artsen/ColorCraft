@@ -9,6 +9,7 @@ venv/
 .venv*/
 ENV/
 *.egg-info/
+.coverage
 dist/
 build/
 *.log
@@ -24,6 +25,10 @@ pnpm-debug.log*
 # Frontend build
 frontend/dist/
 frontend/.vite/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+.tmp/
 
 # IDE
 .vscode/

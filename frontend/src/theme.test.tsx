@@ -25,7 +25,10 @@ function matchMedia(prefersDark: boolean): MediaQueryList {
 describe('theme preferences', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.stubGlobal('matchMedia', vi.fn(() => matchMedia(false)))
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => matchMedia(false)),
+    )
     document.documentElement.removeAttribute('data-theme')
     document.documentElement.removeAttribute('data-theme-preference')
   })
@@ -42,12 +45,17 @@ describe('theme preferences', () => {
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark')
     expect(applyTheme('dark')).toBe('dark')
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
-    expect(document.documentElement).toHaveAttribute('data-theme-preference', 'dark')
+    expect(document.documentElement).toHaveAttribute(
+      'data-theme-preference',
+      'dark',
+    )
   })
 
   it('switches and persists from the theme control', () => {
     render(<ThemeControl />)
-    fireEvent.change(screen.getByLabelText('Theme'), { target: { value: 'light' } })
+    fireEvent.change(screen.getByLabelText('Theme'), {
+      target: { value: 'light' },
+    })
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('light')
     expect(document.documentElement).toHaveAttribute('data-theme', 'light')
   })
@@ -55,7 +63,9 @@ describe('theme preferences', () => {
   it('boots the stored theme before the application module', () => {
     const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
     expect(html).toContain("localStorage.getItem('colorcraft-theme')")
-    expect(html.indexOf('colorcraft-theme')).toBeLessThan(html.indexOf('/src/main.tsx'))
+    expect(html.indexOf('colorcraft-theme')).toBeLessThan(
+      html.indexOf('/src/main.tsx'),
+    )
   })
 })
 import { readFileSync } from 'node:fs'

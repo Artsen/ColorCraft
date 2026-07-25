@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from color_theory import (
     analyze_color_theory,
     circular_dispersion,
@@ -20,9 +19,9 @@ def color(hue: int, saturation: int = 100, lightness: int = 50):
 
 
 def relationships(hues: list[int], saturation: int = 100):
-    return analyze_color_theory(
-        [color(hue, saturation=saturation) for hue in hues]
-    )["harmonies"]
+    return analyze_color_theory([color(hue, saturation=saturation) for hue in hues])[
+        "harmonies"
+    ]
 
 
 def test_circular_hue_helpers_wrap_correctly():
@@ -72,12 +71,15 @@ def test_split_complementary_positive_and_negative():
 def test_monochromatic_requires_variation_not_duplicate_colors():
     palette = [color(20, 70, 30), color(23, 60, 60)]
     assert analyze_color_theory(palette)["harmonies"]["monochromatic"]
-    assert analyze_color_theory(
-        [color(0, 70, 30), color(20, 60, 60)]
-    )["harmonies"]["monochromatic"]
-    assert analyze_color_theory(
-        [color(0, 70, 30), color(21, 60, 60)]
-    )["harmonies"]["monochromatic"] == []
+    assert analyze_color_theory([color(0, 70, 30), color(20, 60, 60)])["harmonies"][
+        "monochromatic"
+    ]
+    assert (
+        analyze_color_theory([color(0, 70, 30), color(21, 60, 60)])["harmonies"][
+            "monochromatic"
+        ]
+        == []
+    )
     assert relationships([20, 20])["monochromatic"] == []
 
 

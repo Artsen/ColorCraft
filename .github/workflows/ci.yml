@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements-dev.txt
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: corepack pnpm@9.15.9 install --frozen-lockfile
+
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: corepack pnpm@9.15.9 exec playwright install --with-deps chromium
+
+      - name: Run complete validation
+        run: python check.py
+
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-diagnostics
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          if-no-files-found: ignore

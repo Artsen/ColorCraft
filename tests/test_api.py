@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from io import BytesIO
 
-from fastapi.testclient import TestClient
-from PIL import Image
-import pytest
-
-from config import RuntimeSettings
-from main import create_app
 import main
+import pytest
+from config import RuntimeSettings
+from fastapi.testclient import TestClient
+from main import create_app
+from PIL import Image
 
 
 @pytest.fixture()
@@ -67,9 +66,46 @@ def test_readiness(client: TestClient):
         "service": "colorcraft-api",
         "version": "1.0.0",
         "capabilities": [
-            "color extraction",
-            "palette analysis",
-            "color suggestions",
+            "image-color-extraction",
+            "palette-editing",
+            "harmony-analysis",
+            "contrast-review",
+            "palette-export",
+            "local-palette-library",
+        ],
+    }
+
+
+def test_runtime_metadata_uses_resolved_addresses():
+    runtime = RuntimeSettings.from_env(
+        {
+            "COLORCRAFT_WEB_HOST": "localhost",
+            "COLORCRAFT_WEB_PORT": "6200",
+            "COLORCRAFT_API_PORT": "6201",
+            "COLORCRAFT_ALLOWED_ORIGINS": "http://localhost:6200",
+        }
+    )
+    with TestClient(create_app(runtime)) as metadata_client:
+        response = metadata_client.get("/metadata")
+    assert response.status_code == 200
+    assert response.json() == {
+        "schemaVersion": 1,
+        "id": "colorcraft",
+        "name": "ColorCraft",
+        "descriptor": "Local color utility",
+        "version": "1.0.0",
+        "icon": "http://localhost:6200/colorcraft-mark.svg",
+        "webUrl": "http://localhost:6200",
+        "apiUrl": "http://127.0.0.1:6201",
+        "healthUrl": "http://127.0.0.1:6201/health",
+        "readinessUrl": "http://127.0.0.1:6201/ready",
+        "capabilities": [
+            "image-color-extraction",
+            "palette-editing",
+            "harmony-analysis",
+            "contrast-review",
+            "palette-export",
+            "local-palette-library",
         ],
     }
 
@@ -162,9 +198,7 @@ def test_invalid_image_returns_controlled_error(client: TestClient):
     assert "cannot identify image" not in response.text.lower()
 
 
-def test_upload_limit_returns_413(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-):
+def test_upload_limit_returns_413(client: TestClient, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(main, "MAX_UPLOAD_BYTES", 4)
     response = client.post(
         "/api/extract-colors?n_colors=3",
@@ -221,9 +255,7 @@ def test_invalid_hex_values(client: TestClient):
         ("hsl", {"h": 0, "s": 101, "l": 50}),
     ],
 )
-def test_out_of_range_rgb_or_hsl(
-    client: TestClient, field: str, value: dict[str, int]
-):
+def test_out_of_range_rgb_or_hsl(client: TestClient, field: str, value: dict[str, int]):
     invalid = red()
     invalid[field] = value
     response = client.post(
@@ -286,9 +318,7 @@ def test_suggestion_response_schema(client: TestClient):
     assert result["harmonies"][0]["suggestions"]
 
     suggestion = result["harmonies"][0]["suggestions"][0]
-    added = {
-        field: suggestion[field] for field in ("hex", "rgb", "hsl")
-    }
+    added = {field: suggestion[field] for field in ("hex", "rgb", "hsl")}
     analysis_response = client.post(
         "/api/analyze-colors",
         json={"colors": [red(), added]},
