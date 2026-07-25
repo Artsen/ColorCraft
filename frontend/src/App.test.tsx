@@ -52,15 +52,15 @@ describe('ColorCraft workspace', () => {
     const review = within(desktopNavigation()).getByRole('button', { name: 'Review' })
     expect(review).toBeEnabled()
     fireEvent.click(review)
-    expect(window.location.search).toBe('?view=review')
-    expect(screen.getByText('Review palette')).toBeInTheDocument()
+    expect(window.location.search).toBe('?view=review&review=overview')
+    expect(screen.getByText('Analyze this palette')).toBeInTheDocument()
 
     fireEvent.click(within(desktopNavigation()).getByRole('button', { name: 'Create' }))
     expect(screen.getByText('Palette')).toBeInTheDocument()
 
     act(() => window.history.back())
-    await waitFor(() => expect(window.location.search).toBe('?view=review'))
-    expect(screen.getByText('Review palette')).toBeInTheDocument()
+    await waitFor(() => expect(window.location.search).toBe('?view=review&review=overview'))
+    expect(screen.getByText('Analyze this palette')).toBeInTheDocument()
 
     act(() => window.history.forward())
     await waitFor(() => expect(window.location.search).toBe('?view=create'))
@@ -103,5 +103,32 @@ describe('ColorCraft workspace', () => {
     render(<App />)
     await waitFor(() => expect(window.location.search).toBe('?view=create'))
     expect(screen.getByText('Create a palette')).toBeInTheDocument()
+  })
+
+  it('restores the selected Review tab from URL history', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start manually' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add color' }))
+    window.history.pushState({}, '', '/?view=review&review=contrast')
+    act(() => window.dispatchEvent(new PopStateEvent('popstate')))
+    expect(await screen.findByRole('tab', { name: 'Contrast' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+  })
+
+  it('withholds stale analysis after the palette changes', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start manually' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add color' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Analyze palette' }))
+    expect(await screen.findByText('Palette summary')).toBeInTheDocument()
+    fireEvent.click(within(desktopNavigation()).getByRole('button', { name: 'Create' }))
+    const input = screen.getByLabelText('Color 1')
+    fireEvent.change(input, { target: { value: '#121212' } })
+    fireEvent.blur(input)
+    fireEvent.click(within(desktopNavigation()).getByRole('button', { name: 'Review' }))
+    expect(screen.getByText('Analysis is stale because the palette changed.')).toBeInTheDocument()
+    expect(screen.queryByText('Palette summary')).not.toBeInTheDocument()
   })
 })

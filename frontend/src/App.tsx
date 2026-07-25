@@ -1,31 +1,29 @@
-import {
-  Download,
-  Image as ImageIcon,
-  Pipette,
-  RefreshCw,
-  Upload,
-} from 'lucide-react'
+import { Pipette, RefreshCw, Upload } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { analyzeColors, extractColors } from './api/client'
 import type { Analysis, Color } from './api/contracts'
 import { errorMessage } from './api/errors'
-import AnalysisResults from './components/AnalysisResults'
 import AppShell from './components/AppShell'
 import ColorPalette from './components/ColorPalette'
-import ColorSuggestions from './components/ColorSuggestions'
-import ColorWheel from './components/ColorWheel'
+import ExportWorkspace from './components/ExportWorkspace'
 import ImageColorPicker from './components/ImageColorPicker'
 import ImageUpload, { validateImageFile } from './components/ImageUpload'
 import InlineNotice, { type NoticeState } from './components/InlineNotice'
+import ReviewWorkspace from './components/ReviewWorkspace'
 import Button from './components/ui/Button'
 import Dialog from './components/ui/Dialog'
-import Notice from './components/ui/Notice'
-import Panel from './components/ui/Panel'
-import SectionHeader from './components/ui/SectionHeader'
+import {
+  pruneRoleAssignments,
+  type PaletteRole,
+  type RoleAssignments,
+} from './contrast'
 import {
   colorFromHex,
   type PaletteColor,
+  type ReviewView,
   type WorkspaceView,
+  reviewFromLocation,
+  urlForReview,
   urlForView,
   viewFromLocation,
 } from './workspace'
@@ -51,11 +49,15 @@ function App() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [requestedColors, setRequestedColors] = useState(6)
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
+  const [analysisStale, setAnalysisStale] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [extracting, setExtracting] = useState(false)
   const [notice, setNotice] = useState<NoticeState | null>(null)
   const [confirmNewPalette, setConfirmNewPalette] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<number | 'add' | null>(null)
+  const [reviewTab, setReviewTab] = useState<ReviewView>(() => reviewFromLocation())
+  const [roles, setRoles] = useState<RoleAssignments>({})
+  const [paletteName, setPaletteName] = useState('Untitled palette')
   const changeImageInputRef = useRef<HTMLInputElement>(null)
   const sourceUrlRef = useRef<string | null>(null)
   const analysisRequestRef = useRef(0)
@@ -79,19 +81,37 @@ function App() {
   ) => {
     if (!canOpenView(target)) return
     const method = options.replace ? 'replaceState' : 'pushState'
-    window.history[method]({ view: target }, '', urlForView(target))
+    const url = target === 'review' ? urlForReview(reviewTab) : urlForView(target)
+    window.history[method]({ view: target, review: reviewTab }, '', url)
     setView(target)
+  }
+
+  const navigateReview = (target: ReviewView, options: { replace?: boolean } = {}) => {
+    const method = options.replace ? 'replaceState' : 'pushState'
+    window.history[method]({ view: 'review', review: target }, '', urlForReview(target))
+    setReviewTab(target)
+    setView('review')
   }
 
   useEffect(() => {
     const target = viewFromLocation()
-    window.history.replaceState({ view: target }, '', urlForView(target))
+    const targetReview = reviewFromLocation()
+    setReviewTab(targetReview)
+    window.history.replaceState(
+      { view: target, review: targetReview },
+      '',
+      target === 'review' ? urlForReview(targetReview) : urlForView(target),
+    )
   }, [])
 
   useEffect(() => {
     const onPopState = () => {
       const target = viewFromLocation()
-      if (canOpenView(target)) setView(target)
+      const targetReview = reviewFromLocation()
+      if (canOpenView(target)) {
+        setView(target)
+        setReviewTab(targetReview)
+      }
       else navigate('create', { replace: true })
     }
     window.addEventListener('popstate', onPopState)
@@ -101,6 +121,10 @@ function App() {
   useEffect(() => {
     if (!canOpenView(view)) navigate('create', { replace: true })
   }, [colors.length, view])
+
+  useEffect(() => {
+    setRoles((current) => pruneRoleAssignments(current, colors))
+  }, [colors])
 
   useEffect(
     () => () => {
@@ -115,6 +139,7 @@ function App() {
     analysisRequestRef.current += 1
     analysisControllerRef.current?.abort()
     analysisControllerRef.current = null
+    if (analysis) setAnalysisStale(true)
     setAnalysis(null)
   }
 
@@ -163,10 +188,12 @@ function App() {
     const previewUrl = URL.createObjectURL(file)
     sourceUrlRef.current = previewUrl
     setSource({ file, previewUrl, width: null, height: null })
+    setPaletteName(file.name.replace(/\.[^.]+$/, '') || 'Untitled palette')
     setManualPalette(false)
     setColors([])
     setSelectedIndex(null)
     setAnalysis(null)
+    setAnalysisStale(false)
     navigate('create')
     await extractPalette(file)
   }
@@ -178,6 +205,7 @@ function App() {
     setColors([manualStarter])
     setSelectedIndex(0)
     setAnalysis(null)
+    setAnalysisStale(false)
     setNotice(null)
     navigate('create')
   }
@@ -195,6 +223,9 @@ function App() {
     setColors([])
     setSelectedIndex(null)
     setAnalysis(null)
+    setAnalysisStale(false)
+    setRoles({})
+    setPaletteName('Untitled palette')
     setAnalyzing(false)
     setExtracting(false)
     setNotice(null)
@@ -278,6 +309,7 @@ function App() {
       const data = await analyzeColors(colors, controller.signal)
       if (requestId !== analysisRequestRef.current) return
       setAnalysis(data.analysis)
+      setAnalysisStale(false)
       navigate('review')
     } catch (error) {
       if (controller.signal.aborted) return
@@ -428,52 +460,34 @@ function App() {
   )
 
   const reviewView = (
-    <div className="content-stack">
-      {!analysis ? (
-        <Panel>
-          <SectionHeader
-            title="Review palette"
-            description="Run the current palette through harmony and contrast analysis."
-            icon={<ImageIcon size={18} aria-hidden="true" />}
-          />
-          <Button variant="primary" onClick={() => void handleAnalyze()} disabled={analyzing}>
-            {analyzing ? 'Analyzing…' : 'Analyze palette'}
-          </Button>
-        </Panel>
-      ) : (
-        <>
-          <Panel>
-            <SectionHeader
-              title="Color wheel"
-              description="The palette plotted by hue, saturation, and lightness."
-            />
-            <ColorWheel colors={colors} analysis={analysis} />
-          </Panel>
-          <AnalysisResults analysis={analysis} colors={colors} />
-        </>
-      )}
-      <ColorSuggestions colors={colors} onAddColor={addColor} />
-    </div>
+    <ReviewWorkspace
+      colors={colors}
+      analysis={analysis}
+      analysisStale={analysisStale}
+      analyzing={analyzing}
+      selectedTab={reviewTab}
+      roles={roles}
+      onSelectTab={navigateReview}
+      onAnalyze={() => void handleAnalyze()}
+      onAssignRole={(role: PaletteRole, hex) => {
+        setRoles((current) => {
+          const next = { ...current }
+          if (hex) next[role] = hex
+          else delete next[role]
+          return next
+        })
+      }}
+      onAddColor={addColor}
+    />
   )
 
   const exportView = (
-    <Panel>
-      <SectionHeader
-        title="Export palette"
-        description="Export formats will be designed in the dedicated Export workflow."
-        icon={<Download size={18} aria-hidden="true" />}
-      />
-      <Notice>
-        This view confirms the current palette is available. It does not save or export data yet.
-      </Notice>
-      <div className="export-preview" aria-label="Current palette preview">
-        {colors.map((color, index) => (
-          <span key={`${color.hex}-${index}`} style={{ backgroundColor: color.hex }}>
-            <code>{color.hex}</code>
-          </span>
-        ))}
-      </div>
-    </Panel>
+    <ExportWorkspace
+      colors={colors}
+      paletteName={paletteName}
+      roles={roles}
+      onPaletteNameChange={setPaletteName}
+    />
   )
 
   return (

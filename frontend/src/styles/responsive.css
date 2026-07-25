@@ -1,5 +1,7 @@
 @media (max-width: 1280px) {
   .source-palette-workspace { grid-template-columns: minmax(0, 1fr); }
+  .review-overview { grid-template-columns: minmax(0, 1fr); }
+  .role-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .source-image-stage img { max-height: 520px; }
   .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -78,6 +80,11 @@
   .compact-actions { width: 100%; }
   .picker-layout { grid-template-columns: 1fr; }
   .picker-details { border-top: 1px solid var(--color-border-subtle); border-left: 0; }
+  .role-result-list,
+  .compact-suggestion-group { grid-template-columns: 1fr; }
+  .relationship-card-heading,
+  .export-toolbar { align-items: stretch; flex-direction: column; }
+  .relationship-measurements { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 560px) {
@@ -114,6 +121,14 @@
   .extraction-controls { grid-template-columns: 1fr auto; }
   .extraction-controls input { grid-column: 1 / -1; width: 100%; }
   .extraction-controls > span { grid-column: 1 / -1; }
+  .role-grid { grid-template-columns: 1fr; }
+  .summary-list > div,
+  .export-name-field,
+  .suggestion-education article { grid-template-columns: 1fr; }
+  .suggestion-empty { align-items: stretch; flex-direction: column; }
+  .review-workspace > .tabs { width: 100%; }
+  .review-workspace > .tabs .tab { flex: 1 0 auto; }
+  .generated-preview textarea { min-height: 360px; }
 }
 
 @media (max-width: 430px) {

@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest'
+import { blue, red } from './test/fixtures'
+import {
+  generateCss,
+  generateJson,
+  generateSvg,
+  generateTailwind,
+  sanitizeFilename,
+} from './exporters'
+
+const palette = {
+  name: 'Launch </title><script>alert("x")</script> / Summer',
+  colors: [
+    { ...red, population: 0.7 },
+    { ...blue, population: 0.3 },
+  ],
+  roles: {
+    primaryText: red.hex,
+    pageBackground: blue.hex,
+  },
+}
+
+describe('browser palette exporters', () => {
+  it('generates ordered CSS custom properties with a safe comment', () => {
+    const output = generateCss(palette)
+    expect(output).toContain('--color-palette-1: #ff0000;')
+    expect(output.indexOf('#ff0000')).toBeLessThan(output.indexOf('#0000ff'))
+    expect(output).not.toContain('*/ Summer')
+  })
+
+  it('generates schema-versioned JSON with population and roles', () => {
+    const output = JSON.parse(generateJson(palette))
+    expect(output.schemaVersion).toBe(1)
+    expect(output.paletteName).toBe(palette.name)
+    expect(output.colors.map((color: { hex: string }) => color.hex)).toEqual([
+      '#FF0000',
+      '#0000FF',
+    ])
+    expect(output.colors[0].population).toBe(0.7)
+    expect(output.roleAssignments.primaryText).toBe('#ff0000')
+  })
+
+  it('generates a usable ordered Tailwind configuration fragment', () => {
+    const output = generateTailwind(palette)
+    expect(output).toContain("colors: {")
+    expect(output).toContain("'palette-1': '#ff0000'")
+    expect(output).toContain("'palette-2': '#0000ff'")
+  })
+
+  it('escapes user text in SVG and includes readable ordered swatches', () => {
+    const output = generateSvg(palette)
+    expect(output).toContain('&lt;/title&gt;&lt;script&gt;')
+    expect(output).not.toContain('<script>')
+    expect(output.indexOf('#FF0000')).toBeLessThan(output.indexOf('#0000FF'))
+    expect(output).toContain('<title id="title">')
+  })
+
+  it('sanitizes unusual and path-like filenames', () => {
+    expect(sanitizeFilename('../../Launch: Summer?')).toBe('launch-summer')
+    expect(sanitizeFilename('<script>')).toBe('script')
+    expect(sanitizeFilename('///')).toBe('colorcraft-palette')
+  })
+})

@@ -38,6 +38,30 @@ describe('interface primitives', () => {
     expect(screen.getByRole('tab', { name: 'Wheel' })).toHaveAttribute('aria-selected', 'true')
   })
 
+  it('moves tab selection and focus with arrow and End keys', () => {
+    const onSelect = vi.fn()
+    render(
+      <Tabs
+        label="Review sections"
+        options={[
+          { id: 'overview', label: 'Overview' },
+          { id: 'harmony', label: 'Harmony' },
+          { id: 'contrast', label: 'Contrast' },
+        ]}
+        selected="overview"
+        onSelect={onSelect}
+      />,
+    )
+    const overview = screen.getByRole('tab', { name: 'Overview' })
+    overview.focus()
+    fireEvent.keyDown(overview, { key: 'ArrowRight' })
+    expect(onSelect).toHaveBeenLastCalledWith('harmony')
+    expect(screen.getByRole('tab', { name: 'Harmony' })).toHaveFocus()
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Harmony' }), { key: 'End' })
+    expect(onSelect).toHaveBeenLastCalledWith('contrast')
+    expect(screen.getByRole('tab', { name: 'Contrast' })).toHaveFocus()
+  })
+
   it('renders an accessible modal and closes on Escape', () => {
     const onClose = vi.fn()
     render(<Dialog open title="Picker" onClose={onClose}>Content</Dialog>)
