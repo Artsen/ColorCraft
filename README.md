@@ -158,7 +158,7 @@ ColorCraft follows a clean client-server architecture:
 
 - **Python 3.11+** (3.11 recommended for best compatibility)
 - **Node.js 18+** (LTS version recommended)
-- **pnpm** (package manager for frontend)
+- **Corepack** (included with supported Node.js releases)
 - **pip** (Python package installer)
 
 **Platform Support:**
@@ -177,9 +177,6 @@ python --version  # Should be 3.11+
 # Check Node version
 node --version    # Should be 18+
 
-# Install pnpm globally
-npm install -g pnpm
-
 # Upgrade pip
 python -m pip install --upgrade pip
 ```
@@ -193,9 +190,6 @@ python3 --version  # Should be 3.11+
 # Check Node version
 node --version     # Should be 18+
 
-# Install pnpm globally
-npm install -g pnpm
-
 # Upgrade pip
 python3 -m pip install --upgrade pip
 ```
@@ -207,17 +201,15 @@ python3 -m pip install --upgrade pip
 **Windows:**
 ```powershell
 cd backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
+py -3.11 -m venv .venv311
+.\.venv311\Scripts\python.exe -m pip install -r requirements-dev.txt
 ```
 
 **macOS / Linux:**
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
 ```
 
 ### Option B: Global Installation
@@ -241,7 +233,7 @@ pip install -r requirements.txt
 
 ```bash
 cd frontend
-pnpm install
+corepack pnpm@9.15.9 install
 ```
 
 ### Dependencies Installed
@@ -252,7 +244,7 @@ pnpm install
 - **vite** (5.4.20): Fast build tool and dev server
 - **tailwindcss** (3.4.18): Utility-first CSS framework
 - **d3** (7.9.0): Data visualization library
-- **axios** (1.12.2): HTTP client for API calls
+- **zod** (3.25): Runtime validation for API contracts
 
 ## Running the Stack
 
@@ -271,11 +263,51 @@ backend/.venv/bin/python dev.py
 ```
 
 The launcher finds the backend virtual environment, starts FastAPI and Vite,
-and keeps both services attached to the same terminal. Press `Ctrl+C` to stop
-both.
+checks for obvious port conflicts, waits for API readiness, and keeps both
+services attached to the same terminal. If either service exits unexpectedly,
+the launcher stops the sibling process and returns a nonzero exit status.
+Press `Ctrl+C` to stop both.
 
-- App: http://localhost:5173
-- API health check: http://localhost:8000
+- App: http://127.0.0.1:5174
+- API: http://127.0.0.1:4100
+- Health: http://127.0.0.1:4100/health
+- Readiness: http://127.0.0.1:4100/ready
+
+These defaults do not conflict with Web Video Optimizer, which uses ports 5173
+and 4000.
+
+### Runtime configuration
+
+ColorCraft binds only to the local loopback interface by default. The launcher,
+API, and Vite read these environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `COLORCRAFT_WEB_HOST` | `127.0.0.1` | Vite bind host |
+| `COLORCRAFT_WEB_PORT` | `5174` | Vite port |
+| `COLORCRAFT_API_HOST` | `127.0.0.1` | FastAPI bind host |
+| `COLORCRAFT_API_PORT` | `4100` | FastAPI port |
+| `COLORCRAFT_ALLOW_LAN_ACCESS` | `false` | Explicitly permits non-loopback binding and LAN CORS origins |
+| `COLORCRAFT_ALLOWED_ORIGINS` | Resolved frontend origin | Comma-separated exact CORS origins |
+| `VITE_COLORCRAFT_API_URL` | Resolved API origin | Optional direct frontend API origin |
+
+Vite uses `strictPort`, so startup fails instead of silently moving to another
+port. Non-loopback hosts and LAN origins are rejected unless
+`COLORCRAFT_ALLOW_LAN_ACCESS=true`.
+
+Trusted LAN example:
+
+```powershell
+$env:COLORCRAFT_ALLOW_LAN_ACCESS = "true"
+$env:COLORCRAFT_WEB_HOST = "0.0.0.0"
+$env:COLORCRAFT_API_HOST = "0.0.0.0"
+$env:COLORCRAFT_ALLOWED_ORIGINS = "http://192.168.1.20:5174"
+.\dev.cmd
+```
+
+Replace the example address with the host computer's LAN address. ColorCraft
+has no authentication and is intended only for trusted local or explicitly
+enabled trusted LAN use, not public hosting.
 
 ### Two terminals (manual alternative)
 
@@ -283,14 +315,14 @@ both.
 
 **Windows:**
 ```powershell
-.\backend\.venv311\Scripts\python.exe backend\main.py
+cd backend
+.\.venv311\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 4100
 ```
 
 **macOS / Linux:**
 ```bash
 cd backend
-source venv/bin/activate  # If using virtual environment
-python main.py
+./.venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 4100
 ```
 
 **Expected output:**
@@ -298,10 +330,11 @@ python main.py
 INFO:     Started server process [XXXX]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Uvicorn running on http://127.0.0.1:4100 (Press CTRL+C to quit)
 ```
 
-**Verify:** Visit http://localhost:8000 → Should see `{"status":"ok","message":"ColorCraft API is running"}`
+**Verify:** Visit http://127.0.0.1:4100/ready and confirm the status is
+`ready`.
 
 #### Terminal 2: Frontend
 
@@ -314,12 +347,12 @@ corepack pnpm@9.15.9 dev
 ```
   VITE v5.4.20  ready in XXX ms
 
-  ➜  Local:   http://localhost:5173/
+  ➜  Local:   http://127.0.0.1:5174/
   ➜  Network: use --host to expose
   ➜  press h + enter to show help
 ```
 
-**Access:** Open http://localhost:5173 in your browser
+**Access:** Open http://127.0.0.1:5174 in your browser
 
 ## Using ColorCraft
 
@@ -510,7 +543,7 @@ ratio = (lighter_L + 0.05) / (darker_L + 0.05)
 
 ## API Endpoints
 
-### Health Check
+### Service Metadata
 ```http
 GET /
 ```
@@ -518,9 +551,24 @@ GET /
 ```json
 {
   "status": "ok",
-  "message": "ColorCraft API is running"
+  "service": "colorcraft-api",
+  "version": "1.0.0"
 }
 ```
+
+### Health and Readiness
+
+```http
+GET /health
+GET /ready
+```
+
+`/health` indicates that the API process is alive. `/ready` returns `ready`
+after color extraction, palette analysis, and color suggestions have
+initialized. The single-terminal launcher waits for this readiness response.
+
+Request and response validation details, including the canonical color-input
+strategy, are documented in [API Contracts](docs/api-contracts.md).
 
 ### Extract Colors
 ```http
@@ -542,9 +590,19 @@ file: <image_file>
       "hex": "#667eea",
       "rgb": {"r": 102, "g": 126, "b": 234},
       "hsl": {"h": 229, "s": 75, "l": 66}
+    },
+    {
+      "hex": "#f093fb",
+      "rgb": {"r": 240, "g": 147, "b": 251},
+      "hsl": {"h": 294, "s": 92, "l": 78}
+    },
+    {
+      "hex": "#764ba2",
+      "rgb": {"r": 118, "g": 75, "b": 162},
+      "hsl": {"h": 270, "s": 37, "l": 46}
     }
   ],
-  "count": 5
+  "count": 3
 }
 ```
 
@@ -559,6 +617,11 @@ Content-Type: application/json
       "hex": "#667eea",
       "rgb": {"r": 102, "g": 126, "b": 234},
       "hsl": {"h": 229, "s": 75, "l": 66}
+    },
+    {
+      "hex": "#f093fb",
+      "rgb": {"r": 240, "g": 147, "b": 251},
+      "hsl": {"h": 294, "s": 92, "l": 78}
     }
   ]
 }
@@ -569,21 +632,21 @@ Content-Type: application/json
 {
   "success": true,
   "analysis": {
-    "color_theory": {
+    "colorTheory": {
       "harmonies": {
         "complementary": [[0, 1]],
         "triadic": [[0, 1, 2]],
         "analogous": [[1, 2]],
         "tetradic": [],
-        "split_complementary": [],
+        "splitComplementary": [],
         "monochromatic": false
       },
-      "temperature_balance": {
+      "temperatureBalance": {
         "balance": "cool",
-        "warm_count": 1,
-        "cool_count": 4,
-        "warm_ratio": 0.2,
-        "cool_ratio": 0.8
+        "warmCount": 1,
+        "coolCount": 4,
+        "warmRatio": 0.2,
+        "coolRatio": 0.8
       },
       "score": 75,
       "tags": [
@@ -593,9 +656,9 @@ Content-Type: application/json
         "Balanced Saturation"
       ],
       "metrics": {
-        "hue_diversity": 45.2,
-        "saturation_avg": 68.4,
-        "lightness_range": 42
+        "hueDiversity": 45.2,
+        "saturationAvg": 68.4,
+        "lightnessRange": 42
       }
     },
     "accessibility": {
@@ -604,23 +667,28 @@ Content-Type: application/json
           "color1": "#667eea",
           "color2": "#ffffff",
           "ratio": 4.52,
-          "aa_normal": true,
-          "aa_large": true,
-          "aaa_normal": false,
-          "aaa_large": true
+          "aaNormal": true,
+          "aaLarge": true,
+          "aaaNormal": false,
+          "aaaLarge": true
         }
       ],
       "issues": [
         {
           "type": "low_contrast",
           "message": "Low contrast detected between #f1f1f1 and #aaaaaa (ratio: 2.1)",
-          "severity": "warning"
+          "severity": "warning",
+          "color1": "#f1f1f1",
+          "color2": "#aaaaaa",
+          "ratio": 2.1
         }
       ],
       "summary": {
-        "total_pairs": 10,
-        "aa_compliant": 7,
-        "aaa_compliant": 3
+        "totalPairs": 10,
+        "aaNormalPasses": 7,
+        "aaLargePasses": 8,
+        "aaaNormalPasses": 3,
+        "aaaLargePasses": 7
       }
     }
   }
@@ -693,14 +761,14 @@ cd backend
 pip install -r requirements.txt
 ```
 
-**Problem: `Address already in use` (port 8000)**
+**Problem: `Address already in use` (port 4100)**
 ```bash
 # Windows: Find and kill process
-netstat -ano | findstr :8000
+netstat -ano | findstr :4100
 taskkill /PID <PID> /F
 
 # macOS/Linux: Find and kill process
-lsof -ti:8000 | xargs kill -9
+lsof -ti:4100 | xargs kill -9
 ```
 
 **Problem: `ImportError: DLL load failed` (Windows)**
@@ -712,22 +780,22 @@ pip install numpy==1.26.2
 
 ### Frontend Issues
 
-**Problem: `ECONNREFUSED ::1:8000` or `ECONNREFUSED 127.0.0.1:8000`**
+**Problem: `ECONNREFUSED 127.0.0.1:4100`**
 ```bash
 # Solution 1: Ensure backend is running
 cd backend
-python main.py
+python -m uvicorn main:app --host 127.0.0.1 --port 4100
 
 # Solution 2: Restart frontend after backend starts
 cd frontend
 # Press Ctrl+C to stop
-pnpm dev
+corepack pnpm@9.15.9 dev
 ```
 
 **Problem: `pnpm: command not found`**
 ```bash
-# Solution: Install pnpm globally
-npm install -g pnpm
+# Solution: Run pnpm through Corepack
+corepack pnpm@9.15.9 install
 ```
 
 **Problem: Frontend won't start after `git pull`**
@@ -735,8 +803,8 @@ npm install -g pnpm
 # Solution: Clean reinstall
 cd frontend
 rm -rf node_modules pnpm-lock.yaml
-pnpm install
-pnpm dev
+corepack pnpm@9.15.9 install
+corepack pnpm@9.15.9 dev
 ```
 
 ### Image Upload Issues

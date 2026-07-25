@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
-import { Color, Analysis } from '../App'
+import type { Analysis, Color } from '../api/contracts'
 
 interface ColorWheelProps {
   colors: Color[]
@@ -58,7 +58,7 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
     }
 
     // Draw harmony connections
-    const harmonies = analysis.color_theory.harmonies
+    const harmonies = analysis.colorTheory.harmonies
 
     // Draw complementary connections
     if (harmonies.complementary && harmonies.complementary.length > 0) {
@@ -169,7 +169,7 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
       .attr('font-size', '48px')
       .attr('font-weight', 'bold')
       .attr('fill', '#8b5cf6')
-      .text(analysis.color_theory.score)
+      .text(analysis.colorTheory.score)
 
     wheelGroup
       .append('text')

@@ -1,5 +1,8 @@
 import { useState, useRef } from 'react'
-import { Color } from '../App'
+import { extractColors } from '../api/client'
+import type { Color } from '../api/contracts'
+import { errorMessage } from '../api/errors'
+import InlineNotice, { type NoticeState } from './InlineNotice'
 
 interface ImageUploadProps {
   onColorsExtracted: (colors: Color[], imageFile?: File, imageUrl?: string) => void
@@ -11,6 +14,7 @@ export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUp
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [nColors, setNColors] = useState(5)
   const [loading, setLoading] = useState(false)
+  const [notice, setNotice] = useState<NoticeState | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,23 +30,16 @@ export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUp
     if (!selectedFile) return
 
     setLoading(true)
+    setNotice(null)
     try {
-      const formData = new FormData()
-      formData.append('file', selectedFile)
-      formData.append('n_colors', nColors.toString())
-
-      const response = await fetch(`/api/extract-colors?n_colors=${nColors}`, {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        onColorsExtracted(data.colors, selectedFile, previewUrl || undefined)
-      }
+      const data = await extractColors(selectedFile, nColors)
+      onColorsExtracted(data.colors, selectedFile, previewUrl || undefined)
     } catch (error) {
       console.error('Error extracting colors:', error)
-      alert('Failed to extract colors. Please try again.')
+      setNotice({
+        message: errorMessage(error),
+        retry: () => void handleExtractColors(),
+      })
     } finally {
       setLoading(false)
     }
@@ -58,6 +55,12 @@ export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUp
           Upload an image to extract dominant colors, or skip to add colors manually
         </p>
       </div>
+
+      {notice && (
+        <div className="mb-6">
+          <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
+        </div>
+      )}
 
       {/* File Upload Area */}
       <div

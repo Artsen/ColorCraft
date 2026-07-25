@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Color } from '../App'
+import type { Color } from '../api/contracts'
 
 interface ImageColorPickerProps {
   imageUrl: string
@@ -11,7 +11,6 @@ export default function ImageColorPicker({ imageUrl, onColorPicked, onClose }: I
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const [hoveredColor, setHoveredColor] = useState<string>('#000000')
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -69,8 +68,6 @@ export default function ImageColorPicker({ imageUrl, onColorPicked, onClose }: I
     const scaleY = canvas.height / rect.height
     const canvasX = Math.floor(x * scaleX)
     const canvasY = Math.floor(y * scaleY)
-
-    setCursorPosition({ x: e.clientX, y: e.clientY })
 
     // Get pixel color
     if (canvasX >= 0 && canvasX < canvas.width && canvasY >= 0 && canvasY < canvas.height) {

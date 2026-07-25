@@ -1,195 +1,295 @@
-"""
-FastAPI backend for ColorCraft application.
-"""
-from fastapi import FastAPI, File, UploadFile, HTTPException
+"""FastAPI backend for the ColorCraft local application."""
+
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from typing import Annotated
+
+from fastapi import FastAPI, File, Query, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
+from fastapi.responses import JSONResponse
+from PIL import UnidentifiedImageError
+from pydantic import ValidationError
 import uvicorn
 
-from color_extractor import extract_colors
-from color_theory import analyze_color_theory
 from accessibility import analyze_accessibility
+from color_extractor import extract_colors
 from color_suggestions import generate_all_suggestions
-
-
-app = FastAPI(title="ColorCraft API", version="1.0.0")
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, specify exact origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+from color_theory import analyze_color_theory
+from config import RuntimeSettings
+from models import (
+    APIError,
+    AnalysisResponse,
+    AnalysisResult,
+    ColorValue,
+    ErrorResponse,
+    ExtractionResponse,
+    FullAnalysisResponse,
+    PaletteAnalysisRequest,
+    ReadinessResponse,
+    ServiceResponse,
+    SuggestionRequest,
+    SuggestionResponse,
+    ValidationIssue,
 )
 
 
-class Color(BaseModel):
-    hex: str
-    rgb: dict
-    hsl: dict
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+CAPABILITIES = [
+    "color extraction",
+    "palette analysis",
+    "color suggestions",
+]
+ColorCount = Annotated[int, Query(ge=3, le=10)]
 
 
-class ColorAnalysisRequest(BaseModel):
-    colors: List[Color]
+class APIException(Exception):
+    def __init__(self, status_code: int, code: str, message: str) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.code = code
+        self.message = message
 
 
-@app.get("/")
-async def root():
-    """Health check endpoint."""
-    return {"status": "ok", "message": "ColorCraft API is running"}
-
-
-@app.post("/api/extract-colors")
-async def extract_colors_endpoint(
-    file: UploadFile = File(...),
-    n_colors: int = 5
-):
-    """
-    Extract dominant colors from an uploaded image.
-    
-    Args:
-        file: Image file (JPG, PNG, WebP)
-        n_colors: Number of colors to extract (3-10)
-        
-    Returns:
-        List of extracted colors with hex, rgb, and hsl values
-    """
-    # Validate file type
-    allowed_types = ['image/jpeg', 'image/png', 'image/webp']
-    if file.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid file type. Allowed types: {', '.join(allowed_types)}"
-        )
-    
-    # Validate n_colors
-    if not 3 <= n_colors <= 10:
-        raise HTTPException(
-            status_code=400,
-            detail="n_colors must be between 3 and 10"
-        )
-    
-    try:
-        # Read file bytes
-        image_bytes = await file.read()
-        
-        # Extract colors
-        colors = extract_colors(image_bytes, n_colors)
-        
-        return {
-            "success": True,
-            "colors": colors,
-            "count": len(colors)
-        }
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error extracting colors: {str(e)}"
-        )
-
-
-@app.post("/api/analyze-colors")
-async def analyze_colors_endpoint(request: ColorAnalysisRequest):
-    """
-    Analyze color theory and accessibility for a set of colors.
-    
-    Args:
-        request: ColorAnalysisRequest with list of colors
-        
-    Returns:
-        Comprehensive color analysis including harmonies, accessibility, and score
-    """
-    try:
-        colors = [color.model_dump() for color in request.colors]
-        
-        # Perform color theory analysis
-        theory_analysis = analyze_color_theory(colors)
-        
-        # Perform accessibility analysis
-        accessibility_analysis = analyze_accessibility(colors)
-        
-        return {
-            "success": True,
-            "analysis": {
-                "color_theory": theory_analysis,
-                "accessibility": accessibility_analysis
-            }
-        }
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error analyzing colors: {str(e)}"
-        )
-
-
-@app.post("/api/suggest-colors")
-async def suggest_colors_endpoint(request: ColorAnalysisRequest):
-    """
-    Generate harmonious color suggestions for a palette.
-    
-    Args:
-        request: ColorAnalysisRequest with list of colors
-        
-    Returns:
-        Comprehensive color suggestions for each color in the palette
-    """
-    try:
-        colors = [color.model_dump() for color in request.colors]
-        
-        # Generate suggestions for each color
-        all_suggestions = []
-        for color in colors:
-            suggestions = generate_all_suggestions(color)
-            all_suggestions.append(suggestions)
-        
-        return {
-            "success": True,
-            "suggestions": all_suggestions
-        }
-    
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error generating suggestions: {str(e)}"
-        )
-
-
-@app.post("/api/full-analysis")
-async def full_analysis_endpoint(
-    file: UploadFile = File(...),
-    n_colors: int = 5
-):
-    """
-    Extract colors from image and perform full analysis in one request.
-    
-    Args:
-        file: Image file (JPG, PNG, WebP)
-        n_colors: Number of colors to extract (3-10)
-        
-    Returns:
-        Extracted colors with full color theory and accessibility analysis
-    """
-    # Extract colors
-    extract_result = await extract_colors_endpoint(file, n_colors)
-    colors = extract_result["colors"]
-    
-    # Analyze colors
-    color_objects = [Color(**color) for color in colors]
-    analysis_result = await analyze_colors_endpoint(
-        ColorAnalysisRequest(colors=color_objects)
+def error_response(
+    *,
+    status_code: int,
+    code: str,
+    message: str,
+    details: list[ValidationIssue] | None = None,
+) -> JSONResponse:
+    payload = ErrorResponse(
+        error=APIError(code=code, message=message, details=details)
     )
-    
-    return {
-        "success": True,
-        "colors": colors,
-        "analysis": analysis_result["analysis"]
-    }
+    return JSONResponse(
+        status_code=status_code,
+        content=payload.model_dump(by_alias=True, exclude_none=True),
+    )
+
+
+def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
+    runtime = settings or RuntimeSettings.from_env()
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        application.state.ready = True
+        yield
+        application.state.ready = False
+
+    application = FastAPI(
+        title="ColorCraft API",
+        version=runtime.application_version,
+        lifespan=lifespan,
+    )
+    application.state.runtime_settings = runtime
+    application.state.ready = False
+
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(runtime.allowed_origins),
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type"],
+    )
+
+    @application.exception_handler(APIException)
+    async def handle_api_exception(
+        _request: Request, exception: APIException
+    ) -> JSONResponse:
+        return error_response(
+            status_code=exception.status_code,
+            code=exception.code,
+            message=exception.message,
+        )
+
+    @application.exception_handler(RequestValidationError)
+    async def handle_validation_exception(
+        _request: Request, exception: RequestValidationError
+    ) -> JSONResponse:
+        details = [
+            ValidationIssue(
+                location=list(error["loc"]),
+                message=error["msg"],
+                type=error["type"],
+            )
+            for error in exception.errors()
+        ]
+        return error_response(
+            status_code=422,
+            code="validation_error",
+            message="Request validation failed.",
+            details=details,
+        )
+
+    @application.exception_handler(Exception)
+    async def handle_unexpected_exception(
+        _request: Request, _exception: Exception
+    ) -> JSONResponse:
+        return error_response(
+            status_code=500,
+            code="internal_error",
+            message="The ColorCraft API could not complete the request. "
+            "Check the terminal and retry.",
+        )
+
+    @application.get("/", response_model=ServiceResponse)
+    async def root() -> ServiceResponse:
+        return ServiceResponse(
+            status="ok",
+            service=runtime.service_name,
+            version=runtime.application_version,
+        )
+
+    @application.get("/health", response_model=ServiceResponse)
+    async def health() -> ServiceResponse:
+        return ServiceResponse(
+            status="ok",
+            service=runtime.service_name,
+            version=runtime.application_version,
+        )
+
+    @application.get("/ready", response_model=ReadinessResponse)
+    async def ready(request: Request) -> ReadinessResponse | JSONResponse:
+        is_ready = bool(request.app.state.ready)
+        response = ReadinessResponse(
+            status="ready" if is_ready else "not_ready",
+            service=runtime.service_name,
+            version=runtime.application_version,
+            capabilities=CAPABILITIES if is_ready else [],
+        )
+        if is_ready:
+            return response
+        return JSONResponse(
+            status_code=503,
+            content=response.model_dump(by_alias=True),
+        )
+
+    async def extract_uploaded_colors(
+        file: UploadFile, color_count: int
+    ) -> list[ColorValue]:
+        if file.content_type not in ALLOWED_IMAGE_TYPES:
+            allowed = ", ".join(sorted(ALLOWED_IMAGE_TYPES))
+            raise APIException(
+                415,
+                "invalid_file_type",
+                f"Choose a supported image type: {allowed}.",
+            )
+
+        image_bytes = await file.read()
+        if not image_bytes:
+            raise APIException(
+                422,
+                "image_decode_error",
+                "The image could not be decoded. Choose a valid JPG, PNG, or "
+                "WebP image.",
+            )
+
+        try:
+            extracted = extract_colors(image_bytes, color_count)
+            return [ColorValue.model_validate(color) for color in extracted]
+        except (UnidentifiedImageError, OSError, ValueError):
+            raise APIException(
+                422,
+                "image_decode_error",
+                "The image could not be decoded. Choose a valid JPG, PNG, or "
+                "WebP image.",
+            ) from None
+
+    @application.post(
+        "/api/extract-colors",
+        response_model=ExtractionResponse,
+        responses={415: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+    )
+    async def extract_colors_endpoint(
+        file: UploadFile = File(...),
+        n_colors: ColorCount = 5,
+    ) -> ExtractionResponse:
+        colors = await extract_uploaded_colors(file, n_colors)
+        return ExtractionResponse(
+            success=True,
+            colors=colors,
+            count=len(colors),
+        )
+
+    def analyze_palette(request: PaletteAnalysisRequest) -> AnalysisResult:
+        colors = [
+            color.model_dump(by_alias=False) for color in request.colors
+        ]
+        return AnalysisResult(
+            color_theory=analyze_color_theory(colors),
+            accessibility=analyze_accessibility(colors),
+        )
+
+    @application.post(
+        "/api/analyze-colors",
+        response_model=AnalysisResponse,
+        responses={422: {"model": ErrorResponse}},
+    )
+    async def analyze_colors_endpoint(
+        request: PaletteAnalysisRequest,
+    ) -> AnalysisResponse:
+        return AnalysisResponse(
+            success=True,
+            analysis=analyze_palette(request),
+        )
+
+    @application.post(
+        "/api/suggest-colors",
+        response_model=SuggestionResponse,
+        responses={422: {"model": ErrorResponse}},
+    )
+    async def suggest_colors_endpoint(
+        request: SuggestionRequest,
+    ) -> SuggestionResponse:
+        colors = [
+            color.model_dump(by_alias=False) for color in request.colors
+        ]
+        return SuggestionResponse(
+            success=True,
+            suggestions=[
+                generate_all_suggestions(color) for color in colors
+            ],
+        )
+
+    @application.post(
+        "/api/full-analysis",
+        response_model=FullAnalysisResponse,
+        responses={415: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+    )
+    async def full_analysis_endpoint(
+        file: UploadFile = File(...),
+        n_colors: ColorCount = 5,
+    ) -> FullAnalysisResponse:
+        colors = await extract_uploaded_colors(file, n_colors)
+        try:
+            request = PaletteAnalysisRequest(
+                colors=[
+                    color.model_dump(by_alias=False) for color in colors
+                ]
+            )
+        except ValidationError as error:
+            raise APIException(
+                500,
+                "internal_contract_error",
+                "Extracted colors did not satisfy the analysis contract.",
+            ) from error
+        return FullAnalysisResponse(
+            success=True,
+            colors=colors,
+            analysis=analyze_palette(request),
+        )
+
+    return application
+
+
+SETTINGS = RuntimeSettings.from_env()
+app = create_app(SETTINGS)
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
+    uvicorn.run(
+        app,
+        host=SETTINGS.api_host,
+        port=SETTINGS.api_port,
+    )

@@ -1,0 +1,11 @@
+{
+  "serviceName": "colorcraft-api",
+  "applicationVersion": "1.0.0",
+  "defaults": {
+    "webHost": "127.0.0.1",
+    "webPort": 5174,
+    "apiHost": "127.0.0.1",
+    "apiPort": 4100,
+    "readinessTimeoutSeconds": 30
+  }
+}

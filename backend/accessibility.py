@@ -78,8 +78,10 @@ def analyze_accessibility(colors):
         'issues': [],
         'summary': {
             'total_pairs': 0,
-            'aa_compliant': 0,
-            'aaa_compliant': 0
+            'aa_normal_passes': 0,
+            'aa_large_passes': 0,
+            'aaa_normal_passes': 0,
+            'aaa_large_passes': 0
         }
     }
     
@@ -104,18 +106,25 @@ def analyze_accessibility(colors):
             
             results['pairs'].append(pair_result)
             results['summary']['total_pairs'] += 1
-            
+
             if rating['aa_normal']:
-                results['summary']['aa_compliant'] += 1
+                results['summary']['aa_normal_passes'] += 1
+            if rating['aa_large']:
+                results['summary']['aa_large_passes'] += 1
             if rating['aaa_normal']:
-                results['summary']['aaa_compliant'] += 1
+                results['summary']['aaa_normal_passes'] += 1
+            if rating['aaa_large']:
+                results['summary']['aaa_large_passes'] += 1
             
             # Flag potential issues
             if not rating['aa_large']:
                 results['issues'].append({
                     'type': 'low_contrast',
                     'message': f"Low contrast detected between {color1['hex']} and {color2['hex']} (ratio: {rating['ratio']})",
-                    'severity': 'warning'
+                    'severity': 'warning',
+                    'color1': color1['hex'],
+                    'color2': color2['hex'],
+                    'ratio': rating['ratio']
                 })
     
     return results

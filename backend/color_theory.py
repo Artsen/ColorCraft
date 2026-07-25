@@ -155,7 +155,13 @@ def analyze_warm_cool_balance(colors):
     
     total = warm_count + cool_count
     if total == 0:
-        return {'balance': 'neutral', 'warm_ratio': 0, 'cool_ratio': 0}
+        return {
+            'balance': 'neutral',
+            'warm_count': 0,
+            'cool_count': 0,
+            'warm_ratio': 0,
+            'cool_ratio': 0
+        }
     
     warm_ratio = warm_count / len(colors)
     cool_ratio = cool_count / len(colors)
