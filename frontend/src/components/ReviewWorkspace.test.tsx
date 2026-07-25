@@ -20,6 +20,15 @@ function measuredAnalysis(): Analysis {
     ...baseAnalysis,
     colorTheory: {
       ...baseAnalysis.colorTheory,
+      temperatureBalance: {
+        balance: 'mixed',
+        warmCount: 4,
+        transitionalCount: 3,
+        coolCount: 3,
+        warmRatio: 0.4,
+        transitionalRatio: 0.3,
+        coolRatio: 0.3,
+      },
       metrics: { hueDiversity: 180, saturationAvg: 62, lightnessRange: 100 },
       harmonies: {
         ...baseAnalysis.colorTheory.harmonies,
@@ -88,6 +97,9 @@ describe('ReviewWorkspace outcomes', () => {
     expect(screen.getByText('Palette summary')).toBeInTheDocument()
     expect(screen.getByText('Wide lightness range · 100%')).toBeInTheDocument()
     expect(
+      screen.getByText(/40% warm · 30% transitional · 30% cool/),
+    ).toBeInTheDocument()
+    expect(
       screen.getByText(
         'This measures geometric color relationships, not subjective design quality.',
       ),
@@ -126,22 +138,60 @@ describe('ReviewWorkspace outcomes', () => {
         analysisStale={false}
         analyzing={false}
         selectedTab="contrast"
-        roles={{ pageBackground: white.hex, primaryText: black.hex }}
+        roles={{
+          pageBackground: white.hex,
+          surface: white.hex,
+          primaryText: black.hex,
+          border: black.hex,
+          focusIndicator: black.hex,
+        }}
         onSelectTab={vi.fn()}
         onAnalyze={vi.fn()}
         onAssignRole={onAssignRole}
         onAddColor={vi.fn()}
       />,
     )
-    expect(screen.getByText('21.00 to 1')).toBeInTheDocument()
+    expect(screen.getAllByText('21.00 to 1').length).toBeGreaterThan(0)
     expect(screen.getByText('Page heading')).toBeInTheDocument()
-    expect(screen.getAllByText('AA normal: Pass').length).toBeGreaterThan(0)
+    const textResult = screen
+      .getByRole('heading', { name: 'Primary text on page background' })
+      .closest('article')!
+    expect(
+      within(textResult).getByText(/AA normal text \(4.5:1\): Pass/),
+    ).toBeInTheDocument()
+
+    const borderResult = screen
+      .getByRole('heading', { name: 'Border against surface' })
+      .closest('article')!
+    expect(
+      within(borderResult).getByText(
+        /Non-text component contrast \(3:1\): Pass/,
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(borderResult).queryByText(/AA normal/),
+    ).not.toBeInTheDocument()
+
+    const focusResult = screen
+      .getByRole('heading', {
+        name: 'Focus indicator against page background',
+      })
+      .closest('article')!
+    expect(
+      within(focusResult).getByText(
+        /Focus-indicator color contrast \(3:1\): Pass/,
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(focusResult).getByText(/Size, area, thickness, visibility/),
+    ).toBeInTheDocument()
+    expect(within(focusResult).queryByText(/AA normal/)).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Surface'), {
       target: { value: red.hex },
     })
     expect(onAssignRole).toHaveBeenCalledWith('surface', red.hex)
     expect(
-      screen.getByText('Advanced: all-pairs contrast matrix'),
+      screen.getByText('Advanced: all-pairs text contrast matrix'),
     ).toBeInTheDocument()
     view.unmount()
   })

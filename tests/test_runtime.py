@@ -22,6 +22,7 @@ def test_default_resolved_ports():
     assert settings.api_host == "127.0.0.1"
     assert settings.api_port == 4100
     assert settings.allowed_origins == ("http://127.0.0.1:5174",)
+    assert settings.network_mode == "loopback"
     assert readiness_url(settings) == "http://127.0.0.1:4100/ready"
     assert metadata_url(settings) == "http://127.0.0.1:4100/metadata"
 
@@ -52,6 +53,22 @@ def test_lan_origin_requires_explicit_opt_in():
         RuntimeSettings.from_env(
             {"COLORCRAFT_ALLOWED_ORIGINS": "http://192.168.1.20:5174"}
         )
+
+
+def test_network_mode_uses_resolved_exposure_not_only_the_opt_in_flag():
+    opted_in_loopback = RuntimeSettings.from_env(
+        {"COLORCRAFT_ALLOW_LAN_ACCESS": "true"}
+    )
+    assert opted_in_loopback.network_mode == "loopback"
+
+    lan = RuntimeSettings.from_env(
+        {
+            "COLORCRAFT_ALLOW_LAN_ACCESS": "true",
+            "COLORCRAFT_WEB_HOST": "0.0.0.0",
+            "COLORCRAFT_ALLOWED_ORIGINS": "http://192.168.1.20:5174",
+        }
+    )
+    assert lan.network_mode == "lan"
 
 
 def test_child_command_construction():

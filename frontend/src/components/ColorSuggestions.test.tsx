@@ -40,7 +40,7 @@ function response(
           angle: '180°',
           description: 'Relationship details',
           useCases: ['Testing'],
-          mood: 'Measured',
+          commonAssociations: 'Color separation',
           examples: 'Example',
           suggestions: [suggested],
         },
@@ -165,5 +165,18 @@ describe('ColorSuggestions palette lifecycle', () => {
     expect(
       screen.getByRole('button', { name: 'Already in palette #0000ff' }),
     ).toBeDisabled()
+  })
+
+  it('qualifies suggestions and labels conventional guidance', async () => {
+    render(<ColorSuggestions colors={[red]} onAddColor={vi.fn()} />)
+    await loadSuggestions([red])
+    expect(
+      screen.getByText(/do not measure palette quality/i),
+    ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Explore all relationships' }),
+    )
+    expect(screen.getByText('Common associations')).toBeInTheDocument()
+    expect(screen.queryByText('Mood')).not.toBeInTheDocument()
   })
 })

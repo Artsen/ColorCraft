@@ -27,6 +27,7 @@ describe('AppShell navigation', () => {
         title="ColorCraft"
         sourceName="Local color utility"
         summary="Create a palette."
+        networkMode="loopback"
         onNavigate={vi.fn()}
         onNewPalette={vi.fn()}
       >
@@ -60,6 +61,7 @@ describe('AppShell navigation', () => {
         title="Current palette"
         sourceName="Untitled palette"
         summary="Two colors · created manually"
+        networkMode="lan"
         onNavigate={onNavigate}
         onNewPalette={vi.fn()}
       >
@@ -75,5 +77,9 @@ describe('AppShell navigation', () => {
     expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
     expect(themeControls[0]).toHaveValue('dark')
     expect(themeControls[1]).toHaveValue('dark')
+    expect(screen.getByText('LAN enabled')).toHaveAttribute(
+      'title',
+      expect.stringMatching(/trusted LAN access/i),
+    )
   })
 })

@@ -99,6 +99,7 @@ def test_runtime_metadata_uses_resolved_addresses():
         "apiUrl": "http://127.0.0.1:6201",
         "healthUrl": "http://127.0.0.1:6201/health",
         "readinessUrl": "http://127.0.0.1:6201/ready",
+        "networkMode": "loopback",
         "capabilities": [
             "image-color-extraction",
             "palette-editing",
@@ -108,6 +109,22 @@ def test_runtime_metadata_uses_resolved_addresses():
             "local-palette-library",
         ],
     }
+
+
+def test_runtime_metadata_reports_lan_mode_from_resolved_configuration():
+    runtime = RuntimeSettings.from_env(
+        {
+            "COLORCRAFT_ALLOW_LAN_ACCESS": "true",
+            "COLORCRAFT_WEB_HOST": "0.0.0.0",
+            "COLORCRAFT_API_HOST": "0.0.0.0",
+            "COLORCRAFT_ALLOWED_ORIGINS": "http://192.168.1.20:5174",
+            "VITE_COLORCRAFT_API_URL": "http://192.168.1.20:4100",
+        }
+    )
+    with TestClient(create_app(runtime)) as metadata_client:
+        response = metadata_client.get("/metadata")
+    assert response.status_code == 200
+    assert response.json()["networkMode"] == "lan"
 
 
 def test_default_local_cors(client: TestClient):
@@ -198,14 +215,28 @@ def test_invalid_image_returns_controlled_error(client: TestClient):
     assert "cannot identify image" not in response.text.lower()
 
 
-def test_upload_limit_returns_413(client: TestClient, monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    ("payload", "expected_status", "expected_code"),
+    [
+        (b"123", 422, "image_decode_error"),
+        (b"1234", 422, "image_decode_error"),
+        (b"12345", 413, "upload_too_large"),
+    ],
+)
+def test_upload_limit_boundary(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    payload: bytes,
+    expected_status: int,
+    expected_code: str,
+):
     monkeypatch.setattr(main, "MAX_UPLOAD_BYTES", 4)
     response = client.post(
         "/api/extract-colors?n_colors=3",
-        files={"file": ("large.png", b"12345", "image/png")},
+        files={"file": ("boundary.png", payload, "image/png")},
     )
-    assert response.status_code == 413
-    assert response.json()["error"]["code"] == "upload_too_large"
+    assert response.status_code == expected_status
+    assert response.json()["error"]["code"] == expected_code
 
 
 def test_invalid_file_type(client: TestClient):
@@ -316,6 +347,8 @@ def test_suggestion_response_schema(client: TestClient):
     result = response.json()["suggestions"][0]
     assert set(result) == {"baseColor", "harmonies"}
     assert result["harmonies"][0]["suggestions"]
+    assert "commonAssociations" in result["harmonies"][0]
+    assert "mood" not in result["harmonies"][0]
 
     suggestion = result["harmonies"][0]["suggestions"][0]
     added = {field: suggestion[field] for field in ("hex", "rgb", "hsl")}

@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { analyzeColors, extractColors, suggestColors } from './client'
+import {
+  analyzeColors,
+  extractColors,
+  getMetadata,
+  suggestColors,
+} from './client'
 import { ColorCraftApiError } from './errors'
 import { analysis, blue, red } from '../test/fixtures'
 
@@ -35,6 +40,32 @@ describe('ColorCraft API client', () => {
     expect(result.colors[0]).toMatchObject(red)
     expect(result.colors[0].population).toBeCloseTo(1 / 3)
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('parses the runtime network mode from metadata', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          schemaVersion: 1,
+          id: 'colorcraft',
+          name: 'ColorCraft',
+          descriptor: 'Local color utility',
+          version: '1.0.0',
+          icon: 'http://127.0.0.1:5174/colorcraft-mark.svg',
+          webUrl: 'http://127.0.0.1:5174',
+          apiUrl: 'http://127.0.0.1:4100',
+          healthUrl: 'http://127.0.0.1:4100/health',
+          readinessUrl: 'http://127.0.0.1:4100/ready',
+          networkMode: 'loopback',
+          capabilities: ['contrast-review'],
+        }),
+      ),
+    )
+
+    await expect(getMetadata()).resolves.toMatchObject({
+      networkMode: 'loopback',
+    })
   })
 
   it('rejects failed HTTP responses', async () => {

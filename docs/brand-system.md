@@ -20,6 +20,11 @@ local utility rather than a dashboard and does not imply accounts or cloud sync.
 - Prefer concrete verbs such as extract, inspect, compare, and add.
 - Avoid generic AI language and inflated claims.
 - Keep helper text short and place detail beside the result it qualifies.
+- Use **review** or **measure** for defined properties. Do not say that
+  ColorCraft validates aesthetic quality or complete accessibility.
+- Use **Loopback only** and **LAN enabled** for resolved network status. Do not
+  substitute *Local only*, *Secure*, *Private*, or *Offline*.
+- Present suggestion associations as conventional guidance, not measured fact.
 
 This document governs product voice, visual identity, and interface tone.
 [ColorCraft Technical English](./writing-style.md) governs procedural and
@@ -85,8 +90,8 @@ menus use elevated shadow, and modal dialogs use dialog shadow.
 
 - Desktop uses a compact 256px sidebar with product identity, New palette,
   workflow navigation, and theme selection.
-- Workspace headers describe the current palette source and always state that
-  work is local only.
+- Workspace headers describe the current palette source and show the
+  metadata-derived network state as `Loopback only` or `LAN enabled`.
 - Create is always available. Review and Export reflect real palette
   prerequisites and explain disabled states.
 - At 1024px and below, the sidebar becomes a mobile top bar and bottom

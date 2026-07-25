@@ -7,7 +7,7 @@ import {
   Upload,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { analyzeColors, extractColors } from './api/client'
+import { analyzeColors, extractColors, getMetadata } from './api/client'
 import type { Analysis, Color } from './api/contracts'
 import { errorMessage } from './api/errors'
 import AppShell from './components/AppShell'
@@ -76,6 +76,9 @@ function App() {
   const [analyzing, setAnalyzing] = useState(false)
   const [extracting, setExtracting] = useState(false)
   const [notice, setNotice] = useState<NoticeState | null>(null)
+  const [networkMode, setNetworkMode] = useState<'loopback' | 'lan' | null>(
+    null,
+  )
   const [confirmNewPalette, setConfirmNewPalette] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<number | 'add' | null>(null)
   const [reviewTab, setReviewTab] = useState<ReviewView>(() =>
@@ -163,6 +166,18 @@ function App() {
       '',
       target === 'review' ? urlForReview(targetReview) : urlForView(target),
     )
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void getMetadata(controller.signal)
+      .then((metadata) => setNetworkMode(metadata.networkMode))
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          console.error('Could not read runtime metadata:', error)
+        }
+      })
+    return () => controller.abort()
   }, [])
 
   useEffect(() => {
@@ -559,7 +574,7 @@ function App() {
       ? `${savedPalettes.length} saved ${savedPalettes.length === 1 ? 'palette' : 'palettes'} · stored in this browser`
       : paletteActive
         ? `${colorCountLabel(colors.length)} · ${paletteSourceType === 'image' ? 'created from an image' : 'created manually'}`
-        : 'Extract, refine, and validate color palettes from images.'
+        : 'Extract, refine, and review color palettes from images.'
 
   const createView = !paletteActive ? (
     <ImageUpload
@@ -807,6 +822,7 @@ function App() {
         title={headerTitle}
         sourceName={headerSource}
         summary={headerSummary}
+        networkMode={networkMode}
         onNavigate={navigate}
         onNewPalette={requestNewPalette}
         recentPalettes={savedPalettes.map(({ id, name }) => ({ id, name }))}

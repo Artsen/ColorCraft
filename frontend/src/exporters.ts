@@ -1,5 +1,10 @@
 import type { PaletteColor } from './workspace'
-import { paletteRoles, roleLabels, type RoleAssignments } from './contrast'
+import {
+  contrastRatio,
+  paletteRoles,
+  roleLabels,
+  type RoleAssignments,
+} from './contrast'
 
 export type ExportFormat = 'css' | 'json' | 'tailwind' | 'svg'
 
@@ -106,9 +111,15 @@ export function generateSvg({ name, colors }: PaletteExport): string {
   const rows = colors
     .map((color, index) => {
       const y = 70 + index * rowHeight
+      const black = { rgb: { r: 0, g: 0, b: 0 } }
+      const white = { rgb: { r: 255, g: 255, b: 255 } }
+      const labelColor =
+        contrastRatio(color, black) >= contrastRatio(color, white)
+          ? '#000000'
+          : '#ffffff'
       return `  <g aria-label="Color ${index + 1}: ${escapeXml(color.hex.toUpperCase())}">
     <rect x="24" y="${y}" width="672" height="56" rx="8" fill="${escapeXml(color.hex)}"/>
-    <text x="44" y="${y + 35}" fill="${color.hsl.l > 55 ? '#111827' : '#ffffff'}" font-family="system-ui, sans-serif" font-size="18" font-weight="700">${index + 1}. ${escapeXml(color.hex.toUpperCase())}</text>
+    <text x="44" y="${y + 35}" fill="${labelColor}" font-family="system-ui, sans-serif" font-size="18" font-weight="700">${index + 1}. ${escapeXml(color.hex.toUpperCase())}</text>
   </g>`
     })
     .join('\n')

@@ -114,7 +114,7 @@ export default function ColorSuggestions({
     <Panel>
       <SectionHeader
         title="Palette suggestions"
-        description="Choose a base color, then compare a few useful geometric approaches."
+        description="Choose a base color, then compare documented geometric transformations."
         action={
           hasCurrentSuggestions ? (
             <Button
@@ -131,6 +131,11 @@ export default function ColorSuggestions({
       {notice && (
         <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
       )}
+      <Notice>
+        Suggestions are generated transformations and optional design
+        directions. They do not measure palette quality. Review contrast and
+        assigned roles before use.
+      </Notice>
 
       <div className="panel-stack">
         <div>
@@ -223,6 +228,7 @@ function SuggestionResults({
                     <span
                       className="suggestion-preview"
                       style={{ backgroundColor: suggestion.hex }}
+                      role="img"
                       aria-label={`Suggested color ${suggestion.hex}`}
                     />
                     <code>{suggestion.hex}</code>
@@ -274,15 +280,15 @@ function SuggestionResults({
                 <p>{harmony.description}</p>
                 <dl>
                   <div>
-                    <dt>Mood</dt>
-                    <dd>{harmony.mood}</dd>
+                    <dt>Common associations</dt>
+                    <dd>{harmony.commonAssociations}</dd>
                   </div>
                   <div>
                     <dt>Examples</dt>
                     <dd>{harmony.examples}</dd>
                   </div>
                   <div>
-                    <dt>Useful for</dt>
+                    <dt>Common applications</dt>
                     <dd>{harmony.useCases.join(', ')}</dd>
                   </div>
                 </dl>

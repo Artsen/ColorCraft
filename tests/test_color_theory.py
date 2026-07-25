@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 from color_theory import (
     analyze_color_theory,
+    analyze_warm_cool_balance,
     circular_dispersion,
     circular_mean,
     hue_distance,
@@ -88,6 +89,55 @@ def test_neutral_colors_are_not_hue_evidence():
     assert all(not found for found in theory["harmonies"].values())
     assert theory["metrics"]["hue_diversity"] == 0
     assert theory["relationship_fit"] == 0
+
+
+def test_temperature_boundaries_categorize_every_meaningful_hue_once():
+    result = analyze_warm_cool_balance(
+        [color(hue) for hue in [0, 60, 61, 119, 120, 299, 300, 301]]
+    )
+    assert result == {
+        "balance": "mixed",
+        "warm_count": 4,
+        "transitional_count": 2,
+        "cool_count": 2,
+        "warm_ratio": 0.5,
+        "transitional_ratio": 0.25,
+        "cool_ratio": 0.25,
+    }
+
+
+@pytest.mark.parametrize(
+    ("hues", "expected"),
+    [
+        ([0, 20, 40, 60, 180], "warm"),
+        ([61, 75, 90, 119, 180], "transitional"),
+        ([120, 180, 240, 299, 0], "cool"),
+        ([0, 90, 180], "mixed"),
+    ],
+)
+def test_temperature_classification_uses_a_seventy_percent_dominance_threshold(
+    hues: list[int], expected: str
+):
+    result = analyze_warm_cool_balance([color(hue) for hue in hues])
+    assert result["balance"] == expected
+    assert (
+        result["warm_ratio"] + result["transitional_ratio"] + result["cool_ratio"]
+    ) == pytest.approx(1, abs=0.011)
+
+
+def test_low_saturation_colors_are_excluded_from_temperature_evidence():
+    result = analyze_warm_cool_balance(
+        [color(0, saturation=9), color(90, saturation=0)]
+    )
+    assert result == {
+        "balance": "neutral",
+        "warm_count": 0,
+        "transitional_count": 0,
+        "cool_count": 0,
+        "warm_ratio": 0.0,
+        "transitional_ratio": 0.0,
+        "cool_ratio": 0.0,
+    }
 
 
 def test_relationship_output_is_explainable():

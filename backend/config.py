@@ -118,6 +118,25 @@ class RuntimeSettings:
         host = self.api_host if is_loopback_host(self.api_host) else "127.0.0.1"
         return origin_for(host, self.api_port)
 
+    @property
+    def network_mode(self) -> str:
+        """Return the exposure mode from the resolved hosts and browser origins."""
+        configured_hosts = [self.web_host, self.api_host]
+        configured_hosts.extend(
+            parsed.hostname
+            for origin in self.allowed_origins
+            if (parsed := urlparse(origin)).hostname
+        )
+        if self.vite_api_url:
+            parsed_api_url = urlparse(self.vite_api_url)
+            if parsed_api_url.hostname:
+                configured_hosts.append(parsed_api_url.hostname)
+        return (
+            "loopback"
+            if all(is_loopback_host(host) for host in configured_hosts)
+            else "lan"
+        )
+
     @classmethod
     def from_env(
         cls, environment: Mapping[str, str] | None = None

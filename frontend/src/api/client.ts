@@ -1,9 +1,11 @@
 import type { ZodType } from 'zod'
 import {
   analysisResponseSchema,
+  applicationMetadataSchema,
   extractionResponseSchema,
   suggestionResponseSchema,
   type AnalysisResponse,
+  type ApplicationMetadata,
   type Color,
   type ExtractionResponse,
   type SuggestionResponse,
@@ -74,6 +76,15 @@ export function extractColors(
     extractionResponseSchema,
     { method: 'POST', body: formData, signal },
   )
+}
+
+export function getMetadata(
+  signal?: AbortSignal,
+): Promise<ApplicationMetadata> {
+  return request('/metadata', applicationMetadataSchema, {
+    method: 'GET',
+    signal,
+  })
 }
 
 export function analyzeColors(

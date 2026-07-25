@@ -85,13 +85,17 @@ The frontend sends 2–10 normalized palette colors to
 6. Returns a camelCase `analysis` contract.
 
 The frontend combines the API analysis with current role assignments. Contrast
-shows role-specific checks and an advanced all-pairs contrast matrix.
+uses an explicit `text`, `nonText`, or `focus` discriminator for each role
+check. Text checks use AA and AAA text thresholds. Non-text and focus color
+checks use 3:1 without text badges. The advanced matrix remains a text-contrast
+exploration table.
 
 ## Suggestions flow
 
 The frontend sends 1–10 colors to `POST /api/suggest-colors`. The API generates
-suggestion approaches for each base color. Suggestions do not change the
-palette automatically. The user must select **Add**.
+geometric suggestion approaches for each base color. `commonAssociations` and
+`useCases` contain qualified conventional guidance. Suggestions do not change
+the palette automatically. The user must select **Add**.
 
 The frontend fingerprints the current palette. A palette color change
 invalidates the displayed suggestion results.
@@ -106,8 +110,9 @@ The frontend generates every export without an API request:
 - SVG swatch sheet
 
 CSS and Tailwind comments replace line breaks and the `*/` sequence in the
-palette name. SVG output escapes `&`, `<`, `>`, `"`, and `'`. Download uses an
-object URL and revokes the URL after the browser starts the download.
+palette name. SVG output escapes `&`, `<`, `>`, `"`, and `'`. Each swatch label
+uses black or white according to the higher measured contrast ratio. Download
+uses an object URL and revokes the URL after the browser starts the download.
 
 Export does not create or update a saved palette record.
 
@@ -129,6 +134,10 @@ Source-image bytes are not part of a saved palette record. See
 The default services bind to `127.0.0.1`. CORS accepts the resolved web origin.
 Wildcard origins are rejected. Non-loopback hosts and origins require
 `COLORCRAFT_ALLOW_LAN_ACCESS=true`.
+
+Runtime metadata reports `networkMode` from resolved hosts and browser origins.
+The frontend uses this field for the shell status and does not infer exposure
+from a display URL.
 
 ColorCraft does not provide authentication. Trusted LAN access expands the
 network boundary. Do not expose the development API directly to an untrusted

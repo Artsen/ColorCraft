@@ -13,6 +13,21 @@ export const paletteRoles = [
 
 export type PaletteRole = (typeof paletteRoles)[number]
 export type RoleAssignments = Partial<Record<PaletteRole, string>>
+export type ContrastCheckKind = 'text' | 'nonText' | 'focus'
+
+export const textContrastThresholds = {
+  aaNormal: 4.5,
+  aaLarge: 3,
+  aaaNormal: 7,
+  aaaLarge: 4.5,
+} as const
+export const nonTextContrastThreshold = 3
+
+export interface ContrastResult {
+  label: string
+  threshold: number
+  pass: boolean
+}
 
 export const roleLabels: Record<PaletteRole, string> = {
   pageBackground: 'Page background',
@@ -30,6 +45,7 @@ export const roleChecks: Array<{
   label: string
   foreground: PaletteRole
   background: PaletteRole
+  kind: ContrastCheckKind
   preview: 'page' | 'surface' | 'action' | 'border' | 'focus'
 }> = [
   {
@@ -37,6 +53,7 @@ export const roleChecks: Array<{
     label: 'Primary text on page background',
     foreground: 'primaryText',
     background: 'pageBackground',
+    kind: 'text',
     preview: 'page',
   },
   {
@@ -44,6 +61,7 @@ export const roleChecks: Array<{
     label: 'Secondary text on surface',
     foreground: 'secondaryText',
     background: 'surface',
+    kind: 'text',
     preview: 'surface',
   },
   {
@@ -51,6 +69,7 @@ export const roleChecks: Array<{
     label: 'Action text on primary action',
     foreground: 'actionText',
     background: 'primaryAction',
+    kind: 'text',
     preview: 'action',
   },
   {
@@ -58,6 +77,7 @@ export const roleChecks: Array<{
     label: 'Border against surface',
     foreground: 'border',
     background: 'surface',
+    kind: 'nonText',
     preview: 'border',
   },
   {
@@ -65,6 +85,7 @@ export const roleChecks: Array<{
     label: 'Focus indicator against page background',
     foreground: 'focusIndicator',
     background: 'pageBackground',
+    kind: 'focus',
     preview: 'focus',
   },
   {
@@ -72,6 +93,7 @@ export const roleChecks: Array<{
     label: 'Focus indicator against surface',
     foreground: 'focusIndicator',
     background: 'surface',
+    kind: 'focus',
     preview: 'focus',
   },
 ]
@@ -104,6 +126,46 @@ export function contrastRatio(
     relativeLuminance(background),
   )
   return (lighter + 0.05) / (darker + 0.05)
+}
+
+export function resultsForContrastCheck(
+  kind: ContrastCheckKind,
+  ratio: number,
+): ContrastResult[] {
+  if (kind === 'text') {
+    return [
+      {
+        label: 'AA normal text',
+        threshold: textContrastThresholds.aaNormal,
+        pass: ratio >= textContrastThresholds.aaNormal,
+      },
+      {
+        label: 'AA large text',
+        threshold: textContrastThresholds.aaLarge,
+        pass: ratio >= textContrastThresholds.aaLarge,
+      },
+      {
+        label: 'AAA normal text',
+        threshold: textContrastThresholds.aaaNormal,
+        pass: ratio >= textContrastThresholds.aaaNormal,
+      },
+      {
+        label: 'AAA large text',
+        threshold: textContrastThresholds.aaaLarge,
+        pass: ratio >= textContrastThresholds.aaaLarge,
+      },
+    ]
+  }
+  return [
+    {
+      label:
+        kind === 'focus'
+          ? 'Focus-indicator color contrast'
+          : 'Non-text component contrast',
+      threshold: nonTextContrastThreshold,
+      pass: ratio >= nonTextContrastThreshold,
+    },
+  ]
 }
 
 export function pruneRoleAssignments(

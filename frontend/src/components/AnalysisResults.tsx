@@ -65,11 +65,21 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
 
         <div className="split-grid analysis-detail-grid">
           <section className="analysis-section">
-            <h3>Temperature balance</h3>
+            <h3>Temperature evidence</h3>
             <div className="detail-list">
               <div className="detail-row">
                 <span>Balance</span>
                 <strong>{colorTheory.temperatureBalance.balance}</strong>
+              </div>
+              <div className="detail-row">
+                <span>Transitional colors</span>
+                <strong>
+                  {colorTheory.temperatureBalance.transitionalCount} (
+                  {(
+                    colorTheory.temperatureBalance.transitionalRatio * 100
+                  ).toFixed(0)}
+                  %)
+                </strong>
               </div>
               <div className="detail-row">
                 <span>Warm colors</span>

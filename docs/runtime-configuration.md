@@ -82,6 +82,18 @@ termination when the network requires transport encryption.
 - `VITE_COLORCRAFT_API_URL` must be reachable from the browser.
 - Environment variables override `runtime-config.json`.
 
+## Network status
+
+`GET /metadata` returns a machine-readable `networkMode`:
+
+- `loopback`: All resolved bind hosts and browser origins are loopback
+  addresses.
+- `lan`: At least one resolved bind host or browser origin is not loopback.
+
+The application shell shows **Loopback only** or **LAN enabled** from this
+field. Setting `COLORCRAFT_ALLOW_LAN_ACCESS=true` without a non-loopback host or
+origin does not change the status to **LAN enabled**.
+
 Static dashboard defaults are in [`app-manifest.json`](../app-manifest.json).
 Dashboard consumers must use `/metadata` when they need runtime-resolved URLs.
 See [Dashboard manifest](./dashboard-manifest.md).

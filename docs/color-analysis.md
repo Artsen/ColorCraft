@@ -132,8 +132,17 @@ accessibility score, or design recommendation.
 - Hue diversity is circular standard deviation in degrees, capped at 180.
 - Average saturation is the arithmetic mean of HSL saturation.
 - Lightness range is the maximum HSL lightness minus the minimum.
-- Temperature ratios count meaningful hues in the current warm and cool
-  intervals. They do not evaluate aesthetic balance.
+- Temperature evidence assigns every meaningful hue to one category:
+  - Warm: 300 through 360 degrees and 0 through 60 degrees
+  - Transitional: greater than 60 and less than 120 degrees
+  - Cool: 120 through less than 300 degrees
+- A hue at 300 degrees is warm so that the categories do not overlap.
+- Low-saturation colors are excluded from temperature evidence.
+- `warmRatio`, `transitionalRatio`, and `coolRatio` use all categorized
+  meaningful hues as the denominator.
+- A category is dominant when its ratio is greater than 70%. The result is
+  `mixed` when no category exceeds 70% and `neutral` when no meaningful hue
+  evidence exists.
 
 ## Contrast calculation
 
@@ -150,7 +159,7 @@ Contrast ratio is:
 (lighter luminance + 0.05) / (darker luminance + 0.05)
 ```
 
-The API reports:
+The API all-pairs result reports text thresholds:
 
 | Result | Minimum ratio |
 | --- | ---: |
@@ -159,17 +168,30 @@ The API reports:
 | WCAG AAA normal text | 7:1 |
 | WCAG AAA large text | 4.5:1 |
 
-The API evaluates every palette color pair. Review also evaluates assigned
-color roles in meaningful interface combinations.
+The API evaluates every palette color pair as text-contrast exploration data.
+Review applies the ratio to typed role checks:
+
+- Text checks show the AA and AAA normal-text and large-text thresholds.
+- Non-text component checks use a 3:1 threshold and do not show text badges.
+- Focus-indicator color checks use a 3:1 threshold for each evaluated adjacent
+  color pair.
+
+A non-text result evaluates color contrast only. It does not evaluate component
+size, shape, state, or other accessibility requirements. A focus-indicator
+result does not evaluate size, area, thickness, visibility, or the
+focused-versus-unfocused appearance.
 
 A passing ratio applies only to the evaluated contrast pair and text category.
 It does not prove complete interface accessibility or WCAG conformance.
 
 ## Suggestions
 
-Suggestions are optional calculations from a selected base color. A suggestion
-does not confirm that a detected relationship exists in the current palette.
-The frontend invalidates suggestions when any palette color changes.
+Suggestions are optional geometric transformations from a selected base color.
+Descriptions lead with hue, saturation, or lightness changes. `useCases` and
+`commonAssociations` contain conventional guidance, not measured suitability.
+A suggestion does not confirm that a detected relationship exists in the
+current palette. The frontend invalidates suggestions when any palette color
+changes.
 
 ## Export accuracy and escaping
 
@@ -177,8 +199,9 @@ JSON export uses `schemaVersion: 1`. JSON includes ordered colors, normalized
 color values, optional population, color-role metadata, and role assignments.
 
 CSS and Tailwind output sanitize palette names used in comments. SVG output
-escapes XML-sensitive characters. Export generation does not alter the palette
-and does not save it to IndexedDB.
+escapes XML-sensitive characters. Each SVG swatch compares measured contrast
+against black and white and uses the label color with the higher ratio. Export
+generation does not alter the palette and does not save it to IndexedDB.
 
 ## Interpretation limits
 
@@ -190,3 +213,4 @@ and does not save it to IndexedDB.
 - Contrast is independent of hue geometry.
 - Contrast evaluation covers one accessibility requirement.
 - Suggestions are recommendations, not measurements.
+- Temperature categories describe hue intervals, not aesthetic balance.

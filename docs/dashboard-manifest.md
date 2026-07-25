@@ -8,7 +8,8 @@ Static addresses are defaults only. Environment variables can change ports or ho
 
 1. Discover the application from `app-manifest.json`.
 2. Query the manifest's metadata path on the candidate API address.
-3. Treat `/metadata` as authoritative for runtime-resolved URLs.
+3. Treat `/metadata` as authoritative for runtime-resolved URLs and
+   `networkMode`.
 4. Use `/ready` for dependency readiness and `/health` for liveness.
 
 Current capability slugs are:
@@ -20,4 +21,7 @@ Current capability slugs are:
 - `palette-export`
 - `local-palette-library`
 
-The manifest contract and public copy are tested for equality. Runtime tests verify that metadata respects configuration overrides.
+The manifest contract and public copy are tested for equality. Runtime tests
+verify that metadata respects configuration overrides. The static manifest
+does not guess the network exposure mode. Runtime metadata reports `loopback`
+or `lan` from the resolved configuration.

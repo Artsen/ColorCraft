@@ -1,9 +1,9 @@
 import { useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { ImagePlus, Upload } from 'lucide-react'
+import { MAX_IMAGE_BYTES, MAX_IMAGE_MEGABYTES } from '../limits'
 import Button from './ui/Button'
 import Notice from './ui/Notice'
 
-export const MAX_IMAGE_BYTES = 15 * 1024 * 1024
 const acceptedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
 export function validateImageFile(file: File): string | null {
@@ -15,7 +15,7 @@ export function validateImageFile(file: File): string | null {
     return 'Choose a JPG, PNG, or WebP image.'
   }
   if (file.size > MAX_IMAGE_BYTES) {
-    return 'Choose an image smaller than 15 MB.'
+    return `Choose an image that is ${MAX_IMAGE_MEGABYTES} MB or smaller.`
   }
   return null
 }
@@ -103,7 +103,7 @@ export default function ImageUpload({
         <strong>
           {dragReady ? 'Release to use this image' : 'Drop an image here'}
         </strong>
-        <span>JPG, PNG, or WebP · up to 15 MB</span>
+        <span>JPG, PNG, or WebP · up to {MAX_IMAGE_MEGABYTES} MB</span>
       </div>
 
       <label className="visually-hidden" htmlFor="source-image">
