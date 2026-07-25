@@ -256,13 +256,34 @@ pnpm install
 
 ## Running the Stack
 
-### Terminal 1: Backend
+### One terminal (recommended)
 
 **Windows:**
 ```powershell
-cd backend
-venv\Scripts\activate  # If using virtual environment
-python main.py
+cd D:\path\to\ColorCraft
+.\dev.cmd
+```
+
+**macOS / Linux:**
+```bash
+cd /path/to/ColorCraft
+backend/.venv/bin/python dev.py
+```
+
+The launcher finds the backend virtual environment, starts FastAPI and Vite,
+and keeps both services attached to the same terminal. Press `Ctrl+C` to stop
+both.
+
+- App: http://localhost:5173
+- API health check: http://localhost:8000
+
+### Two terminals (manual alternative)
+
+#### Terminal 1: Backend
+
+**Windows:**
+```powershell
+.\backend\.venv311\Scripts\python.exe backend\main.py
 ```
 
 **macOS / Linux:**
@@ -282,11 +303,11 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 
 **Verify:** Visit http://localhost:8000 → Should see `{"status":"ok","message":"ColorCraft API is running"}`
 
-### Terminal 2: Frontend
+#### Terminal 2: Frontend
 
-```bash
+```powershell
 cd frontend
-pnpm dev
+corepack pnpm@9.15.9 dev
 ```
 
 **Expected output:**
