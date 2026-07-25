@@ -12,6 +12,7 @@ const windowsPython = path.join(
 const python =
   process.env.COLORCRAFT_PYTHON ??
   (process.platform === 'win32' ? `"${windowsPython}"` : 'python3')
+const reuseExistingServer = !process.env.CI
 
 export default defineConfig({
   testDir: './e2e',
@@ -28,15 +29,26 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  webServer: {
-    command: `${python} dev.py`,
-    cwd: repositoryRoot,
-    url: 'http://127.0.0.1:5174',
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  webServer: [
+    {
+      command: `${python} -m uvicorn main:app --host 127.0.0.1 --port 4100`,
+      cwd: path.join(repositoryRoot, 'backend'),
+      url: 'http://127.0.0.1:4100/ready',
+      reuseExistingServer,
+      timeout: 60_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+    {
+      command: 'corepack pnpm@9.15.9 dev --host 127.0.0.1 --port 5174',
+      cwd: path.join(repositoryRoot, 'frontend'),
+      url: 'http://127.0.0.1:5174',
+      reuseExistingServer,
+      timeout: 60_000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+  ],
   projects: [
     {
       name: 'chromium',
