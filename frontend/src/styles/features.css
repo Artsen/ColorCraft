@@ -338,6 +338,112 @@
   background: var(--color-scrim);
 }
 
+.review-workspace > .tabs {
+  position: sticky;
+  top: var(--space-3);
+  z-index: 5;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-subtle);
+}
+
+.review-workspace [role="tabpanel"]:focus-visible {
+  border-radius: var(--radius-card);
+  outline-offset: var(--space-2);
+}
+
+.review-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.summary-list { display: grid; gap: 0; margin: 0; }
+.summary-list > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.42fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.summary-list dt { color: var(--color-text-subtle); font: var(--font-label); }
+.summary-list dd { display: flex; align-items: center; gap: var(--space-2); margin: 0; color: var(--color-text-primary); font: var(--font-body-compact); }
+.summary-swatch { width: 28px; height: 28px; flex: 0 0 auto; border: 1px solid var(--color-swatch-boundary); border-radius: 6px; }
+.compact-fit { margin-top: var(--space-4); }
+.compact-fit .fit-header p { margin: var(--space-1) 0 0; }
+.compact-fit .fit-header > strong { color: var(--color-primary); font: var(--font-metric); }
+
+.relationship-card-list { display: grid; gap: var(--space-3); }
+.relationship-card {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-recessed);
+}
+.relationship-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.relationship-card-heading h3 { margin: 0; }
+.relationship-card-heading p { margin: var(--space-1) 0 0; color: var(--color-text-secondary); font: var(--font-body-compact); }
+.relationship-swatches { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.relationship-swatches > span { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-pill); background: var(--color-surface); }
+.relationship-swatches i { width: 22px; height: 22px; border: 1px solid var(--color-swatch-boundary); border-radius: 50%; }
+.relationship-measurements { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin: var(--space-3) 0 0; }
+.relationship-measurements div { padding: var(--space-2); border-radius: var(--radius-control); background: var(--color-surface); }
+.relationship-measurements dt { color: var(--color-text-subtle); font: var(--font-metadata); }
+.relationship-measurements dd { margin: var(--space-1) 0 0; color: var(--color-text-primary); font: var(--font-code); }
+.advanced-disclosure { margin-top: var(--space-3); border-top: 1px solid var(--color-border-subtle); }
+.advanced-disclosure summary { padding-block: var(--space-3); color: var(--color-text-secondary); font: var(--font-label); cursor: pointer; }
+.advanced-disclosure > p { margin: 0; color: var(--color-text-secondary); font: var(--font-body-compact); }
+
+.role-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+.role-field { display: grid; gap: var(--space-1); }
+.role-field > span { color: var(--color-text-secondary); font: var(--font-label); }
+.role-field select { width: 100%; min-width: 0; }
+.role-result-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.role-result { display: grid; align-content: start; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-card); background: var(--color-surface-recessed); }
+.role-result.incomplete { min-height: 118px; color: var(--color-text-subtle); }
+.role-result h3 { margin: 0; }
+.role-result p { margin: var(--space-1) 0 0; color: var(--color-text-secondary); font: var(--font-body-compact); }
+.contrast-preview { display: grid; min-height: 92px; padding: var(--space-4); border: 1px solid var(--color-swatch-boundary); border-radius: var(--radius-card); place-items: center; }
+.contrast-preview button { min-height: 40px; padding: var(--space-2) var(--space-4); border: 1px solid currentColor; border-radius: var(--radius-control); font-weight: 650; }
+.contrast-preview.preview-copy { align-content: center; justify-items: start; }
+.contrast-preview.preview-copy span { font-size: 0.875rem; opacity: 0.9; }
+.preview-border { width: 100%; padding: var(--space-3); border: 3px solid; border-radius: var(--radius-control); color: var(--color-text-primary); background: var(--color-surface); }
+.contrast-preview button:focus { outline: 3px solid; outline-offset: 3px; }
+.status-badge { gap: 4px; }
+.status-badge svg { flex: 0 0 auto; }
+.all-pairs { margin-top: var(--space-5); }
+.all-pairs .contrast-list { padding-top: var(--space-2); }
+
+.suggestion-empty { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4); border: 1px dashed var(--color-border-strong); border-radius: var(--radius-card); }
+.suggestion-empty p { margin: 0; color: var(--color-text-secondary); }
+.compact-suggestion-list { display: grid; gap: var(--space-3); }
+.compact-suggestion-group { display: grid; grid-template-columns: minmax(180px, 0.65fr) minmax(0, 1.35fr); gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-card); background: var(--color-surface-recessed); }
+.compact-suggestion-group h3 { margin: 0; text-transform: capitalize; }
+.compact-suggestion-group p { margin: var(--space-1) 0 0; color: var(--color-text-secondary); font: var(--font-body-compact); }
+.compact-suggestion-colors { display: grid; gap: var(--space-2); }
+.compact-suggestion { display: grid; grid-template-columns: 38px minmax(80px, 1fr) auto; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-control); background: var(--color-surface); }
+.compact-suggestion .suggestion-preview { width: 38px; height: 38px; }
+.suggestion-education { display: grid; gap: var(--space-3); padding-top: var(--space-2); }
+.suggestion-education article { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-card); }
+.suggestion-education h3 { margin: 0; text-transform: capitalize; }
+.suggestion-education dl { margin: var(--space-2) 0 0; }
+.suggestion-education dl div { display: grid; grid-template-columns: 90px 1fr; gap: var(--space-2); }
+.suggestion-education dt { color: var(--color-text-subtle); font: var(--font-metadata); }
+.suggestion-education dd { margin: 0; color: var(--color-text-secondary); font: var(--font-body-compact); }
+
+.export-workspace { width: min(1040px, 100%); }
+.export-name-field { display: grid; grid-template-columns: 140px minmax(0, 420px); align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.export-name-field span { color: var(--color-text-secondary); font: var(--font-label); }
+.export-format-panel { padding-top: var(--space-4); }
+.export-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-3); }
+.export-toolbar > div:first-child { display: grid; gap: var(--space-1); }
+.export-toolbar span { color: var(--color-text-subtle); font: var(--font-code); }
+.generated-preview { display: block; margin-top: var(--space-3); }
+.generated-preview textarea { width: 100%; min-height: 440px; resize: vertical; color: var(--color-text-primary); background: var(--color-surface-recessed); font: var(--font-code); line-height: 1.55; tab-size: 2; }
+
 @media (forced-colors: active) {
   .app-mark,
   .drop-zone-icon { forced-color-adjust: auto; color: CanvasText; }
@@ -350,4 +456,11 @@
   .tab[aria-selected="true"] { outline: 2px solid Highlight; box-shadow: none; }
   .notice,
   .status-badge { border-color: CanvasText; }
+  .summary-swatch,
+  .relationship-swatches i,
+  .suggestion-preview,
+  .contrast-preview { forced-color-adjust: none; }
+  .role-result,
+  .relationship-card,
+  .generated-preview textarea { border-color: CanvasText; }
 }
