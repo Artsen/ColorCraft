@@ -21,6 +21,11 @@ local utility rather than a dashboard and does not imply accounts or cloud sync.
 - Avoid generic AI language and inflated claims.
 - Keep helper text short and place detail beside the result it qualifies.
 
+This document governs product voice, visual identity, and interface tone.
+[ColorCraft Technical English](./writing-style.md) governs procedural and
+technical documentation. The standards are complementary. Do not rewrite design
+rationale as a controlled procedure.
+
 ## Mark
 
 The provisional ColorCraft mark is an original double-C aperture:
@@ -87,8 +92,10 @@ menus use elevated shadow, and modal dialogs use dialog shadow.
 - At 1024px and below, the sidebar becomes a mobile top bar and bottom
   navigation without changing the information architecture.
 - Navigation is URL-backed so browser history restores the current workflow
-  stage. Palette data itself remains session-only.
-- Do not add Library or Recent Palettes until saved-palette persistence exists.
+  stage and Review tab.
+- Library and Recent palettes show saved palette records from IndexedDB.
+- Source-image previews, analysis, suggestions, and unsaved changes remain
+  session-only.
 
 ## Themes and accessibility
 

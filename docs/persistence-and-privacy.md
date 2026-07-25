@@ -1,30 +1,64 @@
 # Persistence and privacy
 
-ColorCraft is local-first, not account-backed. There is no synchronization service or server-side palette database.
+## Storage model
 
-## What is stored
+ColorCraft is local-first and does not use accounts, cloud synchronization, or
+a server-side palette database.
 
-The `colorcraft` IndexedDB database contains `palettes` records with:
+The frontend uses:
 
-- schema version, ID, name, and created/updated timestamps
-- manual or image source type and an optional source filename
-- 1–10 normalized colors with optional population and pixel-count metadata
-- semantic contrast-role assignments
+- IndexedDB for saved palette records
+- LocalStorage for the theme preference
+- Browser memory for source-image previews, analysis, suggestions, and unsaved
+  changes
 
-Schema version 1 is validated with Zod whenever records are read. Legacy records with no version or version 0 are migrated in memory and become version 1 when next saved. Corrupt records and unknown future versions are skipped so one bad record cannot prevent the Library from opening.
+## Saved palette records
 
-LocalStorage contains only the theme preference. Uploaded image bytes, object URLs, analysis responses, and suggestions are not written to LocalStorage or IndexedDB.
+The `colorcraft` IndexedDB database contains the `palettes` object store. A
+schema-version-1 record contains:
 
-## Image processing
+- Record ID and palette name
+- Created and updated timestamps
+- Manual or image source type
+- Optional source filename
+- 1–10 normalized palette colors
+- Optional population and `pixelCount`
+- Color-role assignments
 
-An uploaded file is previewed in browser memory and sent to the configured FastAPI service. The service reads it for that request and does not write it to disk or a database. If LAN access is enabled, image traffic crosses that network path; use a trusted network or HTTPS termination.
+The frontend validates each record with Zod. It can migrate an unversioned or
+version-0 record to the current shape. The next save writes schema version 1.
+The frontend ignores malformed records and unknown future schema versions.
+
+## Source images
+
+The browser creates a session-only source-image preview. It sends the source
+image to the configured API for extraction.
+
+The API reads the image for the request. It does not write the image to disk or
+a database. A saved palette can contain the source filename and extracted color
+metadata. It does not contain the source-image bytes.
 
 ## Retention and deletion
 
-Palette records remain until the user deletes them or clears site data for the ColorCraft origin. Library deletion is confirmed and cannot be undone. Different browser profiles, origins, and port combinations have separate browser storage.
+A saved palette remains until the user selects **Delete palette** or clears site
+data for the ColorCraft origin. Deletion cannot be undone.
 
-To remove all ColorCraft browser data, use the browser's site-data controls for the web origin. Uninstalling the repository does not necessarily clear browser data.
+Browser profiles and origins have separate IndexedDB databases. Changing the
+web host or port can show a different, empty Palette Library.
 
-## Security posture
+Removing the repository does not necessarily remove browser storage. Use the
+browser's site-data controls to remove all saved palettes and the theme
+preference.
 
-Defaults bind both services to loopback. Non-loopback hosts and CORS origins require explicit `COLORCRAFT_ALLOW_LAN_ACCESS=true`; wildcard CORS is rejected. ColorCraft does not provide authentication, so do not expose it directly to an untrusted network.
+## Privacy and network boundary
+
+The default services bind to loopback addresses. The default configuration
+keeps browser-to-API traffic on the current computer.
+
+`COLORCRAFT_ALLOW_LAN_ACCESS=true` permits a larger network boundary. On a LAN,
+source-image data traverses the configured network path. ColorCraft does not
+provide authentication or transport encryption. Do not expose it directly to
+an untrusted network.
+
+Local does not automatically mean private, secure, offline, anonymous, or
+persistent.
