@@ -1,4 +1,11 @@
-import { Download, FilePlus2, FlaskConical, Palette, Plus } from 'lucide-react'
+import {
+  Download,
+  FilePlus2,
+  FlaskConical,
+  Library,
+  Palette,
+  Plus,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { WorkspaceView } from '../workspace'
 import AppMark from './ui/AppMark'
@@ -19,6 +26,9 @@ interface AppShellProps {
   summary: string
   onNavigate: (view: WorkspaceView) => void
   onNewPalette: () => void
+  recentPalettes?: Array<{ id: string; name: string }>
+  onOpenRecent?: (id: string) => void
+  headerActions?: ReactNode
   children: ReactNode
 }
 
@@ -26,6 +36,7 @@ const navigationItems = [
   { view: 'create' as const, label: 'Create', icon: Palette },
   { view: 'review' as const, label: 'Review', icon: FlaskConical },
   { view: 'export' as const, label: 'Export', icon: Download },
+  { view: 'library' as const, label: 'Library', icon: Library },
 ]
 
 export default function AppShell({
@@ -36,16 +47,22 @@ export default function AppShell({
   summary,
   onNavigate,
   onNewPalette,
+  recentPalettes = [],
+  onOpenRecent,
+  headerActions,
   children,
 }: AppShellProps) {
   const availability = (target: WorkspaceView) => {
     if (target === 'create') return { available: true, reason: '' }
+    if (target === 'library') return { available: true, reason: '' }
     return navigation[target]
   }
 
   const navigationContent = (location: 'sidebar' | 'mobile') => (
     <nav
-      className={location === 'sidebar' ? 'shell-navigation' : 'mobile-navigation'}
+      className={
+        location === 'sidebar' ? 'shell-navigation' : 'mobile-navigation'
+      }
       aria-label={location === 'sidebar' ? 'Primary' : 'Mobile primary'}
     >
       {navigationItems.map(({ view: target, label, icon: Icon }) => {
@@ -67,7 +84,11 @@ export default function AppShell({
             </button>
             {!state.available && (
               <span
-                className={location === 'sidebar' ? 'navigation-reason' : 'visually-hidden'}
+                className={
+                  location === 'sidebar'
+                    ? 'navigation-reason'
+                    : 'visually-hidden'
+                }
                 id={reasonId}
               >
                 {state.reason}
@@ -98,6 +119,26 @@ export default function AppShell({
           New palette
         </Button>
         {navigationContent('sidebar')}
+        {recentPalettes.length > 0 && (
+          <section
+            className="recent-palettes"
+            aria-labelledby="recent-palettes-heading"
+          >
+            <h2 id="recent-palettes-heading">Recent palettes</h2>
+            <div>
+              {recentPalettes.slice(0, 3).map((palette) => (
+                <button
+                  type="button"
+                  key={palette.id}
+                  onClick={() => onOpenRecent?.(palette.id)}
+                >
+                  <span className="recent-palette-dot" aria-hidden="true" />
+                  <span>{palette.name}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
         <div className="sidebar-theme">
           <ThemeControl />
         </div>
@@ -129,7 +170,10 @@ export default function AppShell({
               <h1>{title}</h1>
               <p>{summary}</p>
             </div>
-            <StatusBadge>Local only</StatusBadge>
+            <div className="workspace-header-actions">
+              {headerActions}
+              <StatusBadge>Local only</StatusBadge>
+            </div>
           </header>
           <div className="workspace-content">{children}</div>
         </main>

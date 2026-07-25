@@ -44,13 +44,15 @@ const tabOptions = [
   { id: 'suggestions', label: 'Suggestions' },
 ]
 
-export function orderedRelationships(analysis: Analysis): HarmonyRelationship[] {
+export function orderedRelationships(
+  analysis: Analysis,
+): HarmonyRelationship[] {
   return Object.values(analysis.colorTheory.harmonies)
     .flat()
-    .sort((left, right) => (
-      right.confidence - left.confidence ||
-      left.deviation - right.deviation
-    ))
+    .sort(
+      (left, right) =>
+        right.confidence - left.confidence || left.deviation - right.deviation,
+    )
 }
 
 function relationshipName(type: HarmonyRelationship['type']): string {
@@ -86,20 +88,29 @@ function EmptyAnalysis({
     <Panel>
       <SectionHeader
         title={stale ? 'Refresh the analysis' : 'Analyze this palette'}
-        description={stale
-          ? 'The palette changed, so previous measurements are no longer shown.'
-          : 'Measure harmony and contrast relationships for the current colors.'}
+        description={
+          stale
+            ? 'The palette changed, so previous measurements are no longer shown.'
+            : 'Measure harmony and contrast relationships for the current colors.'
+        }
       />
-      <Notice variant={stale ? 'warning' : 'information'} actions={(
-        <Button
-          variant="primary"
-          icon={<RefreshCw size={16} aria-hidden="true" />}
-          onClick={onAnalyze}
-          disabled={analyzing}
-        >
-          {analyzing ? 'Analyzing…' : stale ? 'Refresh analysis' : 'Analyze palette'}
-        </Button>
-      )}>
+      <Notice
+        variant={stale ? 'warning' : 'information'}
+        actions={
+          <Button
+            variant="primary"
+            icon={<RefreshCw size={16} aria-hidden="true" />}
+            onClick={onAnalyze}
+            disabled={analyzing}
+          >
+            {analyzing
+              ? 'Analyzing…'
+              : stale
+                ? 'Refresh analysis'
+                : 'Analyze palette'}
+          </Button>
+        }
+      >
         {stale
           ? 'Analysis is stale because the palette changed.'
           : 'Analysis is required for this review tab.'}
@@ -108,15 +119,23 @@ function EmptyAnalysis({
   )
 }
 
-function Overview({ colors, analysis }: { colors: PaletteColor[]; analysis: Analysis }) {
+function Overview({
+  colors,
+  analysis,
+}: {
+  colors: PaletteColor[]
+  analysis: Analysis
+}) {
   const relationships = orderedRelationships(analysis)
-  const dominant = [...colors].sort(
-    (left, right) => (right.population ?? 0) - (left.population ?? 0),
-  )[0] ?? colors[0]
+  const dominant =
+    [...colors].sort(
+      (left, right) => (right.population ?? 0) - (left.population ?? 0),
+    )[0] ?? colors[0]
   const temperature = analysis.colorTheory.temperatureBalance
-  const temperatureCopy = temperature.balance === 'balanced'
-    ? 'Balanced temperature'
-    : `${temperature.balance[0].toUpperCase()}${temperature.balance.slice(1)} leaning`
+  const temperatureCopy =
+    temperature.balance === 'balanced'
+      ? 'Balanced temperature'
+      : `${temperature.balance[0].toUpperCase()}${temperature.balance.slice(1)} leaning`
   const lightness = analysis.colorTheory.metrics.lightnessRange
   const nextAction = analysis.accessibility.issues.length
     ? `${analysis.accessibility.issues.length} color ${analysis.accessibility.issues.length === 1 ? 'pair needs' : 'pairs need'} a contrast-role review`
@@ -139,18 +158,58 @@ function Overview({ colors, analysis }: { colors: PaletteColor[]; analysis: Anal
         <dl className="summary-list">
           <div>
             <dt>Dominant color</dt>
-            <dd><span className="summary-swatch" style={{ backgroundColor: dominant.hex }} aria-label={`Dominant color ${dominant.hex}`} /><code>{dominant.hex}</code></dd>
+            <dd>
+              <span
+                className="summary-swatch"
+                role="img"
+                style={{ backgroundColor: dominant.hex }}
+                aria-label={`Dominant color ${dominant.hex}`}
+              />
+              <code>{dominant.hex}</code>
+            </dd>
           </div>
-          <div><dt>Temperature</dt><dd>{temperatureCopy} · {Math.round(temperature.warmRatio * 100)}% warm / {Math.round(temperature.coolRatio * 100)}% cool</dd></div>
-          <div><dt>Saturation</dt><dd>{analysis.colorTheory.metrics.saturationAvg}% average saturation</dd></div>
-          <div><dt>Lightness</dt><dd>{lightness >= 45 ? 'Wide' : lightness >= 20 ? 'Moderate' : 'Narrow'} lightness range · {lightness}%</dd></div>
+          <div>
+            <dt>Temperature</dt>
+            <dd>
+              {temperatureCopy} · {Math.round(temperature.warmRatio * 100)}%
+              warm / {Math.round(temperature.coolRatio * 100)}% cool
+            </dd>
+          </div>
+          <div>
+            <dt>Saturation</dt>
+            <dd>
+              {analysis.colorTheory.metrics.saturationAvg}% average saturation
+            </dd>
+          </div>
+          <div>
+            <dt>Lightness</dt>
+            <dd>
+              {lightness >= 45
+                ? 'Wide'
+                : lightness >= 20
+                  ? 'Moderate'
+                  : 'Narrow'}{' '}
+              lightness range · {lightness}%
+            </dd>
+          </div>
           <div>
             <dt>Strongest relationships</dt>
-            <dd>{relationships.length
-              ? relationships.slice(0, 3).map((item) => `${relationshipName(item.type)} (${Math.round(item.confidence * 100)}%)`).join(', ')
-              : 'No relationship met the configured tolerances'}</dd>
+            <dd>
+              {relationships.length
+                ? relationships
+                    .slice(0, 3)
+                    .map(
+                      (item) =>
+                        `${relationshipName(item.type)} (${Math.round(item.confidence * 100)}%)`,
+                    )
+                    .join(', ')
+                : 'No relationship met the configured tolerances'}
+            </dd>
           </div>
-          <div><dt>Useful next action</dt><dd>{nextAction}</dd></div>
+          <div>
+            <dt>Useful next action</dt>
+            <dd>{nextAction}</dd>
+          </div>
         </dl>
         <div className="relationship-fit compact-fit">
           <div className="fit-header">
@@ -160,14 +219,23 @@ function Overview({ colors, analysis }: { colors: PaletteColor[]; analysis: Anal
             </div>
             <strong>{analysis.colorTheory.relationshipFit}/100</strong>
           </div>
-          <p className="field-help">This measures geometric color relationships, not subjective design quality.</p>
+          <p className="field-help">
+            This measures geometric color relationships, not subjective design
+            quality.
+          </p>
         </div>
       </Panel>
     </div>
   )
 }
 
-function Harmony({ colors, analysis }: { colors: Color[]; analysis: Analysis }) {
+function Harmony({
+  colors,
+  analysis,
+}: {
+  colors: Color[]
+  analysis: Analysis
+}) {
   const relationships = orderedRelationships(analysis)
   return (
     <Panel>
@@ -177,36 +245,85 @@ function Harmony({ colors, analysis }: { colors: Color[]; analysis: Analysis }) 
         icon={<ScanLine size={18} aria-hidden="true" />}
       />
       {relationships.length === 0 ? (
-        <Notice>No relationship met the configured detection tolerances.</Notice>
+        <Notice>
+          No relationship met the configured detection tolerances.
+        </Notice>
       ) : (
         <div className="relationship-card-list">
           {relationships.map((relationship, index) => (
-            <article className="relationship-card" key={`${relationship.type}-${relationship.colorIndexes.join('-')}-${index}`}>
+            <article
+              className="relationship-card"
+              key={`${relationship.type}-${relationship.colorIndexes.join('-')}-${index}`}
+            >
               <div className="relationship-card-heading">
                 <div>
                   <h3>{relationshipExplanation(relationship).split('.')[0]}</h3>
-                  <p>{relationshipExplanation(relationship).split('.').slice(1).join('.').trim()}</p>
+                  <p>
+                    {relationshipExplanation(relationship)
+                      .split('.')
+                      .slice(1)
+                      .join('.')
+                      .trim()}
+                  </p>
                 </div>
-                <StatusBadge variant={relationship.confidence >= 0.8 ? 'success' : relationship.confidence >= 0.55 ? 'information' : 'warning'}>
+                <StatusBadge
+                  variant={
+                    relationship.confidence >= 0.8
+                      ? 'success'
+                      : relationship.confidence >= 0.55
+                        ? 'information'
+                        : 'warning'
+                  }
+                >
                   {Math.round(relationship.confidence * 100)}% confidence
                 </StatusBadge>
               </div>
-              <div className="relationship-swatches" aria-label={`${relationshipName(relationship.type)} colors`}>
-                {relationship.colorIndexes.map((colorIndex) => colors[colorIndex] && (
-                  <span key={colorIndex}>
-                    <i style={{ backgroundColor: colors[colorIndex].hex }} aria-hidden="true" />
-                    <code>{colors[colorIndex].hex}</code>
-                  </span>
-                ))}
+              <div
+                className="relationship-swatches"
+                aria-label={`${relationshipName(relationship.type)} colors`}
+              >
+                {relationship.colorIndexes.map(
+                  (colorIndex) =>
+                    colors[colorIndex] && (
+                      <span key={colorIndex}>
+                        <i
+                          style={{ backgroundColor: colors[colorIndex].hex }}
+                          aria-hidden="true"
+                        />
+                        <code>{colors[colorIndex].hex}</code>
+                      </span>
+                    ),
+                )}
               </div>
               <dl className="relationship-measurements">
-                <div><dt>Expected angle</dt><dd>{relationship.expectedAngles.map((angle) => `${angle.toFixed(0)}°`).join(', ')}</dd></div>
-                <div><dt>Measured angle</dt><dd>{relationship.measuredAngles.map((angle) => `${angle.toFixed(0)}°`).join(', ')}</dd></div>
-                <div><dt>Deviation</dt><dd>{relationship.deviation.toFixed(1)}°</dd></div>
+                <div>
+                  <dt>Expected angle</dt>
+                  <dd>
+                    {relationship.expectedAngles
+                      .map((angle) => `${angle.toFixed(0)}°`)
+                      .join(', ')}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Measured angle</dt>
+                  <dd>
+                    {relationship.measuredAngles
+                      .map((angle) => `${angle.toFixed(0)}°`)
+                      .join(', ')}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Deviation</dt>
+                  <dd>{relationship.deviation.toFixed(1)}°</dd>
+                </div>
               </dl>
               <details className="advanced-disclosure">
                 <summary>Advanced technical details</summary>
-                <p>Type: <code>{relationship.type}</code>. Palette indexes: {relationship.colorIndexes.map((item) => item + 1).join(', ')}. Raw confidence: {relationship.confidence.toFixed(3)}.</p>
+                <p>
+                  Type: <code>{relationship.type}</code>. Palette indexes:{' '}
+                  {relationship.colorIndexes.map((item) => item + 1).join(', ')}
+                  . Raw confidence: {relationship.confidence.toFixed(3)}.
+                </p>
               </details>
             </article>
           ))}
@@ -219,9 +336,11 @@ function Harmony({ colors, analysis }: { colors: Color[]; analysis: Analysis }) 
 function ResultBadge({ label, pass }: { label: string; pass: boolean }) {
   return (
     <StatusBadge variant={pass ? 'success' : 'error'}>
-      {pass
-        ? <CheckCircle2 size={14} aria-hidden="true" />
-        : <XCircle size={14} aria-hidden="true" />}
+      {pass ? (
+        <CheckCircle2 size={14} aria-hidden="true" />
+      ) : (
+        <XCircle size={14} aria-hidden="true" />
+      )}
       {label}: {pass ? 'Pass' : 'Fail'}
     </StatusBadge>
   )
@@ -237,15 +356,44 @@ function ContrastPreview({
   background: string
 }) {
   if (kind === 'action') {
-    return <div className="contrast-preview"><button type="button" style={{ color: foreground, backgroundColor: background }}>Continue</button></div>
+    return (
+      <div className="contrast-preview">
+        <button
+          type="button"
+          style={{ color: foreground, backgroundColor: background }}
+        >
+          Continue
+        </button>
+      </div>
+    )
   }
   if (kind === 'border') {
-    return <div className="contrast-preview" style={{ backgroundColor: background }}><div className="preview-border" style={{ borderColor: foreground }}>Surface boundary</div></div>
+    return (
+      <div className="contrast-preview" style={{ backgroundColor: background }}>
+        <div className="preview-border" style={{ borderColor: foreground }}>
+          Surface boundary
+        </div>
+      </div>
+    )
   }
   if (kind === 'focus') {
-    return <div className="contrast-preview" style={{ backgroundColor: background }}><button type="button" style={{ outlineColor: foreground }}>Focused control</button></div>
+    return (
+      <div className="contrast-preview" style={{ backgroundColor: background }}>
+        <button type="button" style={{ outlineColor: foreground }}>
+          Focused control
+        </button>
+      </div>
+    )
   }
-  return <div className="contrast-preview preview-copy" style={{ color: foreground, backgroundColor: background }}><strong>{kind === 'page' ? 'Page heading' : 'Surface detail'}</strong><span>Readable interface copy in context.</span></div>
+  return (
+    <div
+      className="contrast-preview preview-copy"
+      style={{ color: foreground, backgroundColor: background }}
+    >
+      <strong>{kind === 'page' ? 'Page heading' : 'Surface detail'}</strong>
+      <span>Readable interface copy in context.</span>
+    </div>
+  )
 }
 
 function Contrast({
@@ -259,9 +407,8 @@ function Contrast({
   roles: RoleAssignments
   onAssignRole: (role: PaletteRole, hex: string | undefined) => void
 }) {
-  const colorByHex = (hex?: string) => colors.find(
-    (color) => color.hex.toLowerCase() === hex?.toLowerCase(),
-  )
+  const colorByHex = (hex?: string) =>
+    colors.find((color) => color.hex.toLowerCase() === hex?.toLowerCase())
   return (
     <div className="content-stack">
       <Panel>
@@ -276,7 +423,9 @@ function Contrast({
               <span>{roleLabels[role]}</span>
               <select
                 value={roles[role] ?? ''}
-                onChange={(event) => onAssignRole(role, event.target.value || undefined)}
+                onChange={(event) =>
+                  onAssignRole(role, event.target.value || undefined)
+                }
               >
                 <option value="">Unassigned</option>
                 {colors.map((color, index) => (
@@ -302,7 +451,11 @@ function Contrast({
               return (
                 <article className="role-result incomplete" key={check.id}>
                   <h3>{check.label}</h3>
-                  <p>Assign {roleLabels[check.foreground].toLowerCase()} and {roleLabels[check.background].toLowerCase()} to test this combination.</p>
+                  <p>
+                    Assign {roleLabels[check.foreground].toLowerCase()} and{' '}
+                    {roleLabels[check.background].toLowerCase()} to test this
+                    combination.
+                  </p>
                 </article>
               )
             }
@@ -310,9 +463,20 @@ function Contrast({
             return (
               <article className="role-result" key={check.id}>
                 <div className="role-result-heading">
-                  <div><h3>{check.label}</h3><p><code>{foreground.hex}</code> on <code>{background.hex}</code> · <strong>{ratio.toFixed(2)} to 1</strong></p></div>
+                  <div>
+                    <h3>{check.label}</h3>
+                    <p>
+                      <code>{foreground.hex}</code> on{' '}
+                      <code>{background.hex}</code> ·{' '}
+                      <strong>{ratio.toFixed(2)} to 1</strong>
+                    </p>
+                  </div>
                 </div>
-                <ContrastPreview kind={check.preview} foreground={foreground.hex} background={background.hex} />
+                <ContrastPreview
+                  kind={check.preview}
+                  foreground={foreground.hex}
+                  background={background.hex}
+                />
                 <div className="badge-row">
                   <ResultBadge label="AA normal" pass={ratio >= 4.5} />
                   <ResultBadge label="AA large" pass={ratio >= 3} />
@@ -327,9 +491,14 @@ function Contrast({
           <summary>Advanced: all-pairs contrast matrix</summary>
           <div className="contrast-list">
             {analysis.accessibility.pairs.map((pair) => (
-              <div className="contrast-row" key={`${pair.color1}-${pair.color2}`}>
+              <div
+                className="contrast-row"
+                key={`${pair.color1}-${pair.color2}`}
+              >
                 <div className="contrast-row-header">
-                  <span><code>{pair.color1}</code> + <code>{pair.color2}</code></span>
+                  <span>
+                    <code>{pair.color1}</code> + <code>{pair.color2}</code>
+                  </span>
                   <strong>{pair.ratio.toFixed(2)}:1</strong>
                 </div>
                 <div className="badge-row">
@@ -378,13 +547,22 @@ export default function ReviewWorkspace({
         {selectedTab === 'suggestions' ? (
           <ColorSuggestions colors={colors} onAddColor={onAddColor} />
         ) : !analysis ? (
-          <EmptyAnalysis stale={analysisStale} analyzing={analyzing} onAnalyze={onAnalyze} />
+          <EmptyAnalysis
+            stale={analysisStale}
+            analyzing={analyzing}
+            onAnalyze={onAnalyze}
+          />
         ) : selectedTab === 'overview' ? (
           <Overview colors={colors} analysis={analysis} />
         ) : selectedTab === 'harmony' ? (
           <Harmony colors={colors} analysis={analysis} />
         ) : (
-          <Contrast colors={colors} analysis={analysis} roles={roles} onAssignRole={onAssignRole} />
+          <Contrast
+            colors={colors}
+            analysis={analysis}
+            roles={roles}
+            onAssignRole={onAssignRole}
+          />
         )}
       </div>
     </div>

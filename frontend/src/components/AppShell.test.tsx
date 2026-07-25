@@ -5,12 +5,15 @@ import AppShell from './AppShell'
 describe('AppShell navigation', () => {
   beforeEach(() => {
     localStorage.clear()
-    vi.stubGlobal('matchMedia', vi.fn(() => ({
-      matches: false,
-      media: '(prefers-color-scheme: dark)',
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })))
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({
+        matches: false,
+        media: '(prefers-color-scheme: dark)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    )
   })
 
   it('explains unavailable Review and Export views', () => {
@@ -31,13 +34,18 @@ describe('AppShell navigation', () => {
       </AppShell>,
     )
     const desktop = screen.getByRole('navigation', { name: 'Primary' })
-    expect(within(desktop).getByRole('button', { name: 'Create' })).toBeEnabled()
-    expect(within(desktop).getByRole('button', { name: 'Review' })).toBeDisabled()
-    expect(within(desktop).getByRole('button', { name: 'Review' })).toHaveAttribute(
-      'title',
-      'Add two colors.',
-    )
-    expect(within(desktop).getByRole('button', { name: 'Export' })).toBeDisabled()
+    expect(
+      within(desktop).getByRole('button', { name: 'Create' }),
+    ).toBeEnabled()
+    expect(
+      within(desktop).getByRole('button', { name: 'Review' }),
+    ).toBeDisabled()
+    expect(
+      within(desktop).getByRole('button', { name: 'Review' }),
+    ).toHaveAttribute('title', 'Add two colors.')
+    expect(
+      within(desktop).getByRole('button', { name: 'Export' }),
+    ).toBeDisabled()
   })
 
   it('provides equivalent mobile navigation and shell theme control', () => {

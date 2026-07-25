@@ -1,9 +1,4 @@
-import {
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle2,
-  Info,
-} from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export type NoticeVariant = 'information' | 'success' | 'warning' | 'error'

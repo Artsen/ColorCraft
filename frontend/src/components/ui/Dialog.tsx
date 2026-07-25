@@ -79,7 +79,11 @@ export default function Dialog({
       >
         <div className="dialog-header">
           <h2 id={titleId}>{title}</h2>
-          <IconButton label="Close dialog" icon={<X size={18} />} onClick={onClose} />
+          <IconButton
+            label="Close dialog"
+            icon={<X size={18} />}
+            onClick={onClose}
+          />
         </div>
         {children}
       </div>

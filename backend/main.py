@@ -5,14 +5,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import FastAPI, File, Query, Request, UploadFile
-from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from PIL import Image, UnidentifiedImageError
-from starlette.concurrency import run_in_threadpool
 import uvicorn
-
 from accessibility import analyze_accessibility
 from color_extractor import (
     ImageDimensionError,
@@ -22,10 +15,15 @@ from color_extractor import (
 from color_suggestions import generate_all_suggestions
 from color_theory import analyze_color_theory
 from config import RuntimeSettings
+from fastapi import FastAPI, File, Query, Request, UploadFile
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from models import (
-    APIError,
     AnalysisResponse,
     AnalysisResult,
+    APIError,
+    ApplicationMetadata,
     ErrorResponse,
     ExtractedColor,
     ExtractionResponse,
@@ -37,14 +35,18 @@ from models import (
     SuggestionResponse,
     ValidationIssue,
 )
-
+from PIL import Image, UnidentifiedImageError
+from starlette.concurrency import run_in_threadpool
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 CAPABILITIES = [
-    "color extraction",
-    "palette analysis",
-    "color suggestions",
+    "image-color-extraction",
+    "palette-editing",
+    "harmony-analysis",
+    "contrast-review",
+    "palette-export",
+    "local-palette-library",
 ]
 ColorCount = Annotated[int, Query(ge=3, le=10)]
 
@@ -64,9 +66,7 @@ def error_response(
     message: str,
     details: list[ValidationIssue] | None = None,
 ) -> JSONResponse:
-    payload = ErrorResponse(
-        error=APIError(code=code, message=message, details=details)
-    )
+    payload = ErrorResponse(error=APIError(code=code, message=message, details=details))
     return JSONResponse(
         status_code=status_code,
         content=payload.model_dump(by_alias=True, exclude_none=True),
@@ -154,6 +154,22 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
             version=runtime.application_version,
         )
 
+    @application.get("/metadata", response_model=ApplicationMetadata)
+    async def metadata() -> ApplicationMetadata:
+        return ApplicationMetadata(
+            schema_version=1,
+            id="colorcraft",
+            name="ColorCraft",
+            descriptor="Local color utility",
+            version=runtime.application_version,
+            icon=f"{runtime.web_url}/colorcraft-mark.svg",
+            web_url=runtime.web_url,
+            api_url=runtime.client_api_url,
+            health_url=f"{runtime.client_api_url}/health",
+            readiness_url=f"{runtime.client_api_url}/ready",
+            capabilities=CAPABILITIES,
+        )
+
     @application.get("/ready", response_model=ReadinessResponse)
     async def ready(request: Request) -> ReadinessResponse | JSONResponse:
         is_ready = bool(request.app.state.ready)
@@ -200,9 +216,7 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
             extracted = await run_in_threadpool(
                 extract_colors, image_bytes, color_count
             )
-            return [
-                ExtractedColor.model_validate(color) for color in extracted
-            ]
+            return [ExtractedColor.model_validate(color) for color in extracted]
         except ImageDimensionError:
             raise APIException(
                 413,
@@ -249,9 +263,7 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
         )
 
     def analyze_palette(request: PaletteAnalysisRequest) -> AnalysisResult:
-        colors = [
-            color.model_dump(by_alias=False) for color in request.colors
-        ]
+        colors = [color.model_dump(by_alias=False) for color in request.colors]
         return AnalysisResult(
             color_theory=analyze_color_theory(colors),
             accessibility=analyze_accessibility(colors),
@@ -278,14 +290,10 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
     async def suggest_colors_endpoint(
         request: SuggestionRequest,
     ) -> SuggestionResponse:
-        colors = [
-            color.model_dump(by_alias=False) for color in request.colors
-        ]
+        colors = [color.model_dump(by_alias=False) for color in request.colors]
         return SuggestionResponse(
             success=True,
-            suggestions=[
-                generate_all_suggestions(color) for color in colors
-            ],
+            suggestions=[generate_all_suggestions(color) for color in colors],
         )
 
     @application.post(

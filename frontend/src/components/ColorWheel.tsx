@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import * as d3 from 'd3'
-import type {
-  Analysis,
-  Color,
-  HarmonyRelationship,
-} from '../api/contracts'
+import type { Analysis, Color, HarmonyRelationship } from '../api/contracts'
 
 interface ColorWheelProps {
   colors: Color[]
@@ -120,7 +116,8 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
       if (points.length < 2) return
 
       const style = relationshipStyles[relationship.type]
-      const closePath = points.length > 2 && relationship.type !== 'monochromatic'
+      const closePath =
+        points.length > 2 && relationship.type !== 'monochromatic'
       const path = d3.line()(points)
       if (!path) return
       relationshipLayer
@@ -222,8 +219,9 @@ export default function ColorWheel({ colors, analysis }: ColorWheelProps) {
         {relationshipSummary}
       </p>
       <p className="wheel-caption">
-        Lines use different dash patterns as well as colors. {relationships.length}{' '}
-        detected relationship{relationships.length === 1 ? '' : 's'} shown.
+        Lines use different dash patterns as well as colors.{' '}
+        {relationships.length} detected relationship
+        {relationships.length === 1 ? '' : 's'} shown.
       </p>
     </div>
   )

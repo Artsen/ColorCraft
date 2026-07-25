@@ -21,7 +21,10 @@ function deferred<T>() {
   return { promise, resolve }
 }
 
-function response(colors: Color[], label = 'Complementary'): SuggestionResponse {
+function response(
+  colors: Color[],
+  label = 'Complementary',
+): SuggestionResponse {
   const suggested: SuggestionColor = {
     ...blue,
     name: `${label} blue`,
@@ -48,14 +51,8 @@ function response(colors: Color[], label = 'Complementary'): SuggestionResponse 
 
 async function loadSuggestions(colors: Color[]) {
   vi.mocked(suggestColors).mockResolvedValueOnce(response(colors))
-  fireEvent.click(
-    screen.getByRole('button', { name: 'Generate suggestions' }),
-  )
-  await screen.findByRole('heading', { name: labelFor(colors) })
-}
-
-function labelFor(_colors: Color[]) {
-  return 'Complementary'
+  fireEvent.click(screen.getByRole('button', { name: 'Generate suggestions' }))
+  await screen.findByRole('heading', { name: 'Complementary' })
 }
 
 describe('ColorSuggestions palette lifecycle', () => {
@@ -122,9 +119,7 @@ describe('ColorSuggestions palette lifecycle', () => {
     fireEvent.click(
       screen.getByRole('button', { name: 'Generate suggestions' }),
     )
-    view.rerender(
-      <ColorSuggestions colors={[blue]} onAddColor={vi.fn()} />,
-    )
+    view.rerender(<ColorSuggestions colors={[blue]} onAddColor={vi.fn()} />)
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Generate suggestions' }),
@@ -135,9 +130,13 @@ describe('ColorSuggestions palette lifecycle', () => {
     )
 
     await act(async () => second.resolve(response([blue], 'Newest')))
-    expect(await screen.findByRole('heading', { name: 'Newest' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Newest' }),
+    ).toBeInTheDocument()
     await act(async () => first.resolve(response([red], 'Stale')))
-    expect(screen.queryByRole('heading', { name: 'Stale' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Stale' }),
+    ).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Newest' })).toBeInTheDocument()
   })
 
@@ -152,7 +151,9 @@ describe('ColorSuggestions palette lifecycle', () => {
     )
     view.rerender(<ColorSuggestions colors={[]} onAddColor={vi.fn()} />)
     await act(async () => pending.resolve(response([red], 'Stale')))
-    expect(screen.queryByRole('heading', { name: 'Stale' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Stale' }),
+    ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Generate suggestions' }),
     ).toBeDisabled()
@@ -161,6 +162,8 @@ describe('ColorSuggestions palette lifecycle', () => {
   it('marks duplicate suggestions without adding them', async () => {
     render(<ColorSuggestions colors={[red, blue]} onAddColor={vi.fn()} />)
     await loadSuggestions([red, blue])
-    expect(screen.getByRole('button', { name: 'Already in palette #0000ff' })).toBeDisabled()
+    expect(
+      screen.getByRole('button', { name: 'Already in palette #0000ff' }),
+    ).toBeDisabled()
   })
 })

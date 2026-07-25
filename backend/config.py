@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import ipaddress
 import json
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 from urllib.parse import urlparse
-
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNTIME_CONFIG_PATH = ROOT / "runtime-config.json"
@@ -129,12 +128,8 @@ class RuntimeSettings:
         if not isinstance(defaults, dict):
             raise ConfigurationError("runtime-config.json defaults must be an object.")
 
-        web_host = env.get(
-            "COLORCRAFT_WEB_HOST", str(defaults["webHost"])
-        ).strip()
-        api_host = env.get(
-            "COLORCRAFT_API_HOST", str(defaults["apiHost"])
-        ).strip()
+        web_host = env.get("COLORCRAFT_WEB_HOST", str(defaults["webHost"])).strip()
+        api_host = env.get("COLORCRAFT_API_HOST", str(defaults["apiHost"])).strip()
         allow_lan_access = parse_boolean(
             env.get("COLORCRAFT_ALLOW_LAN_ACCESS"),
             name="COLORCRAFT_ALLOW_LAN_ACCESS",
@@ -149,8 +144,7 @@ class RuntimeSettings:
             ):
                 if not is_loopback_host(host):
                     raise ConfigurationError(
-                        f"{name}={host} requires "
-                        "COLORCRAFT_ALLOW_LAN_ACCESS=true."
+                        f"{name}={host} requires COLORCRAFT_ALLOW_LAN_ACCESS=true."
                     )
 
         web_port = parse_port(

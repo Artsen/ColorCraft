@@ -13,7 +13,6 @@ import numpy as np
 from PIL import Image, UnidentifiedImageError
 from sklearn.cluster import KMeans
 
-
 MAX_IMAGE_PIXELS = 40_000_000
 MAX_SAMPLE_PIXELS = 10_000
 SAMPLE_SEED = 42
@@ -47,11 +46,7 @@ def rgb_to_lab(rgb: list[int] | tuple[int, int, int] | np.ndarray) -> list[float
     delta = 6 / 29
 
     def transform(value: float) -> float:
-        return (
-            value ** (1 / 3)
-            if value > delta**3
-            else value / (3 * delta**2) + 4 / 29
-        )
+        return value ** (1 / 3) if value > delta**3 else value / (3 * delta**2) + 4 / 29
 
     fx = transform(x / 95.047)
     fy = transform(y / 100)
@@ -133,6 +128,7 @@ def hsl_to_rgb(hsl: list[int] | tuple[int, int, int]) -> list[int]:
     if saturation == 0:
         red = green = blue = lightness
     else:
+
         def hue_to_rgb(p: float, q: float, value: float) -> float:
             value %= 1
             if value < 1 / 6:
@@ -162,9 +158,7 @@ def _visible_rgb_pixels(image: Image.Image) -> np.ndarray:
         raise NoUsablePixelsError("The image contains no visible pixels.")
 
     alpha = visible[:, 3:4].astype(np.float64) / 255.0
-    composited = (
-        visible[:, :3].astype(np.float64) * alpha + 255.0 * (1.0 - alpha)
-    )
+    composited = visible[:, :3].astype(np.float64) * alpha + 255.0 * (1.0 - alpha)
     return np.rint(composited).clip(0, 255).astype(np.uint8)
 
 
@@ -172,9 +166,7 @@ def _sample_pixels(pixels: np.ndarray) -> np.ndarray:
     if len(pixels) <= MAX_SAMPLE_PIXELS:
         return pixels
     generator = np.random.default_rng(SAMPLE_SEED)
-    indexes = generator.choice(
-        len(pixels), size=MAX_SAMPLE_PIXELS, replace=False
-    )
+    indexes = generator.choice(len(pixels), size=MAX_SAMPLE_PIXELS, replace=False)
     return pixels[indexes]
 
 
@@ -260,6 +252,9 @@ def extract_colors(image_bytes: bytes, n_colors: int = 5) -> list[dict[str, obje
         )
 
     extracted.sort(
-        key=lambda color: (-int(color["pixelCount"]), str(color["hex"]))
+        key=lambda color: (
+            -color["pixelCount"] if isinstance(color["pixelCount"], int) else 0,
+            str(color["hex"]),
+        )
     )
     return extracted

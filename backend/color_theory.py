@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from itertools import combinations
 import math
+from itertools import combinations
 from typing import Iterable
 
 import numpy as np
-
 
 MIN_MEANINGFUL_SATURATION = 10
 COMPLEMENTARY_TOLERANCE = 12.0
@@ -73,8 +72,7 @@ def _relationship(
     expected_angles = [round(value, 2) for value in expected]
     measured_angles = [round(value, 2) for value in measured]
     deviation = max(
-        abs(actual - target)
-        for actual, target in zip(measured_angles, expected_angles)
+        abs(actual - target) for actual, target in zip(measured_angles, expected_angles)
     )
     return {
         "type": relationship_type,
@@ -203,11 +201,7 @@ def detect_split_complementary(
     relationships = []
     seen: set[tuple[int, int, int]] = set()
     for base_index, base_hue in evidence:
-        others = [
-            (index, hue)
-            for index, hue in evidence
-            if index != base_index
-        ]
+        others = [(index, hue) for index, hue in evidence if index != base_index]
         for (first_index, first), (second_index, second) in combinations(others, 2):
             measured = [
                 hue_distance(base_hue, first),
@@ -216,8 +210,7 @@ def detect_split_complementary(
             ]
             expected = [150.0, 150.0, 60.0]
             deviation = max(
-                abs(actual - target)
-                for actual, target in zip(measured, expected)
+                abs(actual - target) for actual, target in zip(measured, expected)
             )
             key = (base_index, *sorted((first_index, second_index)))
             if deviation <= tolerance and key not in seen:
@@ -250,18 +243,14 @@ def detect_monochromatic(
         if values[1] < MIN_MEANINGFUL_SATURATION or values in seen:
             continue
         seen.add(values)
-        distinct.append(
-            (index, {"h": values[0], "s": values[1], "l": values[2]})
-        )
+        distinct.append((index, {"h": values[0], "s": values[1], "l": values[2]}))
     if len(distinct) < 2:
         return []
 
     mean_hue = circular_mean(item["h"] for _, item in distinct)
     if mean_hue is None:
         return []
-    measured = [
-        hue_distance(item["h"], mean_hue) for _, item in distinct
-    ]
+    measured = [hue_distance(item["h"], mean_hue) for _, item in distinct]
     deviation = max(measured)
     saturation_range = max(item["s"] for _, item in distinct) - min(
         item["s"] for _, item in distinct
@@ -269,10 +258,7 @@ def detect_monochromatic(
     lightness_range = max(item["l"] for _, item in distinct) - min(
         item["l"] for _, item in distinct
     )
-    if (
-        deviation > tolerance
-        or (saturation_range <= 10 and lightness_range <= 10)
-    ):
+    if deviation > tolerance or (saturation_range <= 10 and lightness_range <= 10):
         return []
     return [
         _relationship(
@@ -309,13 +295,7 @@ def analyze_warm_cool_balance(colors: list[dict[str, object]]) -> dict[str, obje
         }
     warm_ratio = warm_count / categorized
     cool_ratio = cool_count / categorized
-    balance = (
-        "warm"
-        if warm_ratio > 0.7
-        else "cool"
-        if cool_ratio > 0.7
-        else "balanced"
-    )
+    balance = "warm" if warm_ratio > 0.7 else "cool" if cool_ratio > 0.7 else "balanced"
     return {
         "balance": balance,
         "warm_count": warm_count,
@@ -346,11 +326,9 @@ def calculate_relationship_fit(
     involved: set[int] = set()
     for relationship in detected:
         relationship_type = str(relationship["type"])
-        if (
-            relationship_type not in best_by_type
-            or float(relationship["confidence"])
-            > float(best_by_type[relationship_type]["confidence"])
-        ):
+        if relationship_type not in best_by_type or float(
+            relationship["confidence"]
+        ) > float(best_by_type[relationship_type]["confidence"]):
             best_by_type[relationship_type] = relationship
         involved.update(int(index) for index in relationship["color_indexes"])
 
@@ -400,8 +378,8 @@ def analyze_color_theory(colors: list[dict[str, object]]) -> dict[str, object]:
         "split_complementary": detect_split_complementary(evidence),
         "monochromatic": detect_monochromatic(colors),
     }
-    relationship_fit, relationship_summary, factors = (
-        calculate_relationship_fit(harmonies, len(evidence))
+    relationship_fit, relationship_summary, factors = calculate_relationship_fit(
+        harmonies, len(evidence)
     )
     temperature_balance = analyze_warm_cool_balance(colors)
 
@@ -413,9 +391,7 @@ def analyze_color_theory(colors: list[dict[str, object]]) -> dict[str, object]:
         "split_complementary": "Split-Complementary Relationship Detected",
         "monochromatic": "Monochromatic Relationship Detected",
     }
-    tags = [
-        labels[name] for name, relationships in harmonies.items() if relationships
-    ]
+    tags = [labels[name] for name, relationships in harmonies.items() if relationships]
     balance = temperature_balance["balance"]
     tags.append(
         "Neutral Palette"

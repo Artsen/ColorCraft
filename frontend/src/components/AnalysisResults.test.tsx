@@ -22,6 +22,8 @@ describe('AnalysisResults', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.queryByText('Harmony Score')).not.toBeInTheDocument()
-    expect(screen.getByText('#ff0000 + #0000ff • Ratio: 2.15')).toBeInTheDocument()
+    expect(
+      screen.getByText('#ff0000 + #0000ff • Ratio: 2.15'),
+    ).toBeInTheDocument()
   })
 })

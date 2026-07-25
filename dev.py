@@ -2,20 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import os
-from pathlib import Path
 import shutil
 import signal
 import socket
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable, Sequence
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
-
 
 ROOT = Path(__file__).resolve().parent
 BACKEND_DIR = ROOT / "backend"
@@ -228,6 +227,10 @@ def readiness_url(settings: RuntimeSettings) -> str:
     return f"{settings.client_api_url}/ready"
 
 
+def metadata_url(settings: RuntimeSettings) -> str:
+    return f"{settings.client_api_url}/metadata"
+
+
 def wait_for_readiness(
     settings: RuntimeSettings,
     processes: Sequence[tuple[ProcessStep, subprocess.Popen[bytes]]],
@@ -248,7 +251,13 @@ def wait_for_readiness(
                 if response.status == 200 and payload.get("status") == "ready":
                     return
                 last_error = f"readiness returned status {response.status}"
-        except (HTTPError, URLError, OSError, TimeoutError, json.JSONDecodeError) as error:
+        except (
+            HTTPError,
+            URLError,
+            OSError,
+            TimeoutError,
+            json.JSONDecodeError,
+        ) as error:
             last_error = str(error)
         sleep(0.2)
 
@@ -295,6 +304,7 @@ def run_dev_launcher(
         print(f"  API:       {runtime.client_api_url}")
         print(f"  Health:    {runtime.client_api_url}/health")
         print(f"  Readiness: {readiness_url(runtime)}")
+        print(f"  Metadata:  {metadata_url(runtime)}")
         print("Waiting for API readiness...")
 
         for step in plan.steps:

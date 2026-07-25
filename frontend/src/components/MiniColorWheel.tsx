@@ -8,7 +8,12 @@ interface MiniColorWheelProps {
   size?: number
 }
 
-export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: MiniColorWheelProps) {
+export default function MiniColorWheel({
+  baseHue,
+  angles,
+  colors,
+  size = 120,
+}: MiniColorWheelProps) {
   const svgRef = useRef<SVGSVGElement>(null)
 
   useEffect(() => {
@@ -30,13 +35,14 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
     // Draw color wheel segments
     const segmentCount = 12
     const segmentAngle = 360 / segmentCount
-    
+
     for (let i = 0; i < segmentCount; i++) {
       const startAngle = (i * segmentAngle - 90) * (Math.PI / 180)
       const endAngle = ((i + 1) * segmentAngle - 90) * (Math.PI / 180)
       const hue = i * segmentAngle
-      
-      const arc = d3.arc()
+
+      const arc = d3
+        .arc()
         .innerRadius(radius * 0.6)
         .outerRadius(radius)
         .startAngle(startAngle)
@@ -54,7 +60,7 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
         for (let j = i + 1; j < angles.length; j++) {
           const angle1 = (angles[i] - 90) * (Math.PI / 180)
           const angle2 = (angles[j] - 90) * (Math.PI / 180)
-          
+
           const x1 = Math.cos(angle1) * radius * 0.75
           const y1 = Math.sin(angle1) * radius * 0.75
           const x2 = Math.cos(angle2) * radius * 0.75
@@ -94,7 +100,6 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
         .attr('stroke', 'var(--color-preview-outline)')
         .attr('stroke-width', 1)
     })
-
   }, [baseHue, angles, colors, size])
 
   return (
@@ -107,4 +112,3 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
     />
   )
 }
-

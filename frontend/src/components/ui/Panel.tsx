@@ -10,7 +10,10 @@ export default function Panel({
   tone?: 'default' | 'recessed' | 'elevated'
 }) {
   return (
-    <div className={`panel ${tone === 'default' ? '' : tone} ${className}`.trim()} {...props}>
+    <div
+      className={`panel ${tone === 'default' ? '' : tone} ${className}`.trim()}
+      {...props}
+    >
       {children}
     </div>
   )

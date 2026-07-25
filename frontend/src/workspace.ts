@@ -1,34 +1,55 @@
 import type { Color, ExtractedColor, RGB } from './api/contracts'
 
-export type WorkspaceView = 'create' | 'review' | 'export'
+export type WorkspaceView = 'create' | 'review' | 'export' | 'library'
 export type ReviewView = 'overview' | 'harmony' | 'contrast' | 'suggestions'
-export type PaletteColor = Color & Partial<Pick<ExtractedColor, 'population' | 'pixelCount'>>
+export type PaletteColor = Color &
+  Partial<Pick<ExtractedColor, 'population' | 'pixelCount'>>
 
-export const workspaceViews: WorkspaceView[] = ['create', 'review', 'export']
-export const reviewViews: ReviewView[] = ['overview', 'harmony', 'contrast', 'suggestions']
+export const workspaceViews: WorkspaceView[] = [
+  'create',
+  'review',
+  'export',
+  'library',
+]
+export const reviewViews: ReviewView[] = [
+  'overview',
+  'harmony',
+  'contrast',
+  'suggestions',
+]
 
-export function viewFromLocation(search = window.location.search): WorkspaceView {
+export function viewFromLocation(
+  search = window.location.search,
+): WorkspaceView {
   const view = new URLSearchParams(search).get('view')
   return workspaceViews.includes(view as WorkspaceView)
     ? (view as WorkspaceView)
     : 'create'
 }
 
-export function urlForView(view: WorkspaceView, href = window.location.href): string {
+export function urlForView(
+  view: WorkspaceView,
+  href = window.location.href,
+): string {
   const url = new URL(href)
   url.searchParams.set('view', view)
   if (view !== 'review') url.searchParams.delete('review')
   return `${url.pathname}${url.search}${url.hash}`
 }
 
-export function reviewFromLocation(search = window.location.search): ReviewView {
+export function reviewFromLocation(
+  search = window.location.search,
+): ReviewView {
   const review = new URLSearchParams(search).get('review')
   return reviewViews.includes(review as ReviewView)
     ? (review as ReviewView)
     : 'overview'
 }
 
-export function urlForReview(review: ReviewView, href = window.location.href): string {
+export function urlForReview(
+  review: ReviewView,
+  href = window.location.href,
+): string {
   const url = new URL(href)
   url.searchParams.set('view', 'review')
   url.searchParams.set('review', review)

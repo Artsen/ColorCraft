@@ -9,7 +9,11 @@ function parseBoolean(value: string | undefined, name: string): boolean {
   throw new Error(`${name} must be true or false.`)
 }
 
-function parsePort(value: string | undefined, fallback: number, name: string): number {
+function parsePort(
+  value: string | undefined,
+  fallback: number,
+  name: string,
+): number {
   const port = value === undefined || value === '' ? fallback : Number(value)
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error(`${name} must be an integer between 1 and 65535.`)
@@ -50,10 +54,11 @@ export default defineConfig(({ mode }) => {
     'COLORCRAFT_API_PORT',
   )
 
-  if (!allowLanAccess && (!isLoopbackHost(webHost) || !isLoopbackHost(apiHost))) {
-    throw new Error(
-      'LAN hosts require COLORCRAFT_ALLOW_LAN_ACCESS=true.',
-    )
+  if (
+    !allowLanAccess &&
+    (!isLoopbackHost(webHost) || !isLoopbackHost(apiHost))
+  ) {
+    throw new Error('LAN hosts require COLORCRAFT_ALLOW_LAN_ACCESS=true.')
   }
 
   const proxyTarget =

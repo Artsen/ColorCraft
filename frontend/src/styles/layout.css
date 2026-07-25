@@ -39,9 +39,16 @@
   font: var(--font-metadata);
 }
 
-.new-palette-button { width: 100%; }
-.shell-navigation { display: grid; gap: var(--space-1); }
-.navigation-item-wrap { min-width: 0; }
+.new-palette-button {
+  width: 100%;
+}
+.shell-navigation {
+  display: grid;
+  gap: var(--space-1);
+}
+.navigation-item-wrap {
+  min-width: 0;
+}
 
 .navigation-item {
   position: relative;
@@ -65,13 +72,13 @@
   background: var(--color-surface-hover);
 }
 
-.navigation-item[aria-current="page"] {
+.navigation-item[aria-current='page'] {
   color: var(--color-text-primary);
   border-color: var(--color-border-subtle);
   background: var(--color-surface-selected);
 }
 
-.navigation-item[aria-current="page"]::before {
+.navigation-item[aria-current='page']::before {
   position: absolute;
   top: 8px;
   bottom: 8px;
@@ -79,7 +86,7 @@
   width: 3px;
   border-radius: var(--radius-pill);
   background: var(--color-primary);
-  content: "";
+  content: '';
 }
 
 .navigation-item:disabled {
@@ -100,18 +107,71 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 
+.recent-palettes {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.recent-palettes h2 {
+  margin: 0 var(--space-3);
+  color: var(--color-text-subtle);
+  font: var(--font-metadata);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.recent-palettes > div {
+  display: grid;
+  gap: 2px;
+}
+.recent-palettes button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 34px;
+  padding-inline: var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  font: var(--font-metadata);
+  text-align: left;
+}
+.recent-palettes button:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-hover);
+}
+.recent-palettes button span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-palette-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
 .sidebar-theme .theme-control {
   align-items: stretch;
   flex-direction: column;
 }
 
-.shell-main { min-width: 0; }
+.shell-main {
+  min-width: 0;
+}
 .mobile-topbar,
-.mobile-navigation { display: none; }
+.mobile-navigation {
+  display: none;
+}
 
 .shell-workspace {
   min-width: 0;
-  padding: var(--space-6) clamp(var(--space-4), 3vw, var(--space-8)) var(--space-9);
+  padding: var(--space-6) clamp(var(--space-4), 3vw, var(--space-8))
+    var(--space-9);
 }
 
 .workspace-header {
@@ -124,8 +184,20 @@
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.workspace-header h1 { margin-bottom: var(--space-1); }
-.workspace-header p { margin-bottom: 0; }
+.workspace-header h1 {
+  margin-bottom: var(--space-1);
+}
+.workspace-header p {
+  margin-bottom: 0;
+}
+.workspace-header-actions,
+.save-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
 .workspace-kicker {
   margin: 0 0 var(--space-1);
   color: var(--color-text-subtle);
@@ -134,9 +206,31 @@
   text-transform: uppercase;
 }
 
-.workspace-content { display: grid; gap: var(--space-4); }
-.content-stack { display: grid; gap: var(--space-5); }
-.panel-stack { display: grid; gap: var(--space-4); }
-.section-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
-.split-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
-.metric-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
+.workspace-content {
+  display: grid;
+  gap: var(--space-4);
+}
+.content-stack {
+  display: grid;
+  gap: var(--space-5);
+}
+.panel-stack {
+  display: grid;
+  gap: var(--space-4);
+}
+.section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+}
+.split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-3);
+}

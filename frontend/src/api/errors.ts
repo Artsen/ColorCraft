@@ -25,7 +25,10 @@ export class ColorCraftApiError extends Error {
   }
 }
 
-export function backendError(status: number, payload: unknown): ColorCraftApiError {
+export function backendError(
+  status: number,
+  payload: unknown,
+): ColorCraftApiError {
   const parsed = errorResponseSchema.safeParse(payload)
   if (parsed.success) {
     return new ColorCraftApiError(parsed.data.error.message, {

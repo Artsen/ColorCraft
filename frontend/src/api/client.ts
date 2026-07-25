@@ -15,7 +15,9 @@ import {
   ColorCraftApiError,
 } from './errors'
 
-const configuredBaseUrl = (import.meta.env.VITE_COLORCRAFT_API_URL || '').replace(/\/$/, '')
+const configuredBaseUrl = (
+  import.meta.env.VITE_COLORCRAFT_API_URL || ''
+).replace(/\/$/, '')
 
 function apiUrl(path: string): string {
   return `${configuredBaseUrl}${path}`

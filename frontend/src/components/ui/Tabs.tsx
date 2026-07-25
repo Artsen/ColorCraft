@@ -33,7 +33,9 @@ export default function Tabs({
       {options.map((option, index) => (
         <button
           key={option.id}
-          ref={(node) => { refs.current[index] = node }}
+          ref={(node) => {
+            refs.current[index] = node
+          }}
           id={`${option.id}-tab`}
           type="button"
           role="tab"

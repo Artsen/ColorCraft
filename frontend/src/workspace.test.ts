@@ -13,13 +13,18 @@ describe('workspace URL and color utilities', () => {
     expect(viewFromLocation('?view=review')).toBe('review')
     expect(viewFromLocation('?view=unknown')).toBe('create')
     expect(viewFromLocation('')).toBe('create')
-    expect(urlForView('export', 'http://localhost/?view=create')).toBe('/?view=export')
+    expect(urlForView('export', 'http://localhost/?view=create')).toBe(
+      '/?view=export',
+    )
   })
 
   it('normalizes unprefixed HEX without accepting partial values', () => {
     expect(normalizeHexDraft('aabbcc')).toBe('#aabbcc')
     expect(colorFromHex('aabbcc')).toEqual(
-      expect.objectContaining({ hex: '#AABBCC', rgb: { r: 170, g: 187, b: 204 } }),
+      expect.objectContaining({
+        hex: '#AABBCC',
+        rgb: { r: 170, g: 187, b: 204 },
+      }),
     )
     expect(colorFromHex('#abc')).toBeNull()
   })

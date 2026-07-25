@@ -32,12 +32,48 @@ export const roleChecks: Array<{
   background: PaletteRole
   preview: 'page' | 'surface' | 'action' | 'border' | 'focus'
 }> = [
-  { id: 'primary-page', label: 'Primary text on page background', foreground: 'primaryText', background: 'pageBackground', preview: 'page' },
-  { id: 'secondary-surface', label: 'Secondary text on surface', foreground: 'secondaryText', background: 'surface', preview: 'surface' },
-  { id: 'action-primary', label: 'Action text on primary action', foreground: 'actionText', background: 'primaryAction', preview: 'action' },
-  { id: 'border-surface', label: 'Border against surface', foreground: 'border', background: 'surface', preview: 'border' },
-  { id: 'focus-page', label: 'Focus indicator against page background', foreground: 'focusIndicator', background: 'pageBackground', preview: 'focus' },
-  { id: 'focus-surface', label: 'Focus indicator against surface', foreground: 'focusIndicator', background: 'surface', preview: 'focus' },
+  {
+    id: 'primary-page',
+    label: 'Primary text on page background',
+    foreground: 'primaryText',
+    background: 'pageBackground',
+    preview: 'page',
+  },
+  {
+    id: 'secondary-surface',
+    label: 'Secondary text on surface',
+    foreground: 'secondaryText',
+    background: 'surface',
+    preview: 'surface',
+  },
+  {
+    id: 'action-primary',
+    label: 'Action text on primary action',
+    foreground: 'actionText',
+    background: 'primaryAction',
+    preview: 'action',
+  },
+  {
+    id: 'border-surface',
+    label: 'Border against surface',
+    foreground: 'border',
+    background: 'surface',
+    preview: 'border',
+  },
+  {
+    id: 'focus-page',
+    label: 'Focus indicator against page background',
+    foreground: 'focusIndicator',
+    background: 'pageBackground',
+    preview: 'focus',
+  },
+  {
+    id: 'focus-surface',
+    label: 'Focus indicator against surface',
+    foreground: 'focusIndicator',
+    background: 'surface',
+    preview: 'focus',
+  },
 ]
 
 function linearChannel(value: number): number {
@@ -55,9 +91,18 @@ export function relativeLuminance(color: Pick<Color, 'rgb'>): number {
   )
 }
 
-export function contrastRatio(foreground: Pick<Color, 'rgb'>, background: Pick<Color, 'rgb'>): number {
-  const lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background))
-  const darker = Math.min(relativeLuminance(foreground), relativeLuminance(background))
+export function contrastRatio(
+  foreground: Pick<Color, 'rgb'>,
+  background: Pick<Color, 'rgb'>,
+): number {
+  const lighter = Math.max(
+    relativeLuminance(foreground),
+    relativeLuminance(background),
+  )
+  const darker = Math.min(
+    relativeLuminance(foreground),
+    relativeLuminance(background),
+  )
   return (lighter + 0.05) / (darker + 0.05)
 }
 
@@ -67,6 +112,8 @@ export function pruneRoleAssignments(
 ): RoleAssignments {
   const current = new Set(colors.map((color) => color.hex.toLowerCase()))
   return Object.fromEntries(
-    Object.entries(assignments).filter(([, hex]) => hex && current.has(hex.toLowerCase())),
+    Object.entries(assignments).filter(
+      ([, hex]) => hex && current.has(hex.toLowerCase()),
+    ),
   ) as RoleAssignments
 }

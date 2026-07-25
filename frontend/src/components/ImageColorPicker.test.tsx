@@ -18,7 +18,9 @@ describe('ImageColorPicker dialog focus', () => {
       />,
     )
 
-    expect(screen.getByRole('dialog', { name: 'Pick a color from the image' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('dialog', { name: 'Pick a color from the image' }),
+    ).toBeInTheDocument()
     const close = screen.getByRole('button', { name: 'Close dialog' })
     const cancel = screen.getByRole('button', { name: 'Cancel' })
     expect(close).toHaveFocus()

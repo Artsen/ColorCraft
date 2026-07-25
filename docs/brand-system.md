@@ -8,10 +8,10 @@ compact information density, restrained radii, semantic controls, and a narrow
 iris-to-ember accent. ColorCraft remains its own product. It does not reuse the
 Web Video Optimizer monogram, video metaphors, or video-specific navigation.
 
-The product uses the family application-shell grammar for three real workflow
-stages: Create, Review, and Export. It remains a focused local utility rather
-than a dashboard. Library, recent-palette, account, and persistence surfaces
-must not appear until the corresponding product capabilities exist.
+The product uses the family application-shell grammar for four real workflow
+destinations: Create, Review, Export, and Library. Library and recent-palette
+surfaces represent browser-local IndexedDB records. ColorCraft remains a focused
+local utility rather than a dashboard and does not imply accounts or cloud sync.
 
 ## Voice
 
