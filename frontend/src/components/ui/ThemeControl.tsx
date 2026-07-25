@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import {
   applyTheme,
   persistTheme,
@@ -7,6 +7,7 @@ import {
 } from '../../theme'
 
 export default function ThemeControl() {
+  const inputId = useId()
   const [preference, setPreference] = useState<ThemePreference>(() => storedTheme())
 
   useEffect(() => {
@@ -19,16 +20,27 @@ export default function ThemeControl() {
     return () => media.removeEventListener('change', onChange)
   }, [preference])
 
+  useEffect(() => {
+    const syncPreference = (event: Event) => {
+      setPreference((event as CustomEvent<ThemePreference>).detail)
+    }
+    window.addEventListener('colorcraft-theme-change', syncPreference)
+    return () => window.removeEventListener('colorcraft-theme-change', syncPreference)
+  }, [])
+
   const changeTheme = (next: ThemePreference) => {
     persistTheme(next)
     setPreference(next)
+    window.dispatchEvent(
+      new CustomEvent<ThemePreference>('colorcraft-theme-change', { detail: next }),
+    )
   }
 
   return (
     <div className="theme-control">
-      <label htmlFor="theme-preference">Theme</label>
+      <label htmlFor={inputId}>Theme</label>
       <select
-        id="theme-preference"
+        id={inputId}
         value={preference}
         onChange={(event) => changeTheme(event.target.value as ThemePreference)}
       >

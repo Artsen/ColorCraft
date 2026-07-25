@@ -1,8 +1,9 @@
 import Button from './ui/Button'
-import Notice from './ui/Notice'
+import Notice, { type NoticeVariant } from './ui/Notice'
 
 export interface NoticeState {
   message: string
+  variant?: NoticeVariant
   retry?: () => void
 }
 
@@ -13,7 +14,7 @@ interface InlineNoticeProps {
 
 export default function InlineNotice({ notice, onDismiss }: InlineNoticeProps) {
   return (
-    <Notice variant="error">
+    <Notice variant={notice.variant ?? 'error'}>
       <p>{notice.message}</p>
       <div className="notice-actions">
         {notice.retry && (

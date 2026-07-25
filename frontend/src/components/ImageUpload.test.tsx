@@ -1,54 +1,52 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { extractColors } from '../api/client'
-import { ColorCraftApiError } from '../api/errors'
-import ImageUpload from './ImageUpload'
+import { describe, expect, it, vi } from 'vitest'
+import ImageUpload, { MAX_IMAGE_BYTES } from './ImageUpload'
 
-vi.mock('../api/client', () => ({
-  extractColors: vi.fn(),
-}))
+function imageFile(name = 'source.png', type = 'image/png') {
+  return new File(['image'], name, { type })
+}
 
-describe('ImageUpload inline notices', () => {
-  let consoleError: ReturnType<typeof vi.spyOn>
+describe('ImageUpload', () => {
+  it('accepts a valid image through drag and drop', async () => {
+    const onImageSelected = vi.fn()
+    render(<ImageUpload onImageSelected={onImageSelected} onStartManual={vi.fn()} />)
+    const zone = screen.getByRole('button', { name: 'Choose or drop a source image' })
+    const file = imageFile()
 
-  beforeEach(() => {
-    vi.mocked(extractColors).mockReset()
-    consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    vi.stubGlobal('URL', {
-      ...URL,
-      createObjectURL: vi.fn(() => 'blob:preview'),
-    })
+    fireEvent.dragEnter(zone, { dataTransfer: { files: [file] } })
+    expect(screen.getByText('Release to use this image')).toBeInTheDocument()
+    fireEvent.drop(zone, { dataTransfer: { files: [file] } })
+
+    await waitFor(() => expect(onImageSelected).toHaveBeenCalledWith(file))
   })
 
-  afterEach(() => {
-    consoleError.mockRestore()
-  })
-
-  it('shows an actionable inline notice and retries extraction', async () => {
-    vi.mocked(extractColors).mockRejectedValue(
-      new ColorCraftApiError(
-        'The image could not be decoded. Choose a valid JPG, PNG, or WebP image.',
-        { code: 'image_decode_error', status: 422 },
-      ),
-    )
+  it('opens the file input from the keyboard', () => {
     const { container } = render(
-      <ImageUpload onColorsExtracted={vi.fn()} onSkipUpload={vi.fn()} />,
+      <ImageUpload onImageSelected={vi.fn()} onStartManual={vi.fn()} />,
     )
-    const input = container.querySelector('input[type="file"]')
-    expect(input).not.toBeNull()
-
-    fireEvent.change(input!, {
-      target: {
-        files: [new File(['invalid'], 'invalid.png', { type: 'image/png' })],
-      },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Extract Colors' }))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The image could not be decoded. Choose a valid JPG, PNG, or WebP image.',
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!
+    const click = vi.spyOn(input, 'click')
+    fireEvent.keyDown(
+      screen.getByRole('button', { name: 'Choose or drop a source image' }),
+      { key: 'Enter' },
     )
+    expect(click).toHaveBeenCalledOnce()
+  })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
-    await waitFor(() => expect(extractColors).toHaveBeenCalledTimes(2))
+  it('rejects unsupported and oversized files inline', async () => {
+    const onImageSelected = vi.fn()
+    const { container } = render(
+      <ImageUpload onImageSelected={onImageSelected} onStartManual={vi.fn()} />,
+    )
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!
+
+    fireEvent.change(input, { target: { files: [imageFile('notes.txt', 'text/plain')] } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a JPG, PNG, or WebP image.')
+
+    const oversized = imageFile()
+    Object.defineProperty(oversized, 'size', { value: MAX_IMAGE_BYTES + 1 })
+    fireEvent.change(input, { target: { files: [oversized] } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose an image smaller than 15 MB.')
+    expect(onImageSelected).not.toHaveBeenCalled()
   })
 })

@@ -1,114 +1,131 @@
-import { useState } from 'react'
-import { ImagePlus } from 'lucide-react'
-import { extractColors } from '../api/client'
-import type { Color } from '../api/contracts'
-import { errorMessage } from '../api/errors'
-import InlineNotice, { type NoticeState } from './InlineNotice'
+import { useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
+import { ImagePlus, Upload } from 'lucide-react'
 import Button from './ui/Button'
-import Panel from './ui/Panel'
-import SectionHeader from './ui/SectionHeader'
+import Notice from './ui/Notice'
 
-interface ImageUploadProps {
-  onColorsExtracted: (colors: Color[], imageFile?: File, imageUrl?: string) => void
-  onSkipUpload: () => void
+export const MAX_IMAGE_BYTES = 15 * 1024 * 1024
+const acceptedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
+export function validateImageFile(file: File): string | null {
+  const supportedExtension = /\.(?:jpe?g|png|webp)$/i.test(file.name)
+  if (!acceptedTypes.has(file.type) && !(file.type === '' && supportedExtension)) {
+    return 'Choose a JPG, PNG, or WebP image.'
+  }
+  if (file.size > MAX_IMAGE_BYTES) {
+    return 'Choose an image smaller than 15 MB.'
+  }
+  return null
 }
 
-export default function ImageUpload({ onColorsExtracted, onSkipUpload }: ImageUploadProps) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [nColors, setNColors] = useState(5)
+interface ImageUploadProps {
+  onImageSelected: (file: File) => void | Promise<void>
+  onStartManual: () => void
+}
+
+export default function ImageUpload({
+  onImageSelected,
+  onStartManual,
+}: ImageUploadProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragReady, setDragReady] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [notice, setNotice] = useState<NoticeState | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      setPreviewUrl(URL.createObjectURL(file))
+  const selectFile = async (file?: File) => {
+    if (!file) return
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      setError(validationError)
+      return
     }
-  }
 
-  const handleExtractColors = async () => {
-    if (!selectedFile) return
-
+    setError(null)
     setLoading(true)
-    setNotice(null)
     try {
-      const data = await extractColors(selectedFile, nColors)
-      onColorsExtracted(data.colors, selectedFile, previewUrl || undefined)
-    } catch (error) {
-      console.error('Error extracting colors:', error)
-      setNotice({
-        message: errorMessage(error),
-        retry: () => void handleExtractColors(),
-      })
+      await onImageSelected(file)
     } finally {
       setLoading(false)
     }
   }
 
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setDragReady(false)
+    void selectFile(event.dataTransfer.files[0])
+  }
+
+  const openFilePicker = () => inputRef.current?.click()
+  const handleDropZoneKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      openFilePicker()
+    }
+  }
+
   return (
-    <Panel>
-      <SectionHeader
-        title="Upload and extract"
-        description="Choose an image to find its dominant colors, or begin with a manual palette."
+    <section className="create-empty" aria-labelledby="create-palette-title">
+      <div>
+        <p className="workspace-kicker">New palette</p>
+        <h2 id="create-palette-title">Create a palette</h2>
+        <p>Drop an image here or choose an image from this computer.</p>
+      </div>
+
+      {error && <Notice variant="error">{error}</Notice>}
+
+      <div
+        className={`drop-zone ${dragReady ? 'drag-ready' : ''}`}
+        role="button"
+        tabIndex={0}
+        aria-label="Choose or drop a source image"
+        onClick={openFilePicker}
+        onKeyDown={handleDropZoneKeyDown}
+        onDragEnter={(event) => {
+          event.preventDefault()
+          setDragReady(true)
+        }}
+        onDragOver={(event) => {
+          event.preventDefault()
+          setDragReady(true)
+        }}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setDragReady(false)
+          }
+        }}
+        onDrop={handleDrop}
+      >
+        <ImagePlus className="drop-zone-icon" size={42} aria-hidden="true" />
+        <strong>{dragReady ? 'Release to use this image' : 'Drop an image here'}</strong>
+        <span>JPG, PNG, or WebP · up to 15 MB</span>
+      </div>
+
+      <label className="visually-hidden" htmlFor="source-image">Source image</label>
+      <input
+        ref={inputRef}
+        id="source-image"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="visually-hidden"
+        onChange={(event) => {
+          void selectFile(event.target.files?.[0])
+          event.target.value = ''
+        }}
       />
 
-      {notice && (
-        <div className="panel-stack">
-          <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
-        </div>
-      )}
-
-      <label className="drop-zone" htmlFor="source-image">
-        {previewUrl ? (
-          <div className="panel-stack">
-            <img src={previewUrl} alt="Selected preview" />
-            <p>{selectedFile?.name}</p>
-          </div>
-        ) : (
-          <div className="panel-stack">
-            <ImagePlus className="drop-zone-icon" size={40} aria-hidden="true" />
-            <div>
-              <strong>Choose an image</strong> from this device
-            </div>
-            <p>JPG, PNG, or WebP</p>
-          </div>
-        )}
-        <input
-          id="source-image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={handleFileSelect}
-          className="visually-hidden"
-        />
-      </label>
-
-      <div className="section-actions upload-actions">
-        {selectedFile ? (
-          <>
-            <div className="inline-field">
-              <label htmlFor="extract-count">Colors</label>
-              <input
-                id="extract-count"
-                type="range"
-                min="3"
-                max="10"
-                value={nColors}
-                onChange={(event) => setNColors(Number(event.target.value))}
-              />
-              <output htmlFor="extract-count">{nColors}</output>
-            </div>
-            <Button variant="primary" onClick={handleExtractColors} disabled={loading}>
-              {loading ? 'Extracting…' : 'Extract Colors'}
-            </Button>
-          </>
-        ) : (
-          <Button variant="secondary" onClick={onSkipUpload}>
-            Build a palette manually
-          </Button>
-        )}
+      <div className="create-actions">
+        <Button
+          variant="primary"
+          icon={<Upload size={17} aria-hidden="true" />}
+          onClick={openFilePicker}
+          disabled={loading}
+        >
+          {loading ? 'Reading image…' : 'Choose image'}
+        </Button>
+        <Button variant="secondary" onClick={onStartManual}>Start manually</Button>
       </div>
-    </Panel>
+      <p className="create-metadata">
+        JPG, PNG, or WebP · Processed by the local ColorCraft API
+      </p>
+    </section>
   )
 }

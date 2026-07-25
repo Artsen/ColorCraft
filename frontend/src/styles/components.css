@@ -218,6 +218,12 @@ input[type="range"] {
 }
 .dialog-header { display: flex; align-items: start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); }
 .dialog-header h2 { margin: 0; }
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
 
 .tabs { display: flex; gap: var(--space-1); padding: var(--space-1); border-radius: var(--radius-control); background: var(--color-surface-recessed); }
 .tab {
@@ -265,3 +271,5 @@ input[type="range"] {
 .menu-item:hover,
 .menu-item:focus-visible { background: var(--color-surface-hover); }
 .menu-item.destructive { color: var(--color-danger); }
+.menu-item:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+.field-error { color: var(--color-danger); font: var(--font-metadata); }
