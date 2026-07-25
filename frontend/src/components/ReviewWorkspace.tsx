@@ -16,7 +16,11 @@ import {
   type PaletteRole,
   type RoleAssignments,
 } from '../contrast'
-import type { PaletteColor, ReviewView } from '../workspace'
+import {
+  paletteColorLabel,
+  type PaletteColor,
+  type ReviewView,
+} from '../workspace'
 import ColorSuggestions from './ColorSuggestions'
 import ColorWheel from './ColorWheel'
 import Button from './ui/Button'
@@ -238,7 +242,7 @@ function Harmony({
   colors,
   analysis,
 }: {
-  colors: Color[]
+  colors: PaletteColor[]
   analysis: Analysis
 }) {
   const relationships = orderedRelationships(analysis)
@@ -407,7 +411,7 @@ function Contrast({
   roles,
   onAssignRole,
 }: {
-  colors: Color[]
+  colors: PaletteColor[]
   analysis: Analysis
   roles: RoleAssignments
   onAssignRole: (role: PaletteRole, hex: string | undefined) => void
@@ -427,6 +431,7 @@ function Contrast({
             <label key={role} className="role-field">
               <span>{roleLabels[role]}</span>
               <select
+                aria-label={roleLabels[role]}
                 value={roles[role] ?? ''}
                 onChange={(event) =>
                   onAssignRole(role, event.target.value || undefined)
@@ -434,8 +439,8 @@ function Contrast({
               >
                 <option value="">Unassigned</option>
                 {colors.map((color, index) => (
-                  <option value={color.hex} key={`${color.hex}-${index}`}>
-                    Color {index + 1} · {color.hex}
+                  <option value={color.hex} key={color.id}>
+                    {paletteColorLabel(color, index)}
                   </option>
                 ))}
               </select>
@@ -472,8 +477,18 @@ function Contrast({
                   <div>
                     <h3>{check.label}</h3>
                     <p>
-                      <code>{foreground.hex}</code> on{' '}
-                      <code>{background.hex}</code> ·{' '}
+                      <code>
+                        {foreground.name
+                          ? `${foreground.name} · ${foreground.hex}`
+                          : foreground.hex}
+                      </code>{' '}
+                      on{' '}
+                      <code>
+                        {background.name
+                          ? `${background.name} · ${background.hex}`
+                          : background.hex}
+                      </code>{' '}
+                      ·{' '}
                       <strong>
                         {formatContrastRatio(
                           ratio,

@@ -204,6 +204,8 @@ contents, clipboard contents, or unrelated palette data in user-facing errors.
 | Export | The application view that formats the current palette for external use. | Preserve capitalization. |
 | export format | One supported representation of the current palette. | Current labels are CSS custom properties, JSON, Tailwind theme colors, and SVG swatch sheet. |
 | exported file | A file that the browser creates from the current palette. | Do not imply that ColorCraft stores the file. |
+| ColorCraft JSON | The portable, single-palette JSON format that ColorCraft exports and imports in the browser. | Distinguish its schema version from the IndexedDB saved-palette schema and backend API schemas. |
+| imported palette | A validated ColorCraft JSON palette activated in the current session. | State that it remains unsaved until **Save palette** is selected. |
 | copy | Place generated export text on the system clipboard. | Do not use as a synonym for export or download. |
 | download | Save generated export data as a local file through the browser. | Do not use as a synonym for copy. |
 | current session | The active in-memory application state in the current browser tab. | State separately whether data is saved in IndexedDB. |

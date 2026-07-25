@@ -3,6 +3,8 @@ import { ImagePlus, Upload } from 'lucide-react'
 import { MAX_IMAGE_BYTES, MAX_IMAGE_MEGABYTES } from '../limits'
 import Button from './ui/Button'
 import Notice from './ui/Notice'
+import JsonImportButton from './JsonImportButton'
+import type { ImportedPalette } from '../portablePalette'
 
 const acceptedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
@@ -23,11 +25,15 @@ export function validateImageFile(file: File): string | null {
 interface ImageUploadProps {
   onImageSelected: (file: File) => void | Promise<void>
   onStartManual: () => void
+  onImport?: (palette: ImportedPalette) => void
+  onImportError?: (message: string) => void
 }
 
 export default function ImageUpload({
   onImageSelected,
   onStartManual,
+  onImport = () => undefined,
+  onImportError = () => undefined,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragReady, setDragReady] = useState(false)
@@ -133,6 +139,7 @@ export default function ImageUpload({
         <Button variant="secondary" onClick={onStartManual}>
           Start manually
         </Button>
+        <JsonImportButton onImport={onImport} onError={onImportError} />
       </div>
       <p className="create-metadata">
         JPG, PNG, or WebP · Processed by the local ColorCraft API

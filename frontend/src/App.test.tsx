@@ -15,7 +15,33 @@ import {
 } from './api/client'
 import { analysis, red } from './test/fixtures'
 import { savePalette } from './persistence'
+import { serializePortablePalette } from './portablePalette'
 import App from './App'
+
+function portableFile(name = 'Imported palette') {
+  const text = serializePortablePalette(
+    name,
+    [
+      { ...red, name: 'Primary action' },
+      {
+        ...red,
+        id: 'portable-blue',
+        name: 'Surface',
+        hex: '#0000FF',
+        rgb: { r: 0, g: 0, b: 255 },
+        hsl: { h: 240, s: 100, l: 50 },
+      },
+    ],
+    { primaryText: red.hex },
+  )
+  const file = new File([text], 'palette.json', {
+    type: 'application/json',
+  })
+  Object.defineProperty(file, 'arrayBuffer', {
+    value: vi.fn(async () => new TextEncoder().encode(text).buffer),
+  })
+  return file
+}
 
 vi.mock('./api/client', () => ({
   extractColors: vi.fn(),
@@ -319,5 +345,45 @@ describe('ColorCraft workspace', () => {
     expect(
       within(desktopNavigation()).getByRole('button', { name: 'Review' }),
     ).toBeDisabled()
+  })
+
+  it('imports a validated portable palette locally into an unsaved workspace', async () => {
+    const { container } = render(<App />)
+    const input = container.querySelector<HTMLInputElement>(
+      'input[accept=".json,application/json"]',
+    )!
+    fireEvent.change(input, { target: { files: [portableFile()] } })
+
+    expect(await screen.findByText('Imported palette')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Primary action')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Surface')).toBeInTheDocument()
+    expect(screen.getByText('Unsaved')).toBeInTheDocument()
+    expect(
+      screen.getByText(/was imported locally and remains unsaved/),
+    ).toBeInTheDocument()
+  })
+
+  it('cancels or confirms import replacement without reparsing the file', async () => {
+    const { container } = render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start manually' }))
+    const input = container.querySelector<HTMLInputElement>(
+      'input[accept=".json,application/json"]',
+    )!
+    const file = portableFile('Replacement')
+    fireEvent.change(input, { target: { files: [file] } })
+    expect(
+      await screen.findByRole('dialog', { name: 'Import another palette?' }),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep working' }))
+    expect(screen.getByText('Untitled palette')).toBeInTheDocument()
+
+    fireEvent.change(input, { target: { files: [file] } })
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Discard changes and import',
+      }),
+    )
+    expect(await screen.findByText('Replacement')).toBeInTheDocument()
+    expect(file.arrayBuffer).toHaveBeenCalledTimes(2)
   })
 })

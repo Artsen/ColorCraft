@@ -37,6 +37,7 @@ The React frontend owns:
 - Stale-analysis invalidation
 - Suggestion invalidation
 - Browser-side export generation
+- Browser-side ColorCraft JSON validation and import
 - Saved palette persistence
 - Theme preference
 
@@ -97,7 +98,9 @@ geometric suggestion approaches for each base color. `commonAssociations` and
 `useCases` contain qualified conventional guidance. Suggestions do not change
 the palette automatically. The user must select **Add**.
 
-The frontend fingerprints the current palette. A palette color change
+The frontend gives each active palette color a stable internal ID and optional
+name. Selection and reordering use the ID; backend requests are canonicalized
+to HEX, RGB, and HSL only. The frontend fingerprints the current palette. A palette color change
 invalidates the displayed suggestion results.
 
 ## Export flow
@@ -105,7 +108,7 @@ invalidates the displayed suggestion results.
 The frontend generates every export without an API request:
 
 - CSS custom properties
-- Schema-versioned JSON
+- Portable ColorCraft JSON schema version 2
 - Tailwind theme colors
 - SVG swatch sheet
 
@@ -121,10 +124,17 @@ Export does not create or update a saved palette record.
 The current source-image preview, analysis, suggestions, and unsaved changes
 remain in memory. The URL records the active application view and Review tab.
 
-Saved palette records use schema version 1 in the browser's `colorcraft`
-IndexedDB database. The frontend validates each record before use. It migrates
-unversioned and version-0 records. It ignores malformed records and unknown
-future schema versions.
+Saved palette records use schema version 2 in the browser's `colorcraft`
+IndexedDB database. Saved colors contain internal IDs and optional names. The
+frontend validates each record before use. It migrates schema-version-1 and
+legacy version-0 or unversioned records with deterministic color IDs. It rejects
+malformed records and unknown future schema versions.
+
+The internal saved schema and portable JSON schema are separate contracts.
+Portable JSON version 2 includes `format: "colorcraft-palette"`, optional names,
+ordered colors, extraction metadata, and HEX-based roles, but excludes internal
+IDs. Import also accepts the prior portable JSON version 1. Parsing and
+validation run in the browser before workspace state changes.
 
 Source-image bytes are not part of a saved palette record. See
 [Persistence and privacy](./persistence-and-privacy.md).

@@ -112,9 +112,9 @@ export default function PaletteLibrary({
                     aria-label={`Open ${palette.name}`}
                   >
                     <span className="library-swatches" aria-hidden="true">
-                      {palette.colors.map((color, index) => (
+                      {palette.colors.map((color) => (
                         <i
-                          key={`${color.hex}-${index}`}
+                          key={color.id}
                           style={{ backgroundColor: color.hex }}
                         />
                       ))}

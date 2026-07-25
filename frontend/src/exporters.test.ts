@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { blue, red } from './test/fixtures'
 import {
+  exportTokens,
   generateCss,
   generateJson,
   generateSvg,
@@ -30,14 +31,16 @@ describe('browser palette exporters', () => {
 
   it('generates schema-versioned JSON with population and roles', () => {
     const output = JSON.parse(generateJson(palette))
-    expect(output.schemaVersion).toBe(1)
+    expect(output.schemaVersion).toBe(2)
+    expect(output.format).toBe('colorcraft-palette')
     expect(output.paletteName).toBe(palette.name)
     expect(output.colors.map((color: { hex: string }) => color.hex)).toEqual([
       '#FF0000',
       '#0000FF',
     ])
     expect(output.colors[0].population).toBe(0.7)
-    expect(output.roleAssignments.primaryText).toBe('#ff0000')
+    expect(output.roleAssignments.primaryText).toBe('#FF0000')
+    expect(output.colors[0]).not.toHaveProperty('id')
   })
 
   it('generates a usable ordered Tailwind configuration fragment', () => {
@@ -65,5 +68,36 @@ describe('browser palette exporters', () => {
     expect(sanitizeFilename('../../Launch: Summer?')).toBe('launch-summer')
     expect(sanitizeFilename('<script>')).toBe('script')
     expect(sanitizeFilename('///')).toBe('colorcraft-palette')
+  })
+
+  it('generates safe deterministic tokens from optional Unicode names', () => {
+    const colors = [
+      { ...red, name: 'Prímary action!' },
+      { ...blue, id: 'blue-2', name: 'Primary action' },
+      { ...red, id: 'red-2', name: '🎨' },
+      { ...blue, id: 'blue-3', name: '<script> */' },
+    ]
+    expect(exportTokens(colors)).toEqual([
+      'primary-action',
+      'primary-action-2',
+      'palette-3',
+      'script',
+    ])
+    expect(generateCss({ ...palette, colors })).toContain(
+      '--color-primary-action-2',
+    )
+    expect(generateTailwind({ ...palette, colors })).toContain(
+      "'palette-3': '#ff0000'",
+    )
+  })
+
+  it('includes and escapes visible names in SVG', () => {
+    const output = generateSvg({
+      ...palette,
+      colors: [{ ...red, name: 'Primary <Action> & "Go"' }],
+    })
+    expect(output).toContain(
+      'Primary &lt;Action&gt; &amp; &quot;Go&quot; · #FF0000',
+    )
   })
 })

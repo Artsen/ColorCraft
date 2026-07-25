@@ -39,6 +39,7 @@ def test_curated_product_screenshots_exist() -> None:
         "create-light.png",
         "library-dark.png",
         "mobile-create.png",
+        "palette-organization-light.png",
         "review-dark.png",
         "suggestions-dark.png",
     }

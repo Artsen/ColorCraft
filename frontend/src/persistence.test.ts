@@ -6,6 +6,7 @@ import {
   getSavedPalette,
   listSavedPalettes,
   migratePaletteRecord,
+  paletteSnapshotFingerprint,
   renameSavedPalette,
   savePalette,
 } from './persistence'
@@ -42,6 +43,12 @@ describe('versioned palette persistence', () => {
       first.id,
     ])
     expect(duplicate.name).toBe('Launch palette copy')
+    expect(duplicate.colors.map((color) => color.hex)).toEqual(
+      first.colors.map((color) => color.hex),
+    )
+    expect(duplicate.colors.map((color) => color.id)).not.toEqual(
+      first.colors.map((color) => color.id),
+    )
     expect((await renameSavedPalette(first.id, 'Renamed')).name).toBe('Renamed')
     await deleteSavedPalette(first.id)
     expect(await getSavedPalette(first.id)).toBeNull()
@@ -56,14 +63,54 @@ describe('versioned palette persistence', () => {
     })
     expect(legacy).toEqual(
       expect.objectContaining({
-        schemaVersion: 1,
+        schemaVersion: 2,
         sourceType: 'manual',
         roles: {},
       }),
     )
+    const migratedAgain = migratePaletteRecord({
+      schemaVersion: 1,
+      id: 'legacy-1',
+      name: 'Legacy',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      sourceType: 'manual',
+      colors: [
+        {
+          hex: red.hex,
+          rgb: red.rgb,
+          hsl: red.hsl,
+        },
+      ],
+      roles: {},
+    })
+    expect(migratedAgain?.colors[0].id).toBe(legacy?.colors[0].id)
     expect(migratePaletteRecord({ schemaVersion: 99, id: 'future' })).toBeNull()
     expect(
       migratePaletteRecord({ id: 'broken', colors: [{ hex: '<script>' }] }),
     ).toBeNull()
+  })
+
+  it('fingerprints names, order, values, and roles without a clone false positive', () => {
+    const named = {
+      ...draft,
+      colors: [{ ...red, name: 'Primary' }, blue],
+    }
+    const baseline = paletteSnapshotFingerprint(named)
+    expect(
+      paletteSnapshotFingerprint({ ...named, colors: [...named.colors] }),
+    ).toBe(baseline)
+    expect(
+      paletteSnapshotFingerprint({
+        ...named,
+        colors: [...named.colors].reverse(),
+      }),
+    ).not.toBe(baseline)
+    expect(
+      paletteSnapshotFingerprint({
+        ...named,
+        colors: [{ ...named.colors[0], name: 'Action' }, blue],
+      }),
+    ).not.toBe(baseline)
   })
 })
