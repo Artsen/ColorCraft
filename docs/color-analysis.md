@@ -207,8 +207,14 @@ color changes.
 
 ## Export accuracy and escaping
 
-JSON export uses `schemaVersion: 1`. JSON includes ordered colors, normalized
-color values, optional population, color-role metadata, and role assignments.
+JSON export uses portable `schemaVersion: 3`. JSON includes deterministic
+document-local color keys, ordered normalized colors, optional extraction
+metadata and names, per-color role metadata, and key-based role assignments.
+Internal workspace IDs are excluded.
+
+CSS emits base palette properties plus assigned `--role-*` aliases. Tailwind
+emits base palette keys plus assigned `role-*` semantic keys. SVG rows annotate
+assigned roles.
 
 CSS and Tailwind output sanitize palette names used in comments. SVG output
 escapes XML-sensitive characters. Each SVG swatch compares measured contrast

@@ -9,11 +9,14 @@ request fields are rejected.
 ### Portable palette boundary
 
 ColorCraft JSON import and export are browser-side portable-format contracts,
-not backend API endpoints. Portable schema version 2 uses
+not backend API endpoints. Portable schema version 3 uses
 `format: "colorcraft-palette"`, supports optional Unicode color names and exact
-order, and excludes internal workspace IDs. The importer also accepts portable
-schema version 1. Backend endpoint request and response schemas are unchanged;
-analysis and suggestion requests still contain only HEX, RGB, and HSL.
+order, assigns deterministic document-local keys, and excludes internal
+workspace IDs. Role assignments reference the portable keys. The importer also
+accepts portable schema versions 1 and 2 and maps their HEX roles to the first
+matching color. Backend endpoint request and response schemas are unchanged;
+analysis and suggestion requests still contain only HEX, RGB, and HSL, never
+IDs, names, portable keys, or roles.
 
 The default base URL is `http://127.0.0.1:4100`. FastAPI provides interactive
 OpenAPI documentation at `/docs` and the OpenAPI document at `/openapi.json`.

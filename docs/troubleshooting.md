@@ -146,9 +146,11 @@ unsupported schema or format, contains unknown fields, or has inconsistent
 color or role data.
 
 **Recovery:** Export the palette again from ColorCraft when possible. Confirm
-that the file is a single ColorCraft palette using portable schema version 1 or
-2. ColorCraft validates the complete file and does not partially import invalid
-colors or roles.
+that the file is a single ColorCraft palette using portable schema version 1,
+2, or 3. Version-3 role references must point to unique valid portable color
+keys. ColorCraft validates the complete file and does not partially import
+invalid colors or roles. In version 1 or 2, a role associated with a duplicate
+HEX value maps to the first matching color in palette order.
 
 ## Browser history does not restore a palette
 

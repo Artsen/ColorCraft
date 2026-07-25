@@ -99,20 +99,23 @@ geometric suggestion approaches for each base color. `commonAssociations` and
 the palette automatically. The user must select **Add**.
 
 The frontend gives each active palette color a stable internal ID and optional
-name. Selection and reordering use the ID; backend requests are canonicalized
-to HEX, RGB, and HSL only. The frontend fingerprints the current palette. A palette color change
-invalidates the displayed suggestion results.
+name. Selection, reordering, and role assignments use the ID. Backend requests
+are canonicalized to HEX, RGB, and HSL only. The frontend fingerprints the
+current palette. A palette color change invalidates the displayed suggestion
+results.
 
 ## Export flow
 
 The frontend generates every export without an API request:
 
 - CSS custom properties
-- Portable ColorCraft JSON schema version 2
+- Portable ColorCraft JSON schema version 3
 - Tailwind theme colors
 - SVG swatch sheet
 
-CSS and Tailwind comments replace line breaks and the `*/` sequence in the
+CSS emits base `--color-*` values and assigned `--role-*` aliases. Tailwind
+emits base keys and assigned `role-*` semantic keys. SVG annotates each row with
+its assigned roles. Comments replace line breaks and the `*/` sequence in the
 palette name. SVG output escapes `&`, `<`, `>`, `"`, and `'`. Each swatch label
 uses black or white according to the higher measured contrast ratio. Download
 uses an object URL and revokes the URL after the browser starts the download.
@@ -124,17 +127,21 @@ Export does not create or update a saved palette record.
 The current source-image preview, analysis, suggestions, and unsaved changes
 remain in memory. The URL records the active application view and Review tab.
 
-Saved palette records use schema version 2 in the browser's `colorcraft`
+Saved palette records use schema version 3 in the browser's `colorcraft`
 IndexedDB database. Saved colors contain internal IDs and optional names. The
-frontend validates each record before use. It migrates schema-version-1 and
-legacy version-0 or unversioned records with deterministic color IDs. It rejects
-malformed records and unknown future schema versions.
+frontend validates each record before use. Version-3 roles reference those IDs.
+It migrates schema-version-2 HEX roles and schema-version-1, version-0, or
+unversioned records. A legacy role maps to the first matching color in palette
+order; missing matches are pruned. It rejects malformed records and unknown
+future schema versions.
 
 The internal saved schema and portable JSON schema are separate contracts.
-Portable JSON version 2 includes `format: "colorcraft-palette"`, optional names,
-ordered colors, extraction metadata, and HEX-based roles, but excludes internal
-IDs. Import also accepts the prior portable JSON version 1. Parsing and
-validation run in the browser before workspace state changes.
+Portable JSON version 3 includes `format: "colorcraft-palette"`, optional names,
+ordered colors, extraction metadata, and deterministic document-local color
+keys. Role assignments reference those keys and internal IDs remain excluded.
+Import also accepts portable versions 1 and 2, whose HEX roles map to the first
+matching color. Parsing and validation run in the browser before workspace
+state changes.
 
 Source-image bytes are not part of a saved palette record. See
 [Persistence and privacy](./persistence-and-privacy.md).

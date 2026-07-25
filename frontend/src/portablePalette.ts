@@ -2,7 +2,10 @@ import { z } from 'zod'
 import { colorSchema } from './api/contracts'
 import {
   paletteRoles,
+  remapLegacyHexRoles,
+  roleAssignmentEntries,
   roleLabels,
+  rolesForColor,
   type PaletteRole,
   type RoleAssignments,
 } from './contrast'
@@ -13,10 +16,11 @@ import {
 } from './workspace'
 
 export const PORTABLE_PALETTE_FORMAT = 'colorcraft-palette'
-export const PORTABLE_PALETTE_VERSION = 2
+export const PORTABLE_PALETTE_VERSION = 3
 export const MAX_JSON_IMPORT_BYTES = 1024 * 1024
 export const MAX_JSON_IMPORT_MEGABYTES = 1
 
+const portableKeySchema = z.string().regex(/^color-[1-9][0-9]*$/)
 const roleSchema = z
   .object({
     id: z.enum(paletteRoles),
@@ -34,6 +38,9 @@ const portableColorV2 = portableColorBase
     name: z.string().trim().min(1).max(80).optional(),
     pixelCount: z.number().int().positive().optional(),
   })
+  .strict()
+const portableColorV3 = portableColorV2
+  .extend({ key: portableKeySchema })
   .strict()
 const roleAssignmentsSchema = z
   .object({
@@ -64,6 +71,23 @@ const v2Schema = z
     roleAssignments: roleAssignmentsSchema,
   })
   .strict()
+const v3Schema = z
+  .object({
+    schemaVersion: z.literal(3),
+    format: z.literal(PORTABLE_PALETTE_FORMAT),
+    paletteName: z.string().trim().min(1).max(120),
+    colors: z
+      .array(portableColorV3)
+      .min(1)
+      .max(10)
+      .refine(
+        (colors) =>
+          new Set(colors.map((color) => color.key)).size === colors.length,
+        'Portable color keys must be unique.',
+      ),
+    roleAssignments: roleAssignmentsSchema,
+  })
+  .strict()
 
 export interface ImportedPalette {
   name: string
@@ -91,6 +115,8 @@ function explainSchemaFailure(
   }
   if (field === 'colors' && typeof colorIndex === 'number') {
     const label = `Color ${colorIndex + 1}`
+    if (colorField === 'key')
+      fail(`${label} has a missing or invalid portable key.`)
     if (colorField === 'name')
       fail(`${label} has a name longer than 80 characters.`)
     if (colorField === 'hex')
@@ -105,6 +131,9 @@ function explainSchemaFailure(
       fail(`${label} must have a positive whole-number pixelCount.`)
     if (colorField === 'roles')
       fail(`${label} contains invalid role information.`)
+  }
+  if (field === 'colors' && issue?.code === 'custom') {
+    fail('Portable color keys must be unique.')
   }
   if (field === 'roleAssignments') {
     fail('The palette contains an invalid role assignment.')
@@ -129,12 +158,10 @@ function representationsMatch(color: z.infer<typeof portableColorV2>): boolean {
   )
 }
 
-function validatePortable(
-  value: z.infer<typeof v1Schema> | z.infer<typeof v2Schema>,
-): ImportedPalette {
-  const ordered = [...value.colors].sort(
-    (left, right) => left.order - right.order,
-  )
+function orderedAndValidated<T extends z.infer<typeof portableColorV1>>(
+  colors: T[],
+): T[] {
+  const ordered = [...colors].sort((left, right) => left.order - right.order)
   if (ordered.some((color, index) => color.order !== index + 1)) {
     fail('Color order values must be unique and sequential from 1.')
   }
@@ -148,9 +175,15 @@ function validatePortable(
       fail(`Color ${index + 1} contains an invalid role label.`)
     }
   })
+  return ordered
+}
 
+function validateLegacyPortable(
+  value: z.infer<typeof v1Schema> | z.infer<typeof v2Schema>,
+): ImportedPalette {
+  const ordered = orderedAndValidated(value.colors)
   const paletteHexes = new Set(ordered.map((color) => color.hex.toUpperCase()))
-  const roles = Object.fromEntries(
+  const hexRoles = Object.fromEntries(
     Object.entries(value.roleAssignments).map(([role, hex]) => {
       if (
         !hex ||
@@ -164,30 +197,79 @@ function validatePortable(
       return [role, hex.toUpperCase()]
     }),
   ) as RoleAssignments
-
   ordered.forEach((color, index) => {
     const described = [...color.roles.map((role) => role.id)].sort()
-    const authoritative = paletteRoles
-      .filter((role) => roles[role]?.toUpperCase() === color.hex.toUpperCase())
+    const expected = paletteRoles
+      .filter(
+        (role) => hexRoles[role]?.toUpperCase() === color.hex.toUpperCase(),
+      )
       .sort()
     if (
-      described.length !== authoritative.length ||
-      described.some((role, roleIndex) => role !== authoritative[roleIndex])
+      described.length !== expected.length ||
+      described.some((role, roleIndex) => role !== expected[roleIndex])
     ) {
       fail(
         `Color ${index + 1} has role information that contradicts roleAssignments.`,
       )
     }
   })
-
+  const colors = ordered.map((color) =>
+    paletteColorFromApi(color, {
+      name:
+        'name' in color && typeof color.name === 'string'
+          ? color.name
+          : undefined,
+    }),
+  )
   return {
     name: value.paletteName,
-    colors: ordered.map((color) =>
-      paletteColorFromApi(color, {
-        name: 'name' in color ? color.name : undefined,
+    colors,
+    roles: remapLegacyHexRoles(hexRoles, colors),
+  }
+}
+
+function validateV3Portable(value: z.infer<typeof v3Schema>): ImportedPalette {
+  const ordered = orderedAndValidated(value.colors)
+  const keyIndexes = new Map(
+    ordered.map((color, index) => [color.key, index] as const),
+  )
+  const roleIndexes = Object.fromEntries(
+    roleAssignmentEntries(value.roleAssignments).map(([role, key]) => {
+      const index = keyIndexes.get(key)
+      if (index === undefined) {
+        fail(
+          `The ${roleLabels[role]} role references a portable color key that is not in the palette.`,
+        )
+      }
+      return [role, index]
+    }),
+  ) as Partial<Record<PaletteRole, number>>
+  ordered.forEach((color, index) => {
+    const described = [...color.roles.map((role) => role.id)].sort()
+    const expected = paletteRoles
+      .filter((role) => roleIndexes[role] === index)
+      .sort()
+    if (
+      described.length !== expected.length ||
+      described.some((role, roleIndex) => role !== expected[roleIndex])
+    ) {
+      fail(
+        `Color ${index + 1} has role information that contradicts roleAssignments.`,
+      )
+    }
+  })
+  const colors = ordered.map((color) =>
+    paletteColorFromApi(color, { name: color.name }),
+  )
+  return {
+    name: value.paletteName,
+    colors,
+    roles: Object.fromEntries(
+      paletteRoles.flatMap((role) => {
+        const index = roleIndexes[role]
+        return index === undefined ? [] : [[role, colors[index].id]]
       }),
-    ),
-    roles,
+    ) as RoleAssignments,
   }
 }
 
@@ -215,7 +297,9 @@ export function parsePortablePaletteJson(text: string): ImportedPalette {
       ? v1Schema.safeParse(raw)
       : candidate.schemaVersion === 2
         ? v2Schema.safeParse(raw)
-        : null
+        : candidate.schemaVersion === 3
+          ? v3Schema.safeParse(raw)
+          : null
   if (!parsed?.success) {
     const colorCount = Array.isArray(candidate.colors)
       ? candidate.colors.length
@@ -228,7 +312,9 @@ export function parsePortablePaletteJson(text: string): ImportedPalette {
     if (parsed) explainSchemaFailure(candidate, parsed.error.issues)
     fail('This file is not a supported ColorCraft palette.')
   }
-  return validatePortable(parsed.data)
+  return parsed.data.schemaVersion === 3
+    ? validateV3Portable(parsed.data)
+    : validateLegacyPortable(parsed.data)
 }
 
 export async function readPortablePaletteFile(
@@ -255,11 +341,15 @@ export function serializePortablePalette(
   colors: PaletteColor[],
   roles: RoleAssignments,
 ): string {
+  const keyById = new Map(
+    colors.map((color, index) => [color.id, `color-${index + 1}`]),
+  )
   const value = {
     schemaVersion: PORTABLE_PALETTE_VERSION,
     format: PORTABLE_PALETTE_FORMAT,
     paletteName: name,
     colors: colors.map((color, index) => ({
+      key: `color-${index + 1}`,
       order: index + 1,
       ...(color.name ? { name: color.name } : {}),
       hex: color.hex.toUpperCase(),
@@ -271,17 +361,17 @@ export function serializePortablePalette(
       ...(color.pixelCount === undefined
         ? {}
         : { pixelCount: color.pixelCount }),
-      roles: paletteRoles
-        .filter(
-          (role) => roles[role]?.toLowerCase() === color.hex.toLowerCase(),
-        )
-        .map((role) => ({ id: role, label: roleLabels[role] })),
+      roles: rolesForColor(color.id, roles).map((role) => ({
+        id: role,
+        label: roleLabels[role],
+      })),
     })),
     roleAssignments: Object.fromEntries(
-      paletteRoles
-        .filter((role) => roles[role])
-        .map((role) => [role, roles[role]!.toUpperCase()]),
+      roleAssignmentEntries(roles).flatMap(([role, colorId]) => {
+        const key = keyById.get(colorId)
+        return key ? [[role, key]] : []
+      }),
     ),
   }
-  return JSON.stringify(v2Schema.parse(value), null, 2)
+  return JSON.stringify(v3Schema.parse(value), null, 2)
 }

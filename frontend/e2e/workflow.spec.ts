@@ -15,6 +15,22 @@ async function createManualPalette(page: Page) {
   await page.getByRole('textbox', { name: 'Color 2', exact: true }).blur()
 }
 
+async function selectRoleColor(
+  page: Page,
+  role: string,
+  visibleColor: string,
+  occurrence = 0,
+) {
+  const selector = page.getByLabel(role, { exact: true })
+  const value = await selector
+    .locator('option')
+    .filter({ hasText: visibleColor })
+    .nth(occurrence)
+    .getAttribute('value')
+  expect(value).not.toBeNull()
+  await selector.selectOption(value!)
+}
+
 test('creation through save, review, export, reopen, and delete', async ({
   page,
   context,
@@ -28,8 +44,8 @@ test('creation through save, review, export, reopen, and delete', async ({
   await page.getByRole('button', { name: 'Analyze palette' }).click()
   await expect(page.getByText('Palette summary')).toBeVisible()
   await page.getByRole('tab', { name: 'Contrast' }).click()
-  await page.getByLabel('Page background').selectOption('#F5F0E8')
-  await page.getByLabel('Primary text').selectOption('#6A5BCF')
+  await selectRoleColor(page, 'Page background', '#F5F0E8')
+  await selectRoleColor(page, 'Primary text', '#6A5BCF')
   await expect(page.getByText('Primary text on page background')).toBeVisible()
   await expect(page.getByText(/AA normal text/).first()).toBeVisible()
 
@@ -85,11 +101,11 @@ test('trust-sensitive Create, Review, Suggestions, and Export states are explici
   await expect(page.getByText(/transitional/)).toBeVisible()
 
   await page.getByRole('tab', { name: 'Contrast' }).click()
-  await page.getByLabel('Page background').selectOption('#F5F0E8')
-  await page.getByLabel('Surface').selectOption('#F5F0E8')
-  await page.getByLabel('Primary text', { exact: true }).selectOption('#141D29')
-  await page.getByLabel('Border').selectOption('#141D29')
-  await page.getByLabel('Focus indicator').selectOption('#80FF00')
+  await selectRoleColor(page, 'Page background', '#F5F0E8')
+  await selectRoleColor(page, 'Surface', '#F5F0E8')
+  await selectRoleColor(page, 'Primary text', '#141D29')
+  await selectRoleColor(page, 'Border', '#141D29')
+  await selectRoleColor(page, 'Focus indicator', '#80FF00')
   await expect(page.getByText(/AA normal text/).first()).toBeVisible()
   await expect(page.getByText(/Non-text component contrast/)).toBeVisible()
   await expect(
@@ -168,7 +184,7 @@ test('portable JSON round trip preserves names, order, roles, and local save lif
 
   await page.getByRole('button', { name: 'Analyze palette' }).click()
   await page.getByRole('tab', { name: 'Contrast' }).click()
-  await page.getByLabel('Primary text', { exact: true }).selectOption('#141D29')
+  await selectRoleColor(page, 'Primary text', 'Primary text')
   await page.getByRole('button', { name: 'Save palette' }).click()
   await expect(page.getByText('Saved', { exact: true })).toBeVisible()
 
@@ -208,6 +224,118 @@ test('portable JSON round trip preserves names, order, roles, and local save lif
     .first()
     .click()
   await expect(page.getByLabel('Name for color 2')).toHaveValue('Primary text')
+})
+
+test('stable role identity survives duplicate colors, edits, save, and portable export', async ({
+  page,
+}) => {
+  await page.goto('/?view=create')
+  await page.getByRole('button', { name: 'Start manually' }).click()
+  await page.getByRole('button', { name: 'Add color' }).click()
+  await page.getByRole('button', { name: 'Add color' }).click()
+  for (const index of [1, 2]) {
+    const input = page.getByRole('textbox', {
+      name: `Color ${index}`,
+      exact: true,
+    })
+    await input.fill('#141D29')
+    await input.blur()
+  }
+  await page
+    .getByRole('textbox', { name: 'Color 3', exact: true })
+    .fill('#F5F0E8')
+  await page.getByRole('textbox', { name: 'Color 3', exact: true }).blur()
+  await page.getByLabel('Name for color 1').fill('Primary action')
+  await page.getByLabel('Name for color 1').blur()
+  await page.getByLabel('Name for color 2').fill('Primary action hover')
+  await page.getByLabel('Name for color 2').blur()
+  await page.getByLabel('Name for color 3').fill('Canvas')
+  await page.getByLabel('Name for color 3').blur()
+
+  await page.getByRole('button', { name: 'Analyze palette' }).click()
+  await page.getByRole('tab', { name: 'Contrast' }).click()
+  await selectRoleColor(page, 'Page background', 'Canvas')
+  await selectRoleColor(page, 'Primary text', 'Primary action hover')
+  await selectRoleColor(page, 'Border', 'Primary action ·')
+  await expect(
+    page.getByLabel('Primary text').locator('option:checked'),
+  ).toContainText('Primary action hover')
+  await expect(page.getByText(/AA normal text \(4.5:1\): Pass/)).toBeVisible()
+
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Create' })
+    .click()
+  await page
+    .getByRole('button', { name: /Actions for Primary action hover/ })
+    .click()
+  await page.getByRole('menuitem', { name: 'Move up' }).click()
+  await page.getByLabel('Name for color 1').fill('Hover updated')
+  await page.getByLabel('Name for color 1').blur()
+  const edited = page.getByRole('textbox', { name: 'Color 1', exact: true })
+  await edited.fill('#000000')
+  await edited.blur()
+  await page.getByRole('button', { name: 'Analyze palette' }).click()
+  await page.getByRole('tab', { name: 'Contrast' }).click()
+  await expect(
+    page.getByLabel('Primary text').locator('option:checked'),
+  ).toContainText('Hover updated · #000000 · Color 1')
+  await expect(
+    page.getByLabel('Page background').locator('option:checked'),
+  ).toContainText('Canvas · #F5F0E8 · Color 3')
+  await expect(
+    page.getByLabel('Border').locator('option:checked'),
+  ).toContainText('Primary action · #141D29 · Color 2')
+
+  await page.getByRole('button', { name: 'Save palette' }).click()
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Library' })
+    .click()
+  await page.getByRole('button', { name: 'Open Untitled palette' }).click()
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible()
+
+  await page
+    .getByRole('navigation', { name: 'Primary' })
+    .getByRole('button', { name: 'Export' })
+    .click()
+  const preview = page.getByLabel(/Generated CSS custom properties preview/)
+  await expect(preview).toContainText('--role-page-background:')
+  await expect(preview).toContainText('--role-primary-text:')
+  await page.getByRole('tab', { name: 'Tailwind theme colors' }).click()
+  await expect(
+    page.getByLabel(/Generated Tailwind theme colors preview/),
+  ).toContainText("'role-primary-text': '#000000'")
+  await page.getByRole('tab', { name: 'SVG swatch sheet' }).click()
+  await expect(
+    page.getByLabel(/Generated SVG swatch sheet preview/),
+  ).toContainText('Primary text')
+
+  await page.getByRole('tab', { name: 'JSON' }).click()
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Download' }).click()
+  const download = await downloadPromise
+  const downloadPath = await download.path()
+  expect(downloadPath).not.toBeNull()
+  await page.getByRole('button', { name: 'New palette' }).click()
+  await page
+    .locator('input[accept=".json,application/json"]')
+    .setInputFiles(downloadPath!)
+  await page.getByRole('button', { name: 'Analyze palette' }).click()
+  await page.getByRole('tab', { name: 'Contrast' }).click()
+  await expect(
+    page.getByLabel('Primary text').locator('option:checked'),
+  ).toContainText('Hover updated')
+  await expect(
+    page.getByLabel('Page background').locator('option:checked'),
+  ).toContainText('Canvas')
+
+  const results = await new AxeBuilder({ page }).analyze()
+  expect(
+    results.violations.filter((violation) =>
+      ['serious', 'critical'].includes(violation.impact ?? ''),
+    ),
+  ).toEqual([])
 })
 
 test('empty, import error, and imported organization states pass axe', async ({

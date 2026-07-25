@@ -32,7 +32,7 @@ function portableFile(name = 'Imported palette') {
         hsl: { h: 240, s: 100, l: 50 },
       },
     ],
-    { primaryText: red.hex },
+    { primaryText: red.id },
   )
   const file = new File([text], 'palette.json', {
     type: 'application/json',

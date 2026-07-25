@@ -8,8 +8,8 @@ import {
 } from './portablePalette'
 
 const roles = {
-  primaryText: red.hex,
-  pageBackground: blue.hex,
+  primaryText: red.id,
+  pageBackground: blue.id,
 } as const
 
 function exported() {
@@ -23,36 +23,94 @@ function exported() {
   )
 }
 
+function legacyDocument(version: 1 | 2) {
+  const document = JSON.parse(exported())
+  document.schemaVersion = version
+  document.roleAssignments = {
+    primaryText: '#FF0000',
+    pageBackground: '#0000FF',
+  }
+  document.colors.forEach(
+    (color: {
+      key?: string
+      name?: string
+      pixelCount?: number
+      roles: unknown[]
+    }) => {
+      delete color.key
+      if (version === 1) {
+        delete color.name
+        delete color.pixelCount
+      }
+    },
+  )
+  if (version === 1) delete document.format
+  return document
+}
+
 describe('portable ColorCraft JSON', () => {
-  it('round trips version 2 names, order, metadata, and roles without IDs', () => {
+  it('round trips version 3 names, order, metadata, and role ownership without IDs', () => {
     const text = exported()
-    expect(text).not.toContain('color-red')
+    expect(text).not.toContain(red.id)
+    expect(text).not.toContain(blue.id)
+    const serialized = JSON.parse(text)
+    expect(serialized.schemaVersion).toBe(3)
+    expect(
+      serialized.colors.map((color: { key: string }) => color.key),
+    ).toEqual(['color-1', 'color-2'])
+    expect(serialized.roleAssignments).toEqual({
+      pageBackground: 'color-2',
+      primaryText: 'color-1',
+    })
     const imported = parsePortablePaletteJson(text)
     expect(imported.name).toBe('Portable launch')
     expect(imported.colors.map(({ name, hex }) => ({ name, hex }))).toEqual([
       { name: 'Primary action', hex: '#FF0000' },
       { name: 'Surface', hex: '#0000FF' },
     ])
-    expect(new Set(imported.colors.map((color) => color.id)).size).toBe(2)
     expect(imported.roles).toEqual({
-      primaryText: '#FF0000',
-      pageBackground: '#0000FF',
+      pageBackground: imported.colors[1].id,
+      primaryText: imported.colors[0].id,
     })
   })
 
-  it('imports the prior version 1 format as unnamed colors', () => {
-    const v2 = JSON.parse(exported())
-    delete v2.format
-    v2.schemaVersion = 1
-    v2.colors.forEach((color: { name?: string; pixelCount?: number }) => {
-      delete color.name
-      delete color.pixelCount
-    })
-    const imported = parsePortablePaletteJson(JSON.stringify(v2))
-    expect(imported.colors.every((color) => color.name === undefined)).toBe(
-      true,
+  it('round trips distinct role owners with duplicate HEX values', () => {
+    const duplicate = { ...red, id: 'duplicate-red', name: 'Second red' }
+    const text = serializePortablePalette(
+      'Duplicates',
+      [{ ...red, name: 'First red' }, duplicate],
+      { pageBackground: red.id, primaryText: duplicate.id },
     )
+    const document = JSON.parse(text)
+    expect(document.roleAssignments).toEqual({
+      pageBackground: 'color-1',
+      primaryText: 'color-2',
+    })
+    const imported = parsePortablePaletteJson(text)
+    expect(imported.roles.pageBackground).toBe(imported.colors[0].id)
+    expect(imported.roles.primaryText).toBe(imported.colors[1].id)
   })
+
+  it.each([1, 2] as const)(
+    'imports version %s HEX roles and maps duplicate HEX to the first color',
+    (version) => {
+      const document = legacyDocument(version)
+      document.colors.splice(1, 0, {
+        ...document.colors[0],
+        order: 2,
+        ...(version === 2 ? { name: 'Duplicate' } : {}),
+      })
+      document.colors[2].order = 3
+      const imported = parsePortablePaletteJson(JSON.stringify(document))
+      expect(imported.roles.primaryText).toBe(imported.colors[0].id)
+      expect(imported.colors.every((color) => color.id.length > 0)).toBe(true)
+      if (version === 1) {
+        expect(imported.colors.every((color) => color.name === undefined)).toBe(
+          true,
+        )
+      }
+    },
+  )
 
   it.each([
     ['invalid JSON', '{', 'valid JSON'],
@@ -63,10 +121,7 @@ describe('portable ColorCraft JSON', () => {
     ],
     [
       'unknown format',
-      JSON.stringify({
-        ...JSON.parse(exported()),
-        format: 'other-palette',
-      }),
+      JSON.stringify({ ...JSON.parse(exported()), format: 'other-palette' }),
       'not a supported ColorCraft palette',
     ],
     [
@@ -78,7 +133,7 @@ describe('portable ColorCraft JSON', () => {
     expect(() => parsePortablePaletteJson(text)).toThrow(message)
   })
 
-  it('rejects missing, excessive, duplicate, and nonsequential colors', () => {
+  it('rejects missing, excessive, duplicate, and nonsequential colors or keys', () => {
     const empty = JSON.parse(exported())
     empty.colors = []
     expect(() => parsePortablePaletteJson(JSON.stringify(empty))).toThrow(
@@ -88,17 +143,30 @@ describe('portable ColorCraft JSON', () => {
     const excessive = JSON.parse(exported())
     excessive.colors = Array.from({ length: 11 }, (_, index) => ({
       ...excessive.colors[0],
+      key: `color-${index + 1}`,
       order: index + 1,
     }))
     expect(() => parsePortablePaletteJson(JSON.stringify(excessive))).toThrow(
       'contains 11 colors',
     )
 
-    const duplicate = JSON.parse(exported())
-    duplicate.colors[1].order = 1
-    expect(() => parsePortablePaletteJson(JSON.stringify(duplicate))).toThrow(
-      'unique and sequential',
+    const duplicateOrder = JSON.parse(exported())
+    duplicateOrder.colors[1].order = 1
+    expect(() =>
+      parsePortablePaletteJson(JSON.stringify(duplicateOrder)),
+    ).toThrow('unique and sequential')
+
+    const missingKey = JSON.parse(exported())
+    delete missingKey.colors[0].key
+    expect(() => parsePortablePaletteJson(JSON.stringify(missingKey))).toThrow(
+      'missing or invalid portable key',
     )
+
+    const duplicateKey = JSON.parse(exported())
+    duplicateKey.colors[1].key = duplicateKey.colors[0].key
+    expect(() =>
+      parsePortablePaletteJson(JSON.stringify(duplicateKey)),
+    ).toThrow('keys must be unique')
   })
 
   it('reports actionable name and range failures', () => {
@@ -115,7 +183,7 @@ describe('portable ColorCraft JSON', () => {
     ).toThrow('population outside 0 through 1')
   })
 
-  it('rejects mismatched representations and contradictory or missing roles', () => {
+  it('rejects mismatched representations and contradictory or missing key roles', () => {
     const mismatch = JSON.parse(exported())
     mismatch.colors[0].rgb.r = 1
     expect(() => parsePortablePaletteJson(JSON.stringify(mismatch))).toThrow(
@@ -129,9 +197,9 @@ describe('portable ColorCraft JSON', () => {
     ).toThrow('contradicts roleAssignments')
 
     const missing = JSON.parse(exported())
-    missing.roleAssignments.primaryText = '#123456'
+    missing.roleAssignments.primaryText = 'color-99'
     expect(() => parsePortablePaletteJson(JSON.stringify(missing))).toThrow(
-      'not in the palette',
+      'key that is not in the palette',
     )
 
     const invalidRole = JSON.parse(exported())

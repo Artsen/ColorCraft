@@ -45,8 +45,8 @@ The palette can contain at most 10 colors.
 3. If the current palette has unsaved or modified work, confirm whether to
    discard it.
 
-Import runs entirely in the browser. ColorCraft accepts portable schema version
-1 and version 2 files, validates the whole file before changing the workspace,
+Import runs entirely in the browser. ColorCraft accepts portable schema
+versions 1, 2, and 3, validates the whole file before changing the workspace,
 and never imports arbitrary JSON. The imported palette retains its name, color
 order, optional color names, extraction metadata when present, and valid role
 assignments. It has no source image and remains **Unsaved** until you select
@@ -155,6 +155,11 @@ The current color-role labels are:
 - **Border**
 - **Focus indicator**
 
+Roles are bound to the selected palette color, not its HEX value. Renaming,
+reordering, or editing that color preserves the assignment. Duplicate HEX
+colors remain separate choices. Removing a color clears only roles assigned to
+that color.
+
 Text checks show AA and AAA text thresholds. **Border against surface** is a
 non-text component check with a 3:1 threshold. Focus-indicator checks use 3:1
 for the selected adjacent-color pair.
@@ -197,17 +202,21 @@ stated in percentage points.
 
 Named colors produce safe ASCII keys in CSS and Tailwind output and visible
 labels in SVG. Unnamed colors keep the `palette-1`, `palette-2` numeric pattern.
-ColorCraft JSON schema version 2 preserves Unicode names, exact order,
-extraction metadata, and roles. It does not contain internal workspace IDs.
+ColorCraft JSON schema version 3 preserves Unicode names, exact order,
+extraction metadata, and unambiguous role ownership. Each color receives a
+document-local key such as `color-1`; the file does not contain internal
+workspace IDs.
 4. Select **Copy** or **Download**.
 
 **Copy** places the generated text on the clipboard. **Download** creates an
 exported file through the browser. Export does not create or update a saved
 palette record.
 
-Role assignments currently reference HEX values. Duplicate colors with the same
-HEX value therefore share a role association even when their internal IDs or
-names differ.
+CSS output adds assigned `--role-*` aliases that reference base `--color-*`
+tokens. Tailwind output adds assigned `role-*` keys, and SVG rows identify their
+assigned roles. Imported version-1 and version-2 files still use HEX role
+references. When duplicate HEX values make those older files ambiguous,
+ColorCraft maps the role to the first matching color in palette order.
 
 For SVG output, ColorCraft measures each swatch against black and white. It uses
 the text color with the higher contrast ratio.

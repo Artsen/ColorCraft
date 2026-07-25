@@ -154,6 +154,12 @@ export default function ExportWorkspace({
             </Button>
           </div>
         </div>
+        {format === 'json' && (
+          <p className="field-help">
+            Portable ColorCraft JSON schema version 3 uses document-local color
+            keys for role assignments and excludes internal workspace IDs.
+          </p>
+        )}
         {status && (
           <Notice
             variant={status.variant}
