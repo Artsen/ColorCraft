@@ -43,7 +43,7 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
         .endAngle(endAngle)
 
       g.append('path')
-        .attr('d', arc as any)
+        .attr('d', arc({} as d3.DefaultArcObject))
         .attr('fill', `hsl(${hue}, 70%, 60%)`)
         .attr('opacity', 0.3)
     }
@@ -65,7 +65,7 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
             .attr('y1', y1)
             .attr('x2', x2)
             .attr('y2', y2)
-            .attr('stroke', '#6b7280')
+            .attr('stroke', 'var(--color-text-subtle)')
             .attr('stroke-width', 1.5)
             .attr('stroke-dasharray', '3,3')
             .attr('opacity', 0.5)
@@ -79,12 +79,11 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
       const x = Math.cos(radian) * radius * 0.75
       const y = Math.sin(radian) * radius * 0.75
 
-      // Outer circle (white border)
       g.append('circle')
         .attr('cx', x)
         .attr('cy', y)
         .attr('r', 8)
-        .attr('fill', 'white')
+        .attr('fill', 'var(--color-preview-outline)')
 
       // Inner circle (color)
       g.append('circle')
@@ -92,7 +91,7 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
         .attr('cy', y)
         .attr('r', 6)
         .attr('fill', colors[index] || `hsl(${angle}, 70%, 60%)`)
-        .attr('stroke', 'white')
+        .attr('stroke', 'var(--color-preview-outline)')
         .attr('stroke-width', 1)
     })
 
@@ -103,7 +102,8 @@ export default function MiniColorWheel({ baseHue, angles, colors, size = 120 }: 
       ref={svgRef}
       width={size}
       height={size}
-      className="mx-auto"
+      role="img"
+      aria-label={`Harmony color wheel centered on hue ${Math.round(baseHue)} degrees`}
     />
   )
 }
