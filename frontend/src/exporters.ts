@@ -1,6 +1,13 @@
 import type { PaletteColor } from './workspace'
 import { serializePortablePalette } from './portablePalette'
-import { contrastRatio, type RoleAssignments } from './contrast'
+import {
+  contrastRatio,
+  roleAssignmentEntries,
+  roleLabels,
+  roleTokenNames,
+  rolesForColor,
+  type RoleAssignments,
+} from './contrast'
 
 export type ExportFormat = 'css' | 'json' | 'tailwind' | 'svg'
 
@@ -52,33 +59,65 @@ function safeComment(value: string): string {
   return value.replace(/[\r\n]+/g, ' ').replace(/\*\//g, '* /')
 }
 
-export function generateCss({ name, colors }: PaletteExport): string {
+export function generateCss({ name, colors, roles }: PaletteExport): string {
   const tokens = exportTokens(colors)
-  return `/* Palette: ${safeComment(name)} */\n:root {\n${colors
+  const tokenById = new Map(
+    colors.map((color, index) => [color.id, tokens[index]]),
+  )
+  const aliases = roleAssignmentEntries(roles).flatMap(([role, colorId]) => {
+    const token = tokenById.get(colorId)
+    return token
+      ? [`  --role-${roleTokenNames[role]}: var(--color-${token});`]
+      : []
+  })
+  const values = colors
     .map(
       (color, index) =>
         `  --color-${tokens[index]}: ${color.hex.toLowerCase()};`,
     )
-    .join('\n')}\n}\n`
+    .join('\n')
+  const semantic = aliases.length
+    ? `\n\n  /* Semantic role aliases */\n${aliases.join('\n')}`
+    : ''
+  return `/* Palette: ${safeComment(name)} */\n:root {\n${values}${semantic}\n}\n`
 }
 
 export function generateJson({ name, colors, roles }: PaletteExport): string {
   return serializePortablePalette(name, colors, roles)
 }
 
-export function generateTailwind({ name, colors }: PaletteExport): string {
+export function generateTailwind({
+  name,
+  colors,
+  roles,
+}: PaletteExport): string {
   const tokens = exportTokens(colors)
-  return `/* Palette: ${safeComment(name)} */\nexport default {\n  theme: {\n    extend: {\n      colors: {\n${colors
+  const colorsById = new Map(colors.map((color) => [color.id, color]))
+  const baseColors = colors
     .map(
       (color, index) =>
         `        '${tokens[index]}': '${color.hex.toLowerCase()}',`,
     )
-    .join('\n')}\n      },\n    },\n  },\n}\n`
+    .join('\n')
+  const semanticColors = roleAssignmentEntries(roles).flatMap(
+    ([role, colorId]) => {
+      const color = colorsById.get(colorId)
+      return color
+        ? [
+            `        'role-${roleTokenNames[role]}': '${color.hex.toLowerCase()}',`,
+          ]
+        : []
+    },
+  )
+  const semantic = semanticColors.length
+    ? `\n        // Semantic role colors\n${semanticColors.join('\n')}`
+    : ''
+  return `/* Palette: ${safeComment(name)} */\nexport default {\n  theme: {\n    extend: {\n      colors: {\n${baseColors}${semantic}\n      },\n    },\n  },\n}\n`
 }
 
-export function generateSvg({ name, colors }: PaletteExport): string {
+export function generateSvg({ name, colors, roles }: PaletteExport): string {
   const width = 720
-  const rowHeight = 72
+  const rowHeight = 92
   const height = 92 + colors.length * rowHeight
   const rows = colors
     .map((color, index) => {
@@ -92,9 +131,16 @@ export function generateSvg({ name, colors }: PaletteExport): string {
       const label = color.name
         ? `${color.name} · ${color.hex.toUpperCase()}`
         : color.hex.toUpperCase()
-      return `  <g aria-label="Color ${index + 1}: ${escapeXml(label)}">
-    <rect x="24" y="${y}" width="672" height="56" rx="8" fill="${escapeXml(color.hex)}"/>
-    <text x="44" y="${y + 35}" fill="${labelColor}" font-family="system-ui, sans-serif" font-size="18" font-weight="700">${index + 1}. ${escapeXml(label)}</text>
+      const assignedRoles = rolesForColor(color.id, roles)
+      const roleAnnotation = assignedRoles.length
+        ? `Roles: ${assignedRoles.map((role) => roleLabels[role]).join(', ')}`
+        : ''
+      const annotationLine = roleAnnotation
+        ? `\n    <text x="44" y="${y + 57}" fill="${labelColor}" font-family="system-ui, sans-serif" font-size="14">${escapeXml(roleAnnotation)}</text>`
+        : ''
+      return `  <g aria-label="Color ${index + 1}: ${escapeXml(label)}${roleAnnotation ? `. ${escapeXml(roleAnnotation)}` : ''}">
+    <rect x="24" y="${y}" width="672" height="76" rx="8" fill="${escapeXml(color.hex)}"/>
+    <text x="44" y="${y + 31}" fill="${labelColor}" font-family="system-ui, sans-serif" font-size="18" font-weight="700">${index + 1}. ${escapeXml(label)}</text>${annotationLine}
   </g>`
     })
     .join('\n')

@@ -15,7 +15,7 @@ The frontend uses:
 ## Saved palette records
 
 The `colorcraft` IndexedDB database contains the `palettes` object store. A
-schema-version-2 record contains:
+schema-version-3 record contains:
 
 - Record ID and palette name
 - Created and updated timestamps
@@ -23,20 +23,23 @@ schema-version-2 record contains:
 - Optional source filename
 - 1–10 ordered normalized palette colors with stable internal IDs and optional names
 - Optional population and `pixelCount`
-- Color-role assignments
+- Color-role assignments that reference stable internal color IDs
 
-The frontend validates each record with Zod. It can migrate a schema-version-1,
-version-0, or unversioned record to the current shape.
+The frontend validates each record with Zod. It can migrate a schema-version-2,
+schema-version-1, version-0, or unversioned record to the current shape.
 Legacy colors receive deterministic IDs, so repeatedly opening a migrated
 record does not create a false modified state. Listing the Library does not
-rewrite records. The next save writes schema version 2.
+rewrite records. Version-2 and older HEX roles map to the first matching color
+in palette order; missing matches are discarded. The next save writes schema
+version 3.
 The frontend ignores malformed records and unknown future schema versions.
 
-Portable ColorCraft JSON is not an IndexedDB record. Portable schema version 2
-uses `format: "colorcraft-palette"` and excludes internal IDs. Import supports
-portable versions 1 and 2, reads at most 1 MB, validates the complete file
-locally, and does not send its contents to the API. An imported palette remains
-session-only until the user selects **Save palette**.
+Portable ColorCraft JSON is not an IndexedDB record. Portable schema version 3
+uses `format: "colorcraft-palette"` and deterministic document-local keys while
+excluding internal IDs. Import supports portable versions 1, 2, and 3, reads at
+most 1 MB, validates the complete file locally, and does not send its contents
+to the API. An imported palette remains session-only until the user selects
+**Save palette**.
 
 ## Source images
 

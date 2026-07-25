@@ -76,13 +76,15 @@ gate.
 
 ## Test scope
 
-- Persistence tests cover validation, migration, update identity, sorting,
+- Persistence tests cover version-3 validation, legacy HEX-role migration,
+  duplicate-role remapping, update identity, sorting,
   rename, duplicate, and delete.
 - Frontend tests cover navigation, palette state, stale analysis, Save states,
   Review, Export, and API contract validation.
 - Backend tests cover upload defenses, extraction, relationship analysis,
   suggestions, contrast, metadata, readiness, configuration, and launcher
   supervision.
-- Browser tests cover create, save, analyze, role assignment, export, reopen,
+- Browser tests cover create, save, analyze, stable duplicate-color role
+  assignment, semantic export, portable round trips, reopen,
   delete, and representative accessibility states.
 - Documentation tests verify local Markdown links and curated screenshot names.

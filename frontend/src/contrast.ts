@@ -1,4 +1,5 @@
 import type { Color } from './api/contracts'
+import type { PaletteColor } from './workspace'
 
 export const paletteRoles = [
   'pageBackground',
@@ -12,7 +13,8 @@ export const paletteRoles = [
 ] as const
 
 export type PaletteRole = (typeof paletteRoles)[number]
-export type RoleAssignments = Partial<Record<PaletteRole, string>>
+export type PaletteColorId = string
+export type RoleAssignments = Partial<Record<PaletteRole, PaletteColorId>>
 export type ContrastCheckKind = 'text' | 'nonText' | 'focus'
 
 export const textContrastThresholds = {
@@ -43,6 +45,17 @@ export const roleLabels: Record<PaletteRole, string> = {
   actionText: 'Action text',
   border: 'Border',
   focusIndicator: 'Focus indicator',
+}
+
+export const roleTokenNames: Record<PaletteRole, string> = {
+  pageBackground: 'page-background',
+  surface: 'surface',
+  primaryText: 'primary-text',
+  secondaryText: 'secondary-text',
+  primaryAction: 'primary-action',
+  actionText: 'action-text',
+  border: 'border',
+  focusIndicator: 'focus-indicator',
 }
 
 export const roleChecks: Array<{
@@ -189,12 +202,54 @@ export function resultsForContrastCheck(
 
 export function pruneRoleAssignments(
   assignments: RoleAssignments,
-  colors: Color[],
+  colors: PaletteColor[],
 ): RoleAssignments {
-  const current = new Set(colors.map((color) => color.hex.toLowerCase()))
+  const current = new Set(colors.map((color) => color.id))
   return Object.fromEntries(
     Object.entries(assignments).filter(
-      ([, hex]) => hex && current.has(hex.toLowerCase()),
+      ([, colorId]) => colorId && current.has(colorId),
     ),
+  ) as RoleAssignments
+}
+
+export function colorForRole(
+  role: PaletteRole,
+  assignments: RoleAssignments,
+  colorsById: ReadonlyMap<string, PaletteColor>,
+): PaletteColor | undefined {
+  const colorId = assignments[role]
+  return colorId ? colorsById.get(colorId) : undefined
+}
+
+export function rolesForColor(
+  colorId: string,
+  assignments: RoleAssignments,
+): PaletteRole[] {
+  return paletteRoles.filter((role) => assignments[role] === colorId)
+}
+
+export function roleAssignmentEntries(
+  assignments: RoleAssignments,
+): Array<[PaletteRole, string]> {
+  return paletteRoles.flatMap((role) => {
+    const colorId = assignments[role]
+    return colorId ? [[role, colorId] as [PaletteRole, string]] : []
+  })
+}
+
+export function remapLegacyHexRoles(
+  assignments: Partial<Record<PaletteRole, string>>,
+  colors: PaletteColor[],
+): RoleAssignments {
+  const firstIdByHex = new Map<string, string>()
+  colors.forEach((color) => {
+    const hex = color.hex.toLowerCase()
+    if (!firstIdByHex.has(hex)) firstIdByHex.set(hex, color.id)
+  })
+  return Object.fromEntries(
+    roleAssignmentEntries(assignments).flatMap(([role, hex]) => {
+      const colorId = firstIdByHex.get(hex.toLowerCase())
+      return colorId ? [[role, colorId]] : []
+    }),
   ) as RoleAssignments
 }

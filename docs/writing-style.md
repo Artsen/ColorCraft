@@ -189,7 +189,7 @@ contents, clipboard contents, or unrelated palette data in user-facing errors.
 | non-text component contrast check | A contrast-role check that applies the 3:1 color threshold to a component boundary or state. | Do not claim complete component accessibility. |
 | focus-indicator color contrast check | A 3:1 check for one focus-indicator and adjacent-color pair. | Size, area, thickness, visibility, and focused-versus-unfocused appearance remain outside the calculation. |
 | color role | A semantic interface role assigned to a palette color. | Current labels are Page background, Surface, Primary text, Secondary text, Primary action, Action text, Border, and Focus indicator. |
-| role assignment | The association between a palette color and a color role. | Do not use for an unassigned palette color. |
+| role assignment | The association between a stable palette color identity and a color role. | Do not describe an active role as a HEX association or expose the internal ID. |
 | contrast-role check | A typed contrast test between two meaningful assigned color roles. | Identify whether the check is text, non-text component, or focus-indicator color contrast. |
 | all-pairs text contrast matrix | The advanced matrix that applies text thresholds to every palette color pair. | Keep separate from typed contrast-role checks. |
 | suggestion approach | One method that proposes colors from a base color. | Current API approaches include complementary, triadic, analogous, split-complementary, tetradic, rectangular, monochromatic, double-complementary, and shades and tints. |
@@ -205,6 +205,8 @@ contents, clipboard contents, or unrelated palette data in user-facing errors.
 | export format | One supported representation of the current palette. | Current labels are CSS custom properties, JSON, Tailwind theme colors, and SVG swatch sheet. |
 | exported file | A file that the browser creates from the current palette. | Do not imply that ColorCraft stores the file. |
 | ColorCraft JSON | The portable, single-palette JSON format that ColorCraft exports and imports in the browser. | Distinguish its schema version from the IndexedDB saved-palette schema and backend API schemas. |
+| portable color key | A deterministic document-local color reference such as `color-1` in ColorCraft JSON version 3. | Do not call it an internal workspace ID. |
+| semantic role token | An assigned `--role-*` CSS alias or `role-*` Tailwind key generated from a color role. | Keep it separate from the base palette token. |
 | imported palette | A validated ColorCraft JSON palette activated in the current session. | State that it remains unsaved until **Save palette** is selected. |
 | copy | Place generated export text on the system clipboard. | Do not use as a synonym for export or download. |
 | download | Save generated export data as a local file through the browser. | Do not use as a synonym for copy. |

@@ -37,10 +37,11 @@ The API accepts a source image up to 10 MB and 40 million decoded pixels. Extrac
 
 ColorCraft has no accounts or cloud synchronization. Source-image bytes and unsaved changes remain session-only. Browser history stores the active view and Review tab, not palette data. Export generation runs in the browser.
 
-ColorCraft JSON import is also browser-only. It accepts ColorCraft portable
-schema versions 1 and 2, validates the complete file before changing the
-workspace, and leaves an imported palette unsaved until **Save palette** is
-selected.
+ColorCraft JSON import is also browser-only. New exports use portable schema
+version 3 with document-local color keys. Imports accept versions 1, 2, and 3,
+validate the complete file before changing the workspace, and leave an imported
+palette unsaved until **Save palette** is selected. CSS and Tailwind exports
+include semantic role tokens for assigned colors.
 
 ![Named and reordered ColorCraft palette](./docs/assets/screenshots/palette-organization-light.png)
 

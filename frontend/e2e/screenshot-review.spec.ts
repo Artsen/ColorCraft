@@ -23,12 +23,22 @@ async function capture(page: Page, name: string) {
   })
 }
 
+async function selectRoleColor(page: Page, role: string, visibleColor: string) {
+  const selector = page.getByLabel(role, { exact: true })
+  const value = await selector
+    .locator('option')
+    .filter({ hasText: visibleColor })
+    .getAttribute('value')
+  expect(value).not.toBeNull()
+  await selector.selectOption(value!)
+}
+
 async function setPalette(page: Page) {
   await page.getByRole('button', { name: 'Start manually' }).click()
   for (let index = 0; index < 4; index += 1) {
     await page.getByRole('button', { name: 'Add color' }).click()
   }
-  const colors = ['#6A5BCF', '#F2763F', '#141D29', '#F5F0E8', '#80FF00']
+  const colors = ['#6A5BCF', '#F2763F', '#141D29', '#F5F0E8', '#725FD6']
   for (let index = 0; index < colors.length; index += 1) {
     const input = page.getByRole('textbox', {
       name: `Color ${index + 1}`,
@@ -103,6 +113,8 @@ test('@screenshots fixture-driven UI review', async ({ page }) => {
   await page.getByLabel('Name for color 1').blur()
   await page.getByLabel('Name for color 3').fill('Primary text')
   await page.getByLabel('Name for color 3').blur()
+  await page.getByLabel('Name for color 5').fill('Primary action hover')
+  await page.getByLabel('Name for color 5').blur()
   await page.getByRole('button', { name: /Actions for Primary text/ }).click()
   await page.getByRole('menuitem', { name: 'Move up' }).click()
   await capture(page, '06-manual-palette-workspace')
@@ -124,14 +136,14 @@ test('@screenshots fixture-driven UI review', async ({ page }) => {
   await page.getByRole('tab', { name: 'Harmony' }).click()
   await capture(page, '09-review-harmony')
   await page.getByRole('tab', { name: 'Contrast' }).click()
-  await page.getByLabel('Page background').selectOption('#F5F0E8')
-  await page.getByLabel('Surface').selectOption('#F5F0E8')
-  await page.getByLabel('Primary text').selectOption('#141D29')
-  await page.getByLabel('Secondary text').selectOption('#725FD6')
-  await page.getByLabel('Primary action').selectOption('#725FD6')
-  await page.getByLabel('Action text').selectOption('#F5F0E8')
-  await page.getByLabel('Border').selectOption('#725FD6')
-  await page.getByLabel('Focus indicator').selectOption('#F2763F')
+  await selectRoleColor(page, 'Page background', '#F5F0E8')
+  await selectRoleColor(page, 'Surface', '#F5F0E8')
+  await selectRoleColor(page, 'Primary text', '#141D29')
+  await selectRoleColor(page, 'Secondary text', 'Primary action hover')
+  await selectRoleColor(page, 'Primary action', 'Primary action ·')
+  await selectRoleColor(page, 'Action text', '#F5F0E8')
+  await selectRoleColor(page, 'Border', 'Primary action ·')
+  await selectRoleColor(page, 'Focus indicator', '#F2763F')
   await capture(page, '10-contrast-roles')
   await page.getByRole('tab', { name: 'Suggestions' }).click()
   await page.getByRole('button', { name: 'Generate suggestions' }).click()

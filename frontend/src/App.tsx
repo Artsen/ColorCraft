@@ -810,10 +810,10 @@ function App() {
       roles={roles}
       onSelectTab={navigateReview}
       onAnalyze={() => void handleAnalyze()}
-      onAssignRole={(role: PaletteRole, hex) => {
+      onAssignRole={(role: PaletteRole, colorId) => {
         setRoles((current) => {
           const next = { ...current }
-          if (hex) next[role] = hex
+          if (colorId) next[role] = colorId
           else delete next[role]
           return next
         })

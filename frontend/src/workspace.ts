@@ -165,6 +165,16 @@ export function paletteColorLabel(color: PaletteColor, index: number): string {
   return `${color.name ?? `Color ${index + 1}`} · ${color.hex.toUpperCase()}`
 }
 
+export function paletteRoleOptionLabel(
+  color: PaletteColor,
+  index: number,
+): string {
+  const position = `Color ${index + 1}`
+  return color.name
+    ? `${color.name} · ${color.hex.toUpperCase()} · ${position}`
+    : `${position} · ${color.hex.toUpperCase()}`
+}
+
 export function deterministicPaletteColorId(
   paletteId: string,
   index: number,

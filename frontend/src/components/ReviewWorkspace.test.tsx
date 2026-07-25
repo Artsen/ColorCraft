@@ -151,11 +151,11 @@ describe('ReviewWorkspace outcomes', () => {
         analyzing={false}
         selectedTab="contrast"
         roles={{
-          pageBackground: white.hex,
-          surface: white.hex,
-          primaryText: black.hex,
-          border: black.hex,
-          focusIndicator: black.hex,
+          pageBackground: white.id,
+          surface: white.id,
+          primaryText: black.id,
+          border: black.id,
+          focusIndicator: black.id,
         }}
         onSelectTab={vi.fn()}
         onAnalyze={vi.fn()}
@@ -199,9 +199,9 @@ describe('ReviewWorkspace outcomes', () => {
     ).toBeInTheDocument()
     expect(within(focusResult).queryByText(/AA normal/)).not.toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Surface'), {
-      target: { value: red.hex },
+      target: { value: red.id },
     })
-    expect(onAssignRole).toHaveBeenCalledWith('surface', red.hex)
+    expect(onAssignRole).toHaveBeenCalledWith('surface', red.id)
     expect(
       screen.getByText('Advanced: all-pairs text contrast matrix'),
     ).toBeInTheDocument()
@@ -210,6 +210,42 @@ describe('ReviewWorkspace outcomes', () => {
     )
     expect(screen.getByText('4.4999:1')).toBeInTheDocument()
     view.unmount()
+  })
+
+  it('distinguishes duplicate HEX options and resolves current names by ID', () => {
+    const first = { ...red, id: 'first-red', name: 'Brand' }
+    const second = { ...red, id: 'second-red', name: 'Brand hover' }
+    render(
+      <ReviewWorkspace
+        colors={[first, second]}
+        analysis={measuredAnalysis()}
+        analysisStale={false}
+        analyzing={false}
+        selectedTab="contrast"
+        roles={{ pageBackground: first.id, primaryText: second.id }}
+        onSelectTab={vi.fn()}
+        onAnalyze={vi.fn()}
+        onAssignRole={vi.fn()}
+        onAddColor={vi.fn()}
+      />,
+    )
+    const selector = screen.getByLabelText('Primary text')
+    expect(selector).toHaveValue(second.id)
+    expect(
+      within(selector).getByRole('option', {
+        name: 'Brand · #FF0000 · Color 1',
+      }),
+    ).toHaveValue(first.id)
+    expect(
+      within(selector).getByRole('option', {
+        name: 'Brand hover · #FF0000 · Color 2',
+      }),
+    ).toHaveValue(second.id)
+    const result = screen
+      .getByRole('heading', { name: 'Primary text on page background' })
+      .closest('article')!
+    expect(within(result).getByText(/Brand hover/)).toBeInTheDocument()
+    expect(within(result).getByText(/1.00 to 1/)).toBeInTheDocument()
   })
 
   it('clearly identifies stale analysis without rendering prior results', () => {

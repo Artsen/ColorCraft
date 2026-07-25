@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { blue, red } from './test/fixtures'
 import {
+  colorForRole,
   contrastRatio,
   formatContrastRatio,
   pruneRoleAssignments,
+  remapLegacyHexRoles,
   resultsForContrastCheck,
+  roleAssignmentEntries,
+  rolesForColor,
 } from './contrast'
 
 describe('role contrast state', () => {
@@ -82,11 +86,54 @@ describe('role contrast state', () => {
     expect(
       pruneRoleAssignments(
         {
-          primaryText: red.hex,
-          pageBackground: blue.hex,
+          primaryText: red.id,
+          pageBackground: blue.id,
         },
         [red],
       ),
-    ).toEqual({ primaryText: red.hex })
+    ).toEqual({ primaryText: red.id })
+  })
+
+  it('does not prune an assigned duplicate when the other duplicate is removed', () => {
+    const assigned = { ...red, id: 'assigned-red' }
+    expect(
+      pruneRoleAssignments({ primaryText: assigned.id }, [assigned]),
+    ).toEqual({ primaryText: assigned.id })
+    expect(pruneRoleAssignments({ primaryText: assigned.id }, [red])).toEqual(
+      {},
+    )
+  })
+
+  it('resolves and enumerates role ownership by stable color ID', () => {
+    const duplicate = { ...red, id: 'duplicate-red', name: 'Duplicate' }
+    const roles = {
+      pageBackground: red.id,
+      primaryText: duplicate.id,
+      actionText: duplicate.id,
+    }
+    const colorsById = new Map(
+      [red, duplicate].map((color) => [color.id, color]),
+    )
+    expect(colorForRole('primaryText', roles, colorsById)).toBe(duplicate)
+    expect(rolesForColor(duplicate.id, roles)).toEqual([
+      'primaryText',
+      'actionText',
+    ])
+    expect(roleAssignmentEntries(roles)).toEqual([
+      ['pageBackground', red.id],
+      ['primaryText', duplicate.id],
+      ['actionText', duplicate.id],
+    ])
+    expect(contrastRatio(red, duplicate)).toBe(1)
+  })
+
+  it('migrates legacy duplicate HEX roles to the first match', () => {
+    const duplicate = { ...red, id: 'duplicate-red' }
+    expect(
+      remapLegacyHexRoles({ primaryText: red.hex, surface: '#123456' }, [
+        duplicate,
+        red,
+      ]),
+    ).toEqual({ primaryText: duplicate.id })
   })
 })

@@ -8,6 +8,7 @@ import {
 import type { Analysis, Color, HarmonyRelationship } from '../api/contracts'
 import {
   contrastRatio,
+  colorForRole,
   formatContrastRatio,
   paletteRoles,
   resultsForContrastCheck,
@@ -17,7 +18,7 @@ import {
   type RoleAssignments,
 } from '../contrast'
 import {
-  paletteColorLabel,
+  paletteRoleOptionLabel,
   type PaletteColor,
   type ReviewView,
 } from '../workspace'
@@ -39,7 +40,7 @@ interface ReviewWorkspaceProps {
   roles: RoleAssignments
   onSelectTab: (tab: ReviewView) => void
   onAnalyze: () => void
-  onAssignRole: (role: PaletteRole, hex: string | undefined) => void
+  onAssignRole: (role: PaletteRole, colorId: string | undefined) => void
   onAddColor: (color?: Color) => void
 }
 
@@ -414,10 +415,9 @@ function Contrast({
   colors: PaletteColor[]
   analysis: Analysis
   roles: RoleAssignments
-  onAssignRole: (role: PaletteRole, hex: string | undefined) => void
+  onAssignRole: (role: PaletteRole, colorId: string | undefined) => void
 }) {
-  const colorByHex = (hex?: string) =>
-    colors.find((color) => color.hex.toLowerCase() === hex?.toLowerCase())
+  const colorsById = new Map(colors.map((color) => [color.id, color]))
   return (
     <div className="content-stack">
       <Panel>
@@ -439,8 +439,8 @@ function Contrast({
               >
                 <option value="">Unassigned</option>
                 {colors.map((color, index) => (
-                  <option value={color.hex} key={color.id}>
-                    {paletteColorLabel(color, index)}
+                  <option value={color.id} key={color.id}>
+                    {paletteRoleOptionLabel(color, index)}
                   </option>
                 ))}
               </select>
@@ -455,8 +455,8 @@ function Contrast({
         />
         <div className="role-result-list">
           {roleChecks.map((check) => {
-            const foreground = colorByHex(roles[check.foreground])
-            const background = colorByHex(roles[check.background])
+            const foreground = colorForRole(check.foreground, roles, colorsById)
+            const background = colorForRole(check.background, roles, colorsById)
             if (!foreground || !background) {
               return (
                 <article className="role-result incomplete" key={check.id}>

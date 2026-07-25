@@ -79,4 +79,21 @@ describe('ExportWorkspace actions', () => {
     ).toBeInTheDocument()
     click.mockRestore()
   })
+
+  it('describes and previews portable JSON schema version 3', () => {
+    render(
+      <ExportWorkspace
+        colors={[red]}
+        paletteName="Portable"
+        roles={{ primaryText: red.id }}
+        onPaletteNameChange={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'JSON' }))
+    expect(screen.getByText(/schema version 3/)).toBeInTheDocument()
+    expect(
+      (screen.getByLabelText('Generated JSON preview') as HTMLTextAreaElement)
+        .value,
+    ).toContain('"primaryText": "color-1"')
+  })
 })
