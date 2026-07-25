@@ -4,7 +4,7 @@
   <img src="./frontend/public/colorcraft-mark.svg" width="72" alt="ColorCraft mark">
 </p>
 
-<p align="center"><strong>A local-first workspace for extracting, refining, reviewing, saving, and exporting color palettes.</strong></p>
+<p align="center"><strong>A local workspace for extracting, editing, reviewing, saving, and exporting color palettes.</strong></p>
 
 <p align="center">
   <a href="https://github.com/Artsen/ColorCraft/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Artsen/ColorCraft/actions/workflows/ci.yml/badge.svg"></a>
@@ -12,13 +12,33 @@
   <img alt="Local-first" src="https://img.shields.io/badge/storage-local--first-41a37a">
 </p>
 
-![ColorCraft review workspace](./docs/assets/screenshots/review-dark.png)
+ColorCraft creates a palette from a source image or from colors that you enter
+manually. It detects geometric hue relationships, evaluates contrast, proposes
+optional colors, and generates browser-side exports.
 
-ColorCraft turns an image or a hand-built set of colors into practical design evidence. It extracts representative colors, detects geometric harmony relationships, checks WCAG contrast, suggests additions, and exports reusable values. Saved palettes stay in the current browser. Uploaded source images are processed for the active session and are not placed in persistent browser storage.
+![ColorCraft Review workspace](./docs/assets/screenshots/review-dark.png)
+
+## Current workflow
+
+1. Create a palette from a JPG, PNG, or WebP source image, or select **Start manually**.
+2. Edit, add, duplicate, remove, or sample palette colors.
+3. Select **Analyze palette**.
+4. Use **Overview**, **Harmony**, **Contrast**, and **Suggestions** in Review.
+5. Assign color roles and evaluate the applicable contrast pairs.
+6. Use Export to generate **CSS custom properties**, **JSON**, **Tailwind theme colors**, or an **SVG swatch sheet**.
+7. Select **Copy** or **Download**.
+
+Relationship fit measures geometric agreement with documented hue structures, not aesthetic quality. Contrast checks measure one accessibility requirement; they do not prove complete WCAG conformance.
+
+The API accepts a source image up to 10 MB and 40 million decoded pixels. Extraction returns 3–10 requested colors, or fewer for a limited processing sample. **Save palette** stores a versioned record in IndexedDB. The Library can open, search, rename, duplicate, and delete saved palettes.
+
+ColorCraft has no accounts or cloud synchronization. Source-image bytes and unsaved changes remain session-only. Browser history stores the active view and Review tab, not palette data. Export generation runs in the browser.
+
+![ColorCraft Palette Library](./docs/assets/screenshots/library-dark.png)
 
 ## Quick start
 
-Use Python 3.11 and Node.js 20 or newer. From the repository root:
+Use Python 3.11 and Node.js 20 or newer:
 
 ```powershell
 py -3.11 -m venv backend\.venv311
@@ -29,58 +49,24 @@ cd ..
 .\backend\.venv311\Scripts\python.exe dev.py
 ```
 
-On macOS or Linux, create `backend/.venv`, install the same requirements, then run `backend/.venv/bin/python dev.py`. One launcher starts both services and opens the app:
+The web application starts at `http://127.0.0.1:5174`; the API starts at `http://127.0.0.1:4100`. The default configuration accepts loopback traffic only. Trusted LAN access expands the security boundary and requires opt-in.
 
-- Web: `http://127.0.0.1:5174`
-- API: `http://127.0.0.1:4100`
-- Runtime metadata: `http://127.0.0.1:4100/metadata`
-
-See [Getting started](./docs/getting-started.md) for setup and recovery details.
-
-## Product workflow
-
-```mermaid
-flowchart LR
-    Start[Upload image or start manually] --> Edit[Refine palette]
-    Edit --> Save[Save locally]
-    Save --> Review[Review harmony and contrast]
-    Review --> Export[Copy or download exports]
-    Save --> Library[Search, reopen, rename, duplicate, or delete]
-```
-
-The application makes state explicit: **Unsaved** means no local record exists, **Saved** means the open palette matches its record, and **Modified** means local edits need **Save changes**. Starting another palette or opening a saved palette prompts before meaningful unsaved work is discarded.
-
-## Capabilities
-
-- Deterministic LAB-space image color extraction
-- Manual palette creation and direct HEX editing
-- Harmony visualization and explainable relationship fit
-- WCAG contrast-role review and color suggestions
-- CSS, JSON, Tailwind, and token export
-- IndexedDB palette library with search and recent items
-- Light, dark, and system themes with responsive navigation
-- Dashboard discovery through a static manifest and runtime metadata endpoint
-
-## Validation
-
-After installing the development dependencies and Playwright Chromium:
-
-```powershell
-cd frontend
-corepack pnpm@9.15.9 exec playwright install chromium
-cd ..
-.\backend\.venv311\Scripts\python.exe check.py
-```
-
-`check.py` runs formatting, linting, frontend and backend typing, unit and integration coverage, production build, Playwright workflow coverage, and automated accessibility checks. CI runs the same command. See [Testing](./docs/testing.md).
+Read [Getting started](./docs/getting-started.md) for Windows, macOS, Linux, manual startup, configuration, shutdown, and recovery procedures.
 
 ## Documentation
 
-The [documentation index](./docs/README.md) links setup, workflow, runtime configuration, architecture, API, persistence and privacy, dashboard manifest, brand, testing, screenshot review, and troubleshooting guides.
+Use the [documentation index](./docs/README.md) for user, technical, operations, and contribution guides. All documentation follows [ColorCraft Technical English](./docs/writing-style.md).
 
-## Privacy and security
+## Validation
 
-ColorCraft binds to loopback addresses by default. Palette records are stored in the browser's IndexedDB database; theme preference is the only application preference stored in LocalStorage. Source images are sent to the local API for extraction but are not retained by ColorCraft after processing. Clearing site data removes saved palettes. Read [Persistence and privacy](./docs/persistence-and-privacy.md) before enabling LAN access.
+Run the complete local and CI gate:
+
+```powershell
+.\backend\.venv311\Scripts\python.exe check.py
+```
+
+The gate checks formatting, linting, types, tests, coverage, the production
+build, browser workflows, and representative accessibility states.
 
 ## License
 

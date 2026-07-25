@@ -1,79 +1,110 @@
 # Contributing to ColorCraft
 
-Thank you for your interest in contributing to ColorCraft! This document provides guidelines for contributing to the project.
+## Before you start
 
-## Getting Started
+- Install Python 3.11.
+- Install Node.js 20 or newer.
+- Enable Corepack.
+- Read [ColorCraft Technical English](./docs/writing-style.md) before you change
+  documentation.
 
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/ColorCraft.git`
-3. Create a new branch: `git checkout -b feature/your-feature-name`
-4. Make your changes
-5. Test your changes thoroughly
-6. Commit your changes: `git commit -m "Add your feature"`
-7. Push to your fork: `git push origin feature/your-feature-name`
-8. Create a Pull Request
+## Set up the repository
 
-## Development Setup
+### Windows
 
-### Backend
-```bash
-cd backend
-pip install -r requirements.txt
-python main.py
-```
-
-### Frontend
-```bash
+```powershell
+py -3.11 -m venv backend\.venv311
+.\backend\.venv311\Scripts\python.exe -m pip install --upgrade pip
+.\backend\.venv311\Scripts\python.exe -m pip install -r backend\requirements-dev.txt
 cd frontend
-pnpm install
-pnpm dev
+corepack pnpm@9.15.9 install
+cd ..
 ```
 
-## Code Style
+### macOS and Linux
 
-### Python
-- Follow PEP 8 guidelines
-- Use type hints where appropriate
-- Add docstrings to functions and classes
+```bash
+python3.11 -m venv backend/.venv
+backend/.venv/bin/python -m pip install --upgrade pip
+backend/.venv/bin/python -m pip install -r backend/requirements-dev.txt
+cd frontend
+corepack pnpm@9.15.9 install
+cd ..
+```
 
-### TypeScript/React
-- Use TypeScript for type safety
-- Follow React best practices
-- Use functional components with hooks
+## Start ColorCraft
 
-## Testing
+Use the one-terminal launcher:
 
-Before submitting a PR, ensure:
-- All existing tests pass
-- New features include appropriate tests
-- The application builds without errors
-- No console errors or warnings
+```powershell
+.\backend\.venv311\Scripts\python.exe dev.py
+```
 
-## Pull Request Guidelines
+On macOS or Linux, run `backend/.venv/bin/python dev.py`. See
+[Getting started](./docs/getting-started.md) for manual startup and runtime
+configuration.
 
-- Provide a clear description of the changes
-- Reference any related issues
-- Include screenshots for UI changes
-- Ensure your code is well-documented
-- Keep PRs focused on a single feature or fix
+## Validate a change
 
-## Feature Requests
+Install Playwright Chromium once:
 
-Feature requests are welcome! Please:
-- Check if the feature has already been requested
-- Provide a clear use case
-- Explain how it aligns with the project goals
+```powershell
+cd frontend
+corepack pnpm@9.15.9 exec playwright install chromium
+cd ..
+```
 
-## Bug Reports
+Run the complete gate before you open a pull request:
 
-When reporting bugs, please include:
-- Steps to reproduce
-- Expected behavior
-- Actual behavior
-- Screenshots if applicable
-- Environment details (OS, browser, etc.)
+```powershell
+.\backend\.venv311\Scripts\python.exe check.py
+git diff --check
+```
 
-## Questions?
+On macOS or Linux, use `backend/.venv/bin/python check.py`.
 
-Feel free to open an issue for any questions or clarifications.
+The gate runs Prettier, ESLint, TypeScript, Vitest with coverage, the frontend
+production build, Ruff, mypy, pytest with coverage, Playwright, and axe
+accessibility checks. Use `python check.py --skip-e2e` only for a fast local
+iteration. Do not use the reduced gate as the final pull request validation.
 
+## Code requirements
+
+- Keep a change focused.
+- Add or update tests for changed behavior.
+- Preserve the Pydantic and Zod contract boundary.
+- Use semantic style tokens for application chrome.
+- Do not describe relationship fit as aesthetic quality.
+- Do not describe a passing contrast pair as proof of complete accessibility.
+
+## Documentation requirements
+
+- Follow [ColorCraft Technical English](./docs/writing-style.md).
+- Use the preferred ColorCraft terminology.
+- Preserve exact UI labels and technical strings.
+- Add a glossary entry for a new stable concept.
+- Update the canonical document instead of copying a large section into the
+  README.
+- Verify algorithm claims against current code and tests.
+- Keep measured relationships separate from aesthetic judgment.
+
+## Pull request requirements
+
+- Explain what changed and why.
+- Reference related issues.
+- List the validation commands and results.
+- Include current screenshots for an intentional UI change.
+- State changes to API contracts, persistence, runtime configuration, or
+  privacy boundaries.
+- Do not commit virtual environments, `node_modules`, build output, temporary
+  screenshots, uploaded test images, credentials, or local configuration.
+
+## Report a bug
+
+Include:
+
+- Reproduction steps
+- Expected result
+- Actual result
+- Operating system and browser
+- Relevant terminal output with secrets and local private data removed

@@ -1,15 +1,20 @@
 # ColorCraft documentation
 
-Start with [Getting started](./getting-started.md), then use the guide that matches your task:
+| Document | Audience and purpose |
+| --- | --- |
+| [Getting started](./getting-started.md) | Users and contributors who must install, start, stop, or recover ColorCraft. |
+| [User guide](./user-guide.md) | Users who create, review, save, manage, and export palettes. |
+| [Color analysis](./color-analysis.md) | Readers who must interpret extraction, relationship, fit, and contrast results. |
+| [API contracts](./api-contracts.md) | API consumers who need canonical routes, payloads, validation, and errors. |
+| [Architecture](./architecture.md) | Contributors who need component boundaries and data flows. |
+| [Runtime configuration](./runtime-configuration.md) | Operators who configure hosts, ports, CORS, browser launch, or trusted LAN access. |
+| [Persistence and privacy](./persistence-and-privacy.md) | Users and operators who need storage, retention, migration, and security details. |
+| [Dashboard manifest](./dashboard-manifest.md) | Dashboard integrators who discover ColorCraft and resolve runtime endpoints. |
+| [Testing](./testing.md) | Contributors who run local and CI validation. |
+| [Troubleshooting](./troubleshooting.md) | Users and contributors who must recover from known failures. |
+| [Screenshot review](./screenshot-review.md) | Reviewers who generate or curate product screenshots. |
+| [Brand system](./brand-system.md) | Designers and UI contributors who apply the visual identity and product voice. |
+| [ColorCraft Technical English](./writing-style.md) | All documentation contributors who need the controlled writing and terminology standard. |
 
-- [User workflow](./user-workflow.md) — create, save, review, export, and manage palettes.
-- [Runtime configuration](./runtime-configuration.md) — ports, hosts, CORS, LAN opt-in, and launcher behavior.
-- [Architecture](./architecture.md) — application boundaries and data flow.
-- [API](./api.md) — endpoints, request shapes, metadata, readiness, and errors.
-- [Persistence and privacy](./persistence-and-privacy.md) — IndexedDB schema, migration, retention, and deletion.
-- [Dashboard manifest](./dashboard-manifest.md) — static discovery defaults and runtime resolution.
-- [Testing](./testing.md) — local and CI quality gates.
-- [Screenshot review](./screenshot-review.md) — deterministic fixtures, temporary output, and curation.
-- [Troubleshooting](./troubleshooting.md) — common Python, pnpm, port, and browser failures.
-- [Brand system](./brand-system.md) — identity, tokens, themes, and shell conventions.
-- [API contract rationale](./api-contracts.md) — compatibility and validation design notes.
+The application code, API schemas, and tests are the source of truth for
+behavior. Update the relevant canonical document when behavior changes.
