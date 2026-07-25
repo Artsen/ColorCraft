@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { blue, red } from './test/fixtures'
 import {
   contrastRatio,
+  formatContrastRatio,
   pruneRoleAssignments,
   resultsForContrastCheck,
 } from './contrast'
@@ -45,6 +46,37 @@ describe('role contrast state', () => {
       expect(resultsForContrastCheck(kind, 3)[0].label).not.toMatch(/AA|AAA/)
     },
   )
+
+  it.each([3, 4.5, 7])(
+    'formats and evaluates values around the %s:1 boundary without contradiction',
+    (threshold) => {
+      const epsilon = Number.EPSILON * Math.max(1, threshold)
+      const failingValues = [threshold - 0.0001, threshold - epsilon]
+      const exact = threshold
+      const above = threshold + epsilon
+      const kind = threshold === 3 ? 'nonText' : 'text'
+      const resultAt = (ratio: number) =>
+        resultsForContrastCheck(kind, ratio).find(
+          (result) => result.threshold === threshold,
+        )
+
+      for (const failingValue of failingValues) {
+        const formatted = formatContrastRatio(failingValue, [threshold])
+        expect(resultAt(failingValue)?.pass).toBe(false)
+        expect(Number(formatted)).toBeLessThan(threshold)
+        expect(formatted).toMatch(/^\d+\.\d{4}$/)
+      }
+      expect(resultAt(exact)?.pass).toBe(true)
+      expect(resultAt(above)?.pass).toBe(true)
+      expect(formatContrastRatio(exact, [threshold])).toBe(threshold.toFixed(2))
+      expect(formatContrastRatio(above, [threshold])).toBe(threshold.toFixed(2))
+    },
+  )
+
+  it('keeps ordinary two-decimal contrast formatting unchanged', () => {
+    expect(formatContrastRatio(4.5422)).toBe('4.54')
+    expect(formatContrastRatio(21)).toBe('21.00')
+  })
 
   it('keeps only role assignments whose color still exists', () => {
     expect(

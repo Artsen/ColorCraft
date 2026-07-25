@@ -339,6 +339,9 @@ def test_accessibility_response_schema(client: TestClient):
         "color2",
         "ratio",
     }
+    ratio = accessibility["pairs"][0]["ratio"]
+    assert ratio != round(ratio, 2)
+    assert accessibility["issues"][0]["ratio"] == ratio
 
 
 def test_suggestion_response_schema(client: TestClient):

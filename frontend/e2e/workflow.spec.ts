@@ -67,8 +67,7 @@ test('trust-sensitive Create, Review, Suggestions, and Export states are explici
 }) => {
   await page.goto('/?view=create')
   await expect(page.getByText('JPG, PNG, or WebP · up to 10 MB')).toBeVisible()
-  await expect(page.getByText('Loopback only')).toHaveAttribute(
-    'title',
+  await expect(page.getByText('Loopback only')).toHaveAccessibleDescription(
     /loopback traffic only/i,
   )
 

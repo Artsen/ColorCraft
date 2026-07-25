@@ -22,6 +22,11 @@ export const textContrastThresholds = {
   aaaLarge: 4.5,
 } as const
 export const nonTextContrastThreshold = 3
+export const contrastDisplayThresholds = [
+  nonTextContrastThreshold,
+  textContrastThresholds.aaNormal,
+  textContrastThresholds.aaaNormal,
+] as const
 
 export interface ContrastResult {
   label: string
@@ -126,6 +131,20 @@ export function contrastRatio(
     relativeLuminance(background),
   )
   return (lighter + 0.05) / (darker + 0.05)
+}
+
+export function formatContrastRatio(
+  ratio: number,
+  thresholds: readonly number[] = contrastDisplayThresholds,
+): string {
+  const roundedToTwo = Number(ratio.toFixed(2))
+  const roundedUpToFailureBoundary = thresholds.some(
+    (threshold) => ratio < threshold && roundedToTwo >= threshold,
+  )
+  if (!roundedUpToFailureBoundary) return ratio.toFixed(2)
+
+  const [integerPart, fractionalPart = ''] = ratio.toString().split('.')
+  return `${integerPart}.${fractionalPart.padEnd(4, '0').slice(0, 4)}`
 }
 
 export function resultsForContrastCheck(

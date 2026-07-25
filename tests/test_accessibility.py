@@ -10,20 +10,25 @@ def test_known_black_white_and_identical_contrast():
 
 
 @pytest.mark.parametrize(
-    ("ratio", "field", "passes"),
+    ("threshold", "field"),
     [
-        (4.4999, "aa_normal", False),
-        (4.5, "aa_normal", True),
-        (2.9999, "aa_large", False),
-        (3.0, "aa_large", True),
-        (6.9999, "aaa_normal", False),
-        (7.0, "aaa_normal", True),
-        (4.4999, "aaa_large", False),
-        (4.5, "aaa_large", True),
+        (3.0, "aa_large"),
+        (4.5, "aa_normal"),
+        (4.5, "aaa_large"),
+        (7.0, "aaa_normal"),
     ],
 )
-def test_wcag_threshold_boundaries(ratio: float, field: str, passes: bool):
-    assert wcag_rating(ratio)[field] is passes
+@pytest.mark.parametrize(
+    ("difference", "passes"),
+    [(-0.0001, False), (0, True), (0.0001, True)],
+)
+def test_wcag_threshold_boundaries_preserve_precision(
+    threshold: float, field: str, difference: float, passes: bool
+):
+    ratio = threshold + difference
+    rating = wcag_rating(ratio)
+    assert rating[field] is passes
+    assert rating["ratio"] == ratio
 
 
 def test_known_srgb_contrast_values():

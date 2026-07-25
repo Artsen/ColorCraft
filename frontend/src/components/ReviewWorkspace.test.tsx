@@ -66,6 +66,15 @@ function measuredAnalysis(): Analysis {
           aaaNormal: true,
           aaaLarge: true,
         },
+        {
+          color1: '#FF0000',
+          color2: '#0000FF',
+          ratio: 4.4999,
+          aaNormal: false,
+          aaLarge: true,
+          aaaNormal: false,
+          aaaLarge: false,
+        },
       ],
     },
   }
@@ -193,6 +202,10 @@ describe('ReviewWorkspace outcomes', () => {
     expect(
       screen.getByText('Advanced: all-pairs text contrast matrix'),
     ).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByText('Advanced: all-pairs text contrast matrix'),
+    )
+    expect(screen.getByText('4.4999:1')).toBeInTheDocument()
     view.unmount()
   })
 

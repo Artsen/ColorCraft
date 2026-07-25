@@ -176,6 +176,12 @@ Review applies the ratio to typed role checks:
 - Focus-indicator color checks use a 3:1 threshold for each evaluated adjacent
   color pair.
 
+The API preserves the calculated ratio instead of rounding it to two decimal
+places. Review normally shows two decimal places. When two-decimal rounding
+would make a failing value appear equal to a threshold, Review truncates the
+display to four decimal places. Pass or fail always uses the full calculated
+value.
+
 A non-text result evaluates color contrast only. It does not evaluate component
 size, shape, state, or other accessibility requirements. A focus-indicator
 result does not evaluate size, area, thickness, visibility, or the
@@ -187,11 +193,17 @@ It does not prove complete interface accessibility or WCAG conformance.
 ## Suggestions
 
 Suggestions are optional geometric transformations from a selected base color.
-Descriptions lead with hue, saturation, or lightness changes. `useCases` and
-`commonAssociations` contain conventional guidance, not measured suitability.
-A suggestion does not confirm that a detected relationship exists in the
-current palette. The frontend invalidates suggestions when any palette color
-changes.
+The API converts each candidate through RGB and then derives the final canonical
+HSL value. Suggested-color descriptions compare the canonical base color with
+that returned HSL value. Hue changes use the shortest circular direction.
+Saturation and lightness changes use percentage points. Range limits and RGB
+canonicalization can make the final change smaller than the requested
+intermediate change.
+
+`useCases` and `commonAssociations` contain conventional guidance, not measured
+suitability. A suggestion does not confirm that a detected relationship exists
+in the current palette. The frontend invalidates suggestions when any palette
+color changes.
 
 ## Export accuracy and escaping
 

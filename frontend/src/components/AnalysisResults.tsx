@@ -1,5 +1,6 @@
 import { Accessibility, ScanLine } from 'lucide-react'
 import type { Analysis, Color } from '../api/contracts'
+import { formatContrastRatio } from '../contrast'
 import Metric from './ui/Metric'
 import Notice from './ui/Notice'
 import Panel from './ui/Panel'
@@ -161,7 +162,9 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
                   <p>{issue.message}</p>
                   <small>
                     {issue.color1} + {issue.color2} • Ratio:{' '}
-                    {issue.ratio?.toFixed(2) ?? 'N/A'}
+                    {issue.ratio == null
+                      ? 'N/A'
+                      : formatContrastRatio(issue.ratio)}
                   </small>
                 </Notice>
               ))}
@@ -189,7 +192,12 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
                       style={{ backgroundColor: pair.color2 }}
                     />
                   </div>
-                  <strong>{pair.ratio?.toFixed(2) ?? 'N/A'}:1</strong>
+                  <strong>
+                    {pair.ratio == null
+                      ? 'N/A'
+                      : formatContrastRatio(pair.ratio)}
+                    :1
+                  </strong>
                 </div>
                 <div className="badge-row">
                   <StatusBadge variant={pair.aaNormal ? 'success' : 'error'}>
