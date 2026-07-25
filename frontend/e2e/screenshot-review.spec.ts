@@ -28,7 +28,7 @@ async function setPalette(page: Page) {
   for (let index = 0; index < 4; index += 1) {
     await page.getByRole('button', { name: 'Add color' }).click()
   }
-  const colors = ['#6A5BCF', '#F2763F', '#141D29', '#F5F0E8', '#41A37A']
+  const colors = ['#6A5BCF', '#F2763F', '#141D29', '#F5F0E8', '#80FF00']
   for (let index = 0; index < colors.length; index += 1) {
     const input = page.getByRole('textbox', {
       name: `Color ${index + 1}`,
@@ -119,11 +119,19 @@ test('@screenshots fixture-driven UI review', async ({ page }) => {
   await capture(page, '09-review-harmony')
   await page.getByRole('tab', { name: 'Contrast' }).click()
   await page.getByLabel('Page background').selectOption('#F5F0E8')
+  await page.getByLabel('Surface').selectOption('#F5F0E8')
   await page.getByLabel('Primary text').selectOption('#141D29')
+  await page.getByLabel('Secondary text').selectOption('#725FD6')
+  await page.getByLabel('Primary action').selectOption('#725FD6')
+  await page.getByLabel('Action text').selectOption('#F5F0E8')
+  await page.getByLabel('Border').selectOption('#725FD6')
+  await page.getByLabel('Focus indicator').selectOption('#F2763F')
   await capture(page, '10-contrast-roles')
   await page.getByRole('tab', { name: 'Suggestions' }).click()
   await page.getByRole('button', { name: 'Generate suggestions' }).click()
   await expect(page.locator('.compact-suggestion-list')).toBeVisible()
+  await page.getByRole('button', { name: 'Explore all relationships' }).click()
+  await expect(page.getByText('Common associations').first()).toBeVisible()
   await capture(page, '11-suggestions')
 
   await page

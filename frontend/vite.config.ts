@@ -75,6 +75,10 @@ export default defineConfig(({ mode }) => {
           target: proxyTarget,
           changeOrigin: true,
         },
+        '/metadata': {
+          target: proxyTarget,
+          changeOrigin: true,
+        },
       },
     },
   }

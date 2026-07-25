@@ -53,6 +53,12 @@ describe('browser palette exporters', () => {
     expect(output).not.toContain('<script>')
     expect(output.indexOf('#FF0000')).toBeLessThan(output.indexOf('#0000FF'))
     expect(output).toContain('<title id="title">')
+    expect(output).toMatch(
+      /fill="#ff0000"[\s\S]*?<text[^>]+fill="#000000"[^>]*>1\. #FF0000/,
+    )
+    expect(output).toMatch(
+      /fill="#0000ff"[\s\S]*?<text[^>]+fill="#ffffff"[^>]*>2\. #0000FF/,
+    )
   })
 
   it('sanitizes unusual and path-like filenames', () => {

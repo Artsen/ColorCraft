@@ -101,6 +101,11 @@ Select **Refresh analysis** before you use a stale result.
 dominant color information, temperature, saturation, lightness, relationship
 fit, and a next action.
 
+Temperature shows warm, transitional, and cool percentages. **Warm dominant**,
+**Transitional dominant**, and **Cool dominant** require more than 70% evidence
+in the named category. **Mixed temperature** means that no category exceeds
+70%. Neutral colors do not contribute temperature evidence.
+
 ### Harmony
 
 **Harmony** lists detected harmony relationships in descending relationship
@@ -115,8 +120,8 @@ do not measure aesthetic quality.
 1. Select **Contrast**.
 2. Assign palette colors to the available color roles.
 3. Review each available contrast-role check.
-4. Open **Advanced: all-pairs contrast matrix** only when you need exploratory
-   comparisons.
+4. Open **Advanced: all-pairs text contrast matrix** only when you need
+   exploratory text-threshold comparisons.
 
 The current color-role labels are:
 
@@ -129,8 +134,14 @@ The current color-role labels are:
 - **Border**
 - **Focus indicator**
 
-A passing contrast-role check does not prove that a complete interface is
-accessible or conforms to WCAG.
+Text checks show AA and AAA text thresholds. **Border against surface** is a
+non-text component check with a 3:1 threshold. Focus-indicator checks use 3:1
+for the selected adjacent-color pair.
+
+A non-text result evaluates color contrast only. A focus-indicator result does
+not evaluate size, area, thickness, visibility, or focused-versus-unfocused
+appearance. A passing contrast-role check does not prove that a complete
+interface is accessible or conforms to WCAG.
 
 ### Suggestions
 
@@ -141,7 +152,9 @@ accessible or conforms to WCAG.
 5. Select **Add** for an optional color.
 
 Select **Explore all relationships** for the complete set of suggestion
-approaches. ColorCraft discards suggestion results when a palette color changes.
+approaches. **Common associations** and **Common applications** are conventional
+guidance. They are not measured suitability. ColorCraft discards suggestion
+results when a palette color changes.
 
 ## Export a palette
 
@@ -157,6 +170,9 @@ approaches. ColorCraft discards suggestion results when a palette color changes.
 **Copy** places the generated text on the clipboard. **Download** creates an
 exported file through the browser. Export does not create or update a saved
 palette record.
+
+For SVG output, ColorCraft measures each swatch against black and white. It uses
+the text color with the higher contrast ratio.
 
 If clipboard permission is denied, select **Select preview**, and then copy the
 selected text manually. If download creation fails, copy the preview instead.

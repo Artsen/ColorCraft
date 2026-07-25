@@ -97,8 +97,9 @@ Check the API error code:
 - `image_decode_error`: Select a valid, decodable source image.
 - `no_visible_pixels`: Select an image that contains visible pixels.
 
-The current Create UI states a 15 MB limit, but the API enforces 10 MB. Use
-10 MB as the effective limit.
+Create and the API both enforce a 10 MB limit. A file of exactly 10 MB is
+accepted by the byte-limit check. The image must also pass type, decode, and
+decoded-pixel validation.
 
 ## Color extraction returns fewer colors than requested
 

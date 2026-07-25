@@ -35,8 +35,10 @@ def test_local_markdown_links_resolve() -> None:
 def test_curated_product_screenshots_exist() -> None:
     screenshot_directory = ROOT / "docs" / "assets" / "screenshots"
     assert {path.name for path in screenshot_directory.glob("*.png")} == {
+        "contrast-dark.png",
         "create-light.png",
         "library-dark.png",
         "mobile-create.png",
         "review-dark.png",
+        "suggestions-dark.png",
     }

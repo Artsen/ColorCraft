@@ -24,6 +24,7 @@ interface AppShellProps {
   title: string
   sourceName: string
   summary: string
+  networkMode: 'loopback' | 'lan' | null
   onNavigate: (view: WorkspaceView) => void
   onNewPalette: () => void
   recentPalettes?: Array<{ id: string; name: string }>
@@ -45,6 +46,7 @@ export default function AppShell({
   title,
   sourceName,
   summary,
+  networkMode,
   onNavigate,
   onNewPalette,
   recentPalettes = [],
@@ -172,7 +174,22 @@ export default function AppShell({
             </div>
             <div className="workspace-header-actions">
               {headerActions}
-              <StatusBadge>Local only</StatusBadge>
+              <StatusBadge
+                variant={networkMode === 'lan' ? 'warning' : 'neutral'}
+                title={
+                  networkMode === 'loopback'
+                    ? 'The resolved web and API configuration accepts loopback traffic only.'
+                    : networkMode === 'lan'
+                      ? 'The resolved ColorCraft configuration permits trusted LAN access.'
+                      : 'ColorCraft could not confirm the current network exposure mode.'
+                }
+              >
+                {networkMode === 'loopback'
+                  ? 'Loopback only'
+                  : networkMode === 'lan'
+                    ? 'LAN enabled'
+                    : 'Network status unavailable'}
+              </StatusBadge>
             </div>
           </header>
           <div className="workspace-content">{children}</div>

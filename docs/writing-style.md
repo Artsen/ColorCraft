@@ -184,11 +184,16 @@ contents, clipboard contents, or unrelated palette data in user-facing errors.
 | meaningful hue | A hue with enough saturation to provide geometric evidence under the current algorithm. | The current minimum saturation is documented in `color-analysis.md`. |
 | contrast ratio | The relative-luminance contrast between two assigned colors. | A ratio is a measurement, not a complete accessibility result. |
 | contrast pair | Two colors evaluated together for contrast. | State the roles when the pair is role-based. |
+| text contrast check | A contrast-role check that applies WCAG normal-text or large-text thresholds. | Do not apply text badges to borders or focus indicators. |
+| non-text component contrast check | A contrast-role check that applies the 3:1 color threshold to a component boundary or state. | Do not claim complete component accessibility. |
+| focus-indicator color contrast check | A 3:1 check for one focus-indicator and adjacent-color pair. | Size, area, thickness, visibility, and focused-versus-unfocused appearance remain outside the calculation. |
 | color role | A semantic interface role assigned to a palette color. | Current labels are Page background, Surface, Primary text, Secondary text, Primary action, Action text, Border, and Focus indicator. |
 | role assignment | The association between a palette color and a color role. | Do not use for an unassigned palette color. |
-| contrast-role check | A contrast test between two meaningful assigned color roles. | Do not use as an exact synonym for the all-pairs contrast matrix. |
-| all-pairs contrast matrix | The advanced matrix that compares every palette color pair. | Keep separate from contrast-role checks. |
+| contrast-role check | A typed contrast test between two meaningful assigned color roles. | Identify whether the check is text, non-text component, or focus-indicator color contrast. |
+| all-pairs text contrast matrix | The advanced matrix that applies text thresholds to every palette color pair. | Keep separate from typed contrast-role checks. |
 | suggestion approach | One method that proposes colors from a base color. | Current API approaches include complementary, triadic, analogous, split-complementary, tetradic, rectangular, monochromatic, double-complementary, and shades and tints. |
+| common associations | Context-dependent conventional associations for a suggestion approach. | Preserve the API field `commonAssociations`. Do not present associations as measurements or guaranteed effects. |
+| transitional hue | A meaningful hue greater than 60 degrees and less than 120 degrees in temperature evidence. | Keep separate from neutral colors, which do not provide meaningful hue evidence. |
 | Review | The application view that contains palette analysis. | Preserve capitalization when referring to the UI destination. |
 | Overview | The Review tab that summarizes the current analysis. | Preserve capitalization. |
 | Harmony | The Review tab that presents detected geometric relationships. | Preserve capitalization. |
@@ -204,6 +209,8 @@ contents, clipboard contents, or unrelated palette data in user-facing errors.
 | saved palette | A versioned palette record in the browser's IndexedDB database. | Do not imply an account or cloud copy. |
 | Palette Library | The Library view that lists saved palettes in the current browser origin. | Use **Library** for the navigation label. |
 | local | The application runs on the current computer or configured local network. | Do not use as an automatic synonym for private, secure, offline, anonymous, or persistent. |
+| Loopback only | The shell status for resolved loopback hosts and browser origins. | Preserve capitalization. Do not substitute *Local only*. |
+| LAN enabled | The shell status when a resolved host or browser origin is non-loopback. | Do not imply authentication, privacy, or transport encryption. |
 | source-image preview | The in-memory browser preview of the current source image. | ColorCraft does not store source-image bytes in the Palette Library. |
 
 ## Required domain distinctions

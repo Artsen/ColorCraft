@@ -97,6 +97,15 @@ Each detected relationship contains:
 Relationship fit describes measured geometry. It does not describe aesthetic
 quality.
 
+`temperatureBalance` contains:
+
+- `balance`: `warm`, `transitional`, `cool`, `mixed`, or `neutral`
+- `warmCount`, `transitionalCount`, and `coolCount`
+- `warmRatio`, `transitionalRatio`, and `coolRatio`
+
+The ratios use the total categorized meaningful-hue count. A category is
+dominant only when its ratio is greater than 0.70.
+
 ## Contrast analysis
 
 `accessibility` contains:
@@ -116,9 +125,13 @@ Each item in `suggestions` contains:
 - `baseColor`
 - `harmonies`
 
-Each harmony item contains `type`, `angle`, `description`, `useCases`, `mood`,
-`examples`, and `suggestions`. Each suggested color contains `name`,
-`description`, HEX, RGB, and HSL values.
+Each harmony item contains `type`, `angle`, `description`, `useCases`,
+`commonAssociations`, `examples`, and `suggestions`. Each suggested color
+contains `name`, `description`, HEX, RGB, and HSL values.
+
+`commonAssociations` is conventional guidance. It is not a measured result.
+This field replaces the removed `mood` field and is a breaking response-contract
+change.
 
 ## Metadata and readiness
 
@@ -133,7 +146,11 @@ Each harmony item contains `type`, `angle`, `description`, `useCases`, `mood`,
 - `apiUrl`
 - `healthUrl`
 - `readinessUrl`
+- `networkMode`: `loopback` or `lan`
 - `capabilities`
+
+`networkMode` comes from resolved hosts and browser-visible origins. It does
+not come only from the LAN opt-in environment variable.
 
 `GET /ready` returns HTTP 200 with `status: "ready"` after startup. Before
 startup completes, it can return HTTP 503 with `status: "not_ready"`.

@@ -60,5 +60,10 @@ source-image data traverses the configured network path. ColorCraft does not
 provide authentication or transport encryption. Do not expose it directly to
 an untrusted network.
 
+Runtime metadata reports `networkMode: "loopback"` when every resolved host and
+browser origin is loopback. It reports `networkMode: "lan"` when any resolved
+host or origin is non-loopback. The shell presents these values as **Loopback
+only** and **LAN enabled**.
+
 Local does not automatically mean private, secure, offline, anonymous, or
 persistent.

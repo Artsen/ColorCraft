@@ -7,7 +7,12 @@ import {
   within,
 } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { analyzeColors, extractColors, suggestColors } from './api/client'
+import {
+  analyzeColors,
+  extractColors,
+  getMetadata,
+  suggestColors,
+} from './api/client'
 import { analysis, red } from './test/fixtures'
 import { savePalette } from './persistence'
 import App from './App'
@@ -15,6 +20,7 @@ import App from './App'
 vi.mock('./api/client', () => ({
   extractColors: vi.fn(),
   analyzeColors: vi.fn(),
+  getMetadata: vi.fn(),
   suggestColors: vi.fn(),
 }))
 
@@ -45,12 +51,62 @@ describe('ColorCraft workspace', () => {
     })
     vi.mocked(extractColors).mockReset()
     vi.mocked(analyzeColors).mockReset()
+    vi.mocked(getMetadata).mockReset()
     vi.mocked(suggestColors).mockReset()
     vi.mocked(analyzeColors).mockResolvedValue({ success: true, analysis })
+    vi.mocked(getMetadata).mockResolvedValue({
+      schemaVersion: 1,
+      id: 'colorcraft',
+      name: 'ColorCraft',
+      descriptor: 'Local color utility',
+      version: '1.0.0',
+      icon: 'http://127.0.0.1:5174/colorcraft-mark.svg',
+      webUrl: 'http://127.0.0.1:5174',
+      apiUrl: 'http://127.0.0.1:4100',
+      healthUrl: 'http://127.0.0.1:4100/health',
+      readinessUrl: 'http://127.0.0.1:4100/ready',
+      networkMode: 'loopback',
+      capabilities: [],
+    })
     vi.mocked(suggestColors).mockResolvedValue({
       success: true,
       suggestions: [],
     })
+  })
+
+  it('renders trust-sensitive shell copy and metadata network mode', async () => {
+    render(<App />)
+    expect(
+      screen.getByText(
+        'Extract, refine, and review color palettes from images.',
+      ),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('Loopback only')).toHaveAttribute(
+      'title',
+      expect.stringMatching(/loopback traffic only/i),
+    )
+  })
+
+  it('renders LAN enabled from runtime metadata', async () => {
+    vi.mocked(getMetadata).mockResolvedValueOnce({
+      schemaVersion: 1,
+      id: 'colorcraft',
+      name: 'ColorCraft',
+      descriptor: 'Local color utility',
+      version: '1.0.0',
+      icon: 'http://192.168.1.20:5174/colorcraft-mark.svg',
+      webUrl: 'http://192.168.1.20:5174',
+      apiUrl: 'http://192.168.1.20:4100',
+      healthUrl: 'http://192.168.1.20:4100/health',
+      readinessUrl: 'http://192.168.1.20:4100/ready',
+      networkMode: 'lan',
+      capabilities: [],
+    })
+    render(<App />)
+    expect(await screen.findByText('LAN enabled')).toHaveAttribute(
+      'title',
+      expect.stringMatching(/trusted LAN access/i),
+    )
   })
 
   it('enables views from real palette prerequisites and writes URL state', async () => {

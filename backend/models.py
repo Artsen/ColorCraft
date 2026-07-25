@@ -116,6 +116,7 @@ class ApplicationMetadata(ContractModel):
     api_url: str
     health_url: str
     readiness_url: str
+    network_mode: Literal["loopback", "lan"]
     capabilities: list[str]
 
 
@@ -162,10 +163,12 @@ class HarmonyResults(ContractModel):
 
 
 class TemperatureResults(ContractModel):
-    balance: Literal["warm", "cool", "balanced", "neutral"]
+    balance: Literal["warm", "transitional", "cool", "mixed", "neutral"]
     warm_count: int = Field(ge=0)
+    transitional_count: int = Field(ge=0)
     cool_count: int = Field(ge=0)
     warm_ratio: float = Field(ge=0, le=1)
+    transitional_ratio: float = Field(ge=0, le=1)
     cool_ratio: float = Field(ge=0, le=1)
 
 
@@ -238,7 +241,7 @@ class HarmonySuggestion(ContractModel):
     angle: str
     description: str
     use_cases: list[str]
-    mood: str
+    common_associations: str
     examples: str
     suggestions: list[SuggestionColor]
 

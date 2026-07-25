@@ -1,5 +1,5 @@
 """
-Color suggestion engine for generating harmonious color recommendations.
+Color suggestion engine for documented geometric color transformations.
 """
 
 from color_extractor import hsl_to_rgb, rgb_to_hsl
@@ -17,9 +17,6 @@ def normalize_hue(hue):
 def generate_complementary(base_color):
     """
     Generate complementary color (180° opposite).
-
-    Creates maximum contrast and visual tension.
-    Perfect for call-to-action buttons and emphasis.
     """
     h, s, l = base_color["hsl"]["h"], base_color["hsl"]["s"], base_color["hsl"]["l"]
 
@@ -31,35 +28,34 @@ def generate_complementary(base_color):
             "saturation": s,
             "lightness": l,
             "name": "Direct Complement",
-            "description": "Exact opposite on the color wheel",
+            "description": "Hue shifted by 180°; saturation and lightness unchanged",
         },
         {
             "hue": comp_hue,
             "saturation": min(100, s + 15),
             "lightness": max(20, l - 20),
-            "name": "Rich Complement",
-            "description": "More saturated and darker for depth",
+            "name": "Darker Complement",
+            "description": "Hue +180°, saturation +15, lightness -20",
         },
         {
             "hue": comp_hue,
             "saturation": max(30, s - 20),
             "lightness": min(90, l + 20),
-            "name": "Soft Complement",
-            "description": "Lighter and less saturated for subtlety",
+            "name": "Lighter Complement",
+            "description": "Hue +180°, saturation -20, lightness +20",
         },
     ]
 
     return {
         "type": "Complementary",
         "angle": "180°",
-        "description": "Complementary colors sit opposite each other on the color wheel, creating maximum contrast and visual energy.",
+        "description": "Moves the hue 180° around the color wheel. Color separation and contrast depend on saturation, lightness, and assigned roles.",
         "use_cases": [
-            "Call-to-action buttons that need to stand out",
-            "Highlighting important UI elements",
-            "Creating vibrant, attention-grabbing designs",
-            "Logos that need strong visual impact",
+            "Comparing colors with opposite hues",
+            "Exploring emphasis after contrast review",
+            "Testing role assignments with strong hue separation",
         ],
-        "mood": "Energetic, bold, dynamic, attention-grabbing",
+        "common_associations": "Emphasis, opposition, and color separation",
         "examples": "Red & Green, Blue & Orange, Yellow & Purple",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }
@@ -68,8 +64,6 @@ def generate_complementary(base_color):
 def generate_triadic(base_color):
     """
     Generate triadic colors (120° apart).
-
-    Creates balanced, vibrant palettes with strong visual interest.
     """
     h, s, l = base_color["hsl"]["h"], base_color["hsl"]["s"], base_color["hsl"]["l"]
 
@@ -85,14 +79,14 @@ def generate_triadic(base_color):
                     "saturation": s,
                     "lightness": l,
                     "name": f"Triadic Partner {offset}°",
-                    "description": "Equal spacing for balance",
+                    "description": f"Hue +{offset}°; saturation and lightness unchanged",
                 },
                 {
                     "hue": tri_hue,
                     "saturation": min(100, s + 10),
                     "lightness": l,
-                    "name": f"Vibrant Triadic {offset}°",
-                    "description": "Boosted saturation for impact",
+                    "name": f"Saturated Triadic {offset}°",
+                    "description": f"Hue +{offset}°, saturation +10, lightness unchanged",
                 },
             ]
         )
@@ -100,14 +94,13 @@ def generate_triadic(base_color):
     return {
         "type": "Triadic",
         "angle": "120°",
-        "description": "Triadic colors are evenly spaced around the color wheel, forming an equilateral triangle. This creates balanced, vibrant palettes.",
+        "description": "Moves the hue by 120° and 240° to form three evenly spaced hue positions. Suitability depends on context and assigned roles.",
         "use_cases": [
-            "Playful, energetic designs",
-            "Children's products and educational materials",
-            "Brand identities that need to feel dynamic",
-            "Infographics and data visualizations",
+            "Exploring three-category color systems",
+            "Comparing evenly spaced hue options",
+            "Testing categorical data colors",
         ],
-        "mood": "Balanced, vibrant, playful, harmonious",
+        "common_associations": "Variety, category separation, and three-part systems",
         "examples": "Red-Yellow-Blue (primary colors), Orange-Green-Purple (secondary colors)",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }
@@ -116,8 +109,6 @@ def generate_triadic(base_color):
 def generate_analogous(base_color):
     """
     Generate analogous colors (30-60° adjacent).
-
-    Creates harmonious, cohesive palettes that feel natural.
     """
     h, s, l = base_color["hsl"]["h"], base_color["hsl"]["s"], base_color["hsl"]["l"]
 
@@ -139,14 +130,13 @@ def generate_analogous(base_color):
     return {
         "type": "Analogous",
         "angle": "30-60°",
-        "description": "Analogous colors sit next to each other on the color wheel, creating harmonious, cohesive palettes that feel natural and pleasing.",
+        "description": "Moves the hue by 30° or 60° in either direction while preserving saturation and lightness.",
         "use_cases": [
-            "Backgrounds and gradients",
-            "Nature-inspired designs",
-            "Calming, serene interfaces",
-            "Photography and art portfolios",
+            "Exploring nearby hue variations",
+            "Testing gradients after interpolation review",
+            "Building related category colors",
         ],
-        "mood": "Harmonious, serene, cohesive, natural",
+        "common_associations": "Continuity, proximity, and related color groups",
         "examples": "Blue-Blue/Green-Green, Red-Orange-Yellow",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }
@@ -181,8 +171,8 @@ def generate_split_complementary(base_color):
                     "hue": split_hue,
                     "saturation": max(40, s - 15),
                     "lightness": min(85, l + 15),
-                    "name": f"Soft Split {'+30°' if offset > 0 else '-30°'}",
-                    "description": "Muted variation for subtlety",
+                    "name": f"Lighter Split {'+30°' if offset > 0 else '-30°'}",
+                    "description": f"Hue {150 if offset < 0 else 210:+d}°, saturation -15, lightness +15",
                 },
             ]
         )
@@ -190,14 +180,13 @@ def generate_split_complementary(base_color):
     return {
         "type": "Split-Complementary",
         "angle": "150° & 210°",
-        "description": "Split-complementary uses a base color and two colors adjacent to its complement, offering contrast with more nuance than pure complementary.",
+        "description": "Moves the hue by 150° and 210° to place two options around the direct complement.",
         "use_cases": [
-            "Sophisticated brand palettes",
-            "Web designs needing contrast without harshness",
-            "Editorial layouts and magazines",
-            "Product packaging with visual interest",
+            "Comparing two alternatives near a complementary hue",
+            "Exploring three-color role assignments",
+            "Testing categorical separation",
         ],
-        "mood": "Sophisticated, balanced, nuanced, refined",
+        "common_associations": "Contrast variation and a three-color structure",
         "examples": "Blue with Yellow-Orange and Red-Orange",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }
@@ -206,8 +195,6 @@ def generate_split_complementary(base_color):
 def generate_tetradic(base_color):
     """
     Generate tetradic/square colors (90° apart).
-
-    Creates rich, complex palettes with four distinct colors.
     """
     h, s, l = base_color["hsl"]["h"], base_color["hsl"]["s"], base_color["hsl"]["l"]
 
@@ -229,14 +216,13 @@ def generate_tetradic(base_color):
     return {
         "type": "Tetradic (Square)",
         "angle": "90°",
-        "description": "Tetradic colors form a square on the color wheel, evenly spaced at 90° intervals. This creates rich, complex palettes with maximum variety.",
+        "description": "Moves the hue by 90°, 180°, and 270° to form four evenly spaced hue positions.",
         "use_cases": [
-            "Complex brand systems with multiple sub-brands",
-            "Data visualizations with many categories",
-            "Festive, celebratory designs",
-            "Gaming interfaces and entertainment",
+            "Exploring four-category color systems",
+            "Comparing quarter-turn hue offsets",
+            "Testing multi-role assignments",
         ],
-        "mood": "Rich, complex, diverse, energetic",
+        "common_associations": "Variety, four-part systems, and category separation",
         "examples": "Red-Yellow-Green-Blue, Orange-Chartreuse-Cyan-Violet",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }
@@ -268,14 +254,13 @@ def generate_rectangular(base_color):
     return {
         "type": "Rectangular (Compound)",
         "angle": "60° & 180°",
-        "description": "Rectangular harmony uses two complementary pairs that form a rectangle on the color wheel, offering rich contrast with balance.",
+        "description": "Moves the hue by 60°, 180°, and 240° to form two opposite hue pairs.",
         "use_cases": [
-            "Editorial designs with multiple sections",
-            "Dashboard interfaces with distinct zones",
-            "Marketing materials with varied content",
-            "Presentation templates",
+            "Exploring two complementary pairs",
+            "Testing four-category color systems",
+            "Comparing primary and secondary role groups",
         ],
-        "mood": "Balanced, sophisticated, varied, professional",
+        "common_associations": "Paired opposites and multi-category systems",
         "examples": "Blue-Orange paired with Yellow-Violet",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }
@@ -284,8 +269,6 @@ def generate_rectangular(base_color):
 def generate_monochromatic(base_color):
     """
     Generate monochromatic variations (same hue, different S/L).
-
-    Creates cohesive, elegant palettes with subtle variation.
     """
     h, s, l = base_color["hsl"]["h"], base_color["hsl"]["s"], base_color["hsl"]["l"]
 
@@ -295,56 +278,55 @@ def generate_monochromatic(base_color):
             "saturation": max(10, s - 30),
             "lightness": min(95, l + 30),
             "name": "Lighter Tint",
-            "description": "Pastel variation for backgrounds",
+            "description": "Same hue, saturation -30, lightness +30",
         },
         {
             "hue": h,
             "saturation": max(5, s - 40),
             "lightness": min(98, l + 40),
             "name": "Very Light Tint",
-            "description": "Nearly white for subtle accents",
+            "description": "Same hue, saturation -40, lightness +40",
         },
         {
             "hue": h,
             "saturation": min(100, s + 20),
             "lightness": max(15, l - 30),
             "name": "Darker Shade",
-            "description": "Rich, deep variation for text",
+            "description": "Same hue, saturation +20, lightness -30",
         },
         {
             "hue": h,
             "saturation": min(100, s + 10),
             "lightness": max(10, l - 40),
             "name": "Very Dark Shade",
-            "description": "Nearly black for strong contrast",
+            "description": "Same hue, saturation +10, lightness -40",
         },
         {
             "hue": h,
             "saturation": max(15, s - 25),
             "lightness": l,
             "name": "Desaturated Tone",
-            "description": "Muted variation for sophistication",
+            "description": "Same hue, saturation -25, lightness unchanged",
         },
         {
             "hue": h,
             "saturation": min(100, s + 30),
             "lightness": l,
-            "name": "Vibrant Tone",
-            "description": "Boosted saturation for impact",
+            "name": "Saturated Tone",
+            "description": "Same hue, saturation +30, lightness unchanged",
         },
     ]
 
     return {
         "type": "Monochromatic",
         "angle": "0° (same hue)",
-        "description": "Monochromatic palettes use variations of a single hue with different saturation and lightness levels, creating cohesive, elegant designs.",
+        "description": "Keeps the hue fixed and changes saturation and lightness. Contrast and role suitability require separate review.",
         "use_cases": [
-            "Minimalist, elegant interfaces",
-            "Professional corporate designs",
-            "Photography portfolios",
-            "Luxury brand materials",
+            "Exploring states within one hue family",
+            "Testing light and dark role candidates",
+            "Building ordered surface levels",
         ],
-        "mood": "Cohesive, elegant, sophisticated, calm",
+        "common_associations": "Continuity, hierarchy, and one-hue systems",
         "examples": "Navy-Blue-Sky Blue-Powder Blue, Forest-Sage-Mint Green",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }
@@ -398,14 +380,13 @@ def generate_double_complementary(base_color):
     return {
         "type": "Double-Complementary",
         "angle": "Two 180° pairs",
-        "description": "Double-complementary uses two pairs of complementary colors, creating rich, dynamic palettes with strong contrast.",
+        "description": "Adds a hue 30° from the base and the 180° complements of both hues.",
         "use_cases": [
-            "Bold, energetic brand identities",
-            "Sports team colors and jerseys",
-            "Festival and event materials",
-            "Attention-grabbing advertisements",
+            "Exploring two related base hues and their complements",
+            "Testing four-category color systems",
+            "Comparing two opposite hue pairs",
         ],
-        "mood": "Bold, energetic, dynamic, striking",
+        "common_associations": "Paired opposites and four-color systems",
         "examples": "Red-Green paired with Blue-Orange",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }
@@ -414,8 +395,6 @@ def generate_double_complementary(base_color):
 def generate_shades_tints(base_color):
     """
     Generate pure shades (darker) and tints (lighter).
-
-    Essential for creating depth and hierarchy.
     """
     h, s, l = base_color["hsl"]["h"], base_color["hsl"]["s"], base_color["hsl"]["l"]
 
@@ -448,14 +427,13 @@ def generate_shades_tints(base_color):
     return {
         "type": "Shades & Tints",
         "angle": "Same hue, varied lightness",
-        "description": "Shades (darker) and tints (lighter) of the same color create depth, hierarchy, and visual interest while maintaining color identity.",
+        "description": "Keeps hue and saturation fixed while changing lightness by 15, 30, or 45 percentage points.",
         "use_cases": [
-            "UI states (hover, active, disabled)",
-            "Text hierarchy (headings, body, captions)",
-            "Shadows and highlights",
-            "Depth and layering in designs",
+            "Exploring interface state candidates",
+            "Comparing surface levels",
+            "Testing text and background role candidates",
         ],
-        "mood": "Structured, hierarchical, organized, clear",
+        "common_associations": "Hierarchy, state variation, and tonal scales",
         "examples": "Light Blue → Blue → Navy, Pink → Red → Maroon",
         "suggestions": [convert_hsl_to_color(s) for s in suggestions],
     }

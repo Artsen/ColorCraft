@@ -167,6 +167,7 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
             api_url=runtime.client_api_url,
             health_url=f"{runtime.client_api_url}/health",
             readiness_url=f"{runtime.client_api_url}/ready",
+            network_mode=runtime.network_mode,
             capabilities=CAPABILITIES,
         )
 

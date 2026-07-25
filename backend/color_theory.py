@@ -16,6 +16,7 @@ TRIADIC_TOLERANCE = 12.0
 TETRADIC_TOLERANCE = 10.0
 SPLIT_COMPLEMENTARY_TOLERANCE = 12.0
 MONOCHROMATIC_TOLERANCE = 10.0
+TEMPERATURE_DOMINANCE_THRESHOLD = 0.7
 
 
 def normalize_hue(hue: float) -> float:
@@ -273,6 +274,7 @@ def detect_monochromatic(
 
 def analyze_warm_cool_balance(colors: list[dict[str, object]]) -> dict[str, object]:
     warm_count = 0
+    transitional_count = 0
     cool_count = 0
     for color in colors:
         hsl = color["hsl"]
@@ -281,26 +283,43 @@ def analyze_warm_cool_balance(colors: list[dict[str, object]]) -> dict[str, obje
         hue = normalize_hue(float(hsl["h"]))
         if hue <= 60 or hue >= 300:
             warm_count += 1
-        elif 120 <= hue <= 300:
+        elif hue < 120:
+            transitional_count += 1
+        else:
             cool_count += 1
 
-    categorized = warm_count + cool_count
+    categorized = warm_count + transitional_count + cool_count
     if categorized == 0:
         return {
             "balance": "neutral",
             "warm_count": 0,
+            "transitional_count": 0,
             "cool_count": 0,
             "warm_ratio": 0.0,
+            "transitional_ratio": 0.0,
             "cool_ratio": 0.0,
         }
     warm_ratio = warm_count / categorized
+    transitional_ratio = transitional_count / categorized
     cool_ratio = cool_count / categorized
-    balance = "warm" if warm_ratio > 0.7 else "cool" if cool_ratio > 0.7 else "balanced"
+    ratios = {
+        "warm": warm_ratio,
+        "transitional": transitional_ratio,
+        "cool": cool_ratio,
+    }
+    dominant_category, dominant_ratio = max(ratios.items(), key=lambda item: item[1])
+    balance = (
+        dominant_category
+        if dominant_ratio > TEMPERATURE_DOMINANCE_THRESHOLD
+        else "mixed"
+    )
     return {
         "balance": balance,
         "warm_count": warm_count,
+        "transitional_count": transitional_count,
         "cool_count": cool_count,
         "warm_ratio": round(warm_ratio, 2),
+        "transitional_ratio": round(transitional_ratio, 2),
         "cool_ratio": round(cool_ratio, 2),
     }
 

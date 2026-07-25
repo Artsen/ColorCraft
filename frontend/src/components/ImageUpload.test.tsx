@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import ImageUpload, { MAX_IMAGE_BYTES } from './ImageUpload'
+import { MAX_IMAGE_BYTES } from '../limits'
+import ImageUpload, { validateImageFile } from './ImageUpload'
 
 function imageFile(name = 'source.png', type = 'image/png') {
   return new File(['image'], name, { type })
@@ -57,8 +58,29 @@ describe('ImageUpload', () => {
     Object.defineProperty(oversized, 'size', { value: MAX_IMAGE_BYTES + 1 })
     fireEvent.change(input, { target: { files: [oversized] } })
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Choose an image smaller than 15 MB.',
+      'Choose an image that is 10 MB or smaller.',
     )
     expect(onImageSelected).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['immediately below', MAX_IMAGE_BYTES - 1, null],
+    ['exactly at', MAX_IMAGE_BYTES, null],
+    [
+      'immediately above',
+      MAX_IMAGE_BYTES + 1,
+      'Choose an image that is 10 MB or smaller.',
+    ],
+  ])('validates a file %s the API limit', (_label, size, expected) => {
+    const file = imageFile()
+    Object.defineProperty(file, 'size', { value: size })
+    expect(validateImageFile(file)).toBe(expected)
+  })
+
+  it('shows the effective API limit', () => {
+    render(<ImageUpload onImageSelected={vi.fn()} onStartManual={vi.fn()} />)
+    expect(
+      screen.getByText('JPG, PNG, or WebP · up to 10 MB'),
+    ).toBeInTheDocument()
   })
 })

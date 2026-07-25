@@ -13,8 +13,8 @@
 </p>
 
 ColorCraft creates a palette from a source image or from colors that you enter
-manually. It detects geometric hue relationships, evaluates contrast, proposes
-optional colors, and generates browser-side exports.
+manually. It reviews geometric hue relationships and defined color-pair
+contrast, proposes optional colors, and generates browser-side exports.
 
 ![ColorCraft Review workspace](./docs/assets/screenshots/review-dark.png)
 
@@ -28,11 +28,17 @@ optional colors, and generates browser-side exports.
 6. Use Export to generate **CSS custom properties**, **JSON**, **Tailwind theme colors**, or an **SVG swatch sheet**.
 7. Select **Copy** or **Download**.
 
-Relationship fit measures geometric agreement with documented hue structures, not aesthetic quality. Contrast checks measure one accessibility requirement; they do not prove complete WCAG conformance.
+Relationship fit measures geometric agreement with documented hue structures,
+not aesthetic quality. Text, non-text, and focus-indicator checks use the
+threshold for the identified role pair. They do not prove complete WCAG
+conformance.
 
 The API accepts a source image up to 10 MB and 40 million decoded pixels. Extraction returns 3–10 requested colors, or fewer for a limited processing sample. **Save palette** stores a versioned record in IndexedDB. The Library can open, search, rename, duplicate, and delete saved palettes.
 
 ColorCraft has no accounts or cloud synchronization. Source-image bytes and unsaved changes remain session-only. Browser history stores the active view and Review tab, not palette data. Export generation runs in the browser.
+
+The shell reports **Loopback only** or **LAN enabled** from runtime metadata.
+SVG exports select black or white swatch labels by measured contrast.
 
 ![ColorCraft Palette Library](./docs/assets/screenshots/library-dark.png)
 

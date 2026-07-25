@@ -55,7 +55,7 @@ def wcag_rating(ratio):
     Get WCAG rating for a contrast ratio.
 
     Returns:
-        Dictionary with AA and AAA compliance for normal and large text
+        Dictionary with AA and AAA threshold results for normal and large text
     """
     return {
         "ratio": round(ratio, 2),

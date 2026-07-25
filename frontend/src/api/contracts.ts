@@ -62,10 +62,12 @@ export const harmonyResultsSchema = z
 
 export const temperatureResultsSchema = z
   .object({
-    balance: z.enum(['warm', 'cool', 'balanced', 'neutral']),
+    balance: z.enum(['warm', 'transitional', 'cool', 'mixed', 'neutral']),
     warmCount: z.number().int().nonnegative(),
+    transitionalCount: z.number().int().nonnegative(),
     coolCount: z.number().int().nonnegative(),
     warmRatio: z.number().min(0).max(1),
+    transitionalRatio: z.number().min(0).max(1),
     coolRatio: z.number().min(0).max(1),
   })
   .strict()
@@ -162,9 +164,26 @@ export const harmonySuggestionSchema = z
     angle: z.string(),
     description: z.string(),
     useCases: z.array(z.string()),
-    mood: z.string(),
+    commonAssociations: z.string(),
     examples: z.string(),
     suggestions: z.array(suggestionColorSchema),
+  })
+  .strict()
+
+export const applicationMetadataSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    id: z.literal('colorcraft'),
+    name: z.literal('ColorCraft'),
+    descriptor: z.literal('Local color utility'),
+    version: z.string(),
+    icon: z.string(),
+    webUrl: z.string(),
+    apiUrl: z.string(),
+    healthUrl: z.string(),
+    readinessUrl: z.string(),
+    networkMode: z.enum(['loopback', 'lan']),
+    capabilities: z.array(z.string()),
   })
   .strict()
 
@@ -221,5 +240,6 @@ export type SuggestionColor = z.infer<typeof suggestionColorSchema>
 export type HarmonySuggestion = z.infer<typeof harmonySuggestionSchema>
 export type SuggestionResult = z.infer<typeof suggestionResultSchema>
 export type SuggestionResponse = z.infer<typeof suggestionResponseSchema>
+export type ApplicationMetadata = z.infer<typeof applicationMetadataSchema>
 export type ValidationIssue = z.infer<typeof validationIssueSchema>
 export type ErrorResponse = z.infer<typeof errorResponseSchema>

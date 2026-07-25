@@ -9,6 +9,7 @@ import type { Analysis, Color, HarmonyRelationship } from '../api/contracts'
 import {
   contrastRatio,
   paletteRoles,
+  resultsForContrastCheck,
   roleChecks,
   roleLabels,
   type PaletteRole,
@@ -91,7 +92,7 @@ function EmptyAnalysis({
         description={
           stale
             ? 'The palette changed, so previous measurements are no longer shown.'
-            : 'Measure harmony and contrast relationships for the current colors.'
+            : 'Measure hue geometry and color-pair contrast for the current palette.'
         }
       />
       <Notice
@@ -133,13 +134,15 @@ function Overview({
     )[0] ?? colors[0]
   const temperature = analysis.colorTheory.temperatureBalance
   const temperatureCopy =
-    temperature.balance === 'balanced'
-      ? 'Balanced temperature'
-      : `${temperature.balance[0].toUpperCase()}${temperature.balance.slice(1)} leaning`
+    temperature.balance === 'neutral'
+      ? 'No meaningful chromatic temperature evidence'
+      : temperature.balance === 'mixed'
+        ? 'Mixed temperature'
+        : `${temperature.balance[0].toUpperCase()}${temperature.balance.slice(1)} dominant`
   const lightness = analysis.colorTheory.metrics.lightnessRange
   const nextAction = analysis.accessibility.issues.length
     ? `${analysis.accessibility.issues.length} color ${analysis.accessibility.issues.length === 1 ? 'pair needs' : 'pairs need'} a contrast-role review`
-    : 'Assign semantic roles to validate real interface combinations'
+    : 'Assign semantic roles to review relevant interface combinations'
 
   return (
     <div className="review-overview">
@@ -172,7 +175,8 @@ function Overview({
             <dt>Temperature</dt>
             <dd>
               {temperatureCopy} · {Math.round(temperature.warmRatio * 100)}%
-              warm / {Math.round(temperature.coolRatio * 100)}% cool
+              warm · {Math.round(temperature.transitionalRatio * 100)}%
+              transitional · {Math.round(temperature.coolRatio * 100)}% cool
             </dd>
           </div>
           <div>
@@ -441,7 +445,7 @@ function Contrast({
       <Panel>
         <SectionHeader
           title="Role contrast"
-          description="WCAG ratios and previews for meaningful interface combinations."
+          description="Measured ratios and applicable thresholds for assigned interface roles."
         />
         <div className="role-result-list">
           {roleChecks.map((check) => {
@@ -460,6 +464,7 @@ function Contrast({
               )
             }
             const ratio = contrastRatio(foreground, background)
+            const results = resultsForContrastCheck(check.kind, ratio)
             return (
               <article className="role-result" key={check.id}>
                 <div className="role-result-heading">
@@ -478,17 +483,32 @@ function Contrast({
                   background={background.hex}
                 />
                 <div className="badge-row">
-                  <ResultBadge label="AA normal" pass={ratio >= 4.5} />
-                  <ResultBadge label="AA large" pass={ratio >= 3} />
-                  <ResultBadge label="AAA normal" pass={ratio >= 7} />
-                  <ResultBadge label="AAA large" pass={ratio >= 4.5} />
+                  {results.map((result) => (
+                    <ResultBadge
+                      key={result.label}
+                      label={`${result.label} (${result.threshold}:1)`}
+                      pass={result.pass}
+                    />
+                  ))}
                 </div>
+                <p className="field-help">
+                  {check.kind === 'text'
+                    ? 'Text thresholds apply only to this assigned foreground and background pair.'
+                    : check.kind === 'nonText'
+                      ? 'This checks non-text color contrast only. Component size, shape, state, and other accessibility requirements are not evaluated.'
+                      : 'This checks one adjacent-color pair. Size, area, thickness, visibility, and focused-versus-unfocused appearance are not evaluated.'}
+                </p>
               </article>
             )
           })}
         </div>
         <details className="advanced-disclosure all-pairs">
-          <summary>Advanced: all-pairs contrast matrix</summary>
+          <summary>Advanced: all-pairs text contrast matrix</summary>
+          <p className="field-help">
+            AA and AAA badges below apply text-contrast thresholds to every
+            palette color pair for exploration. They do not classify non-text
+            components or focus indicators.
+          </p>
           <div className="contrast-list">
             {analysis.accessibility.pairs.map((pair) => (
               <div
@@ -502,10 +522,10 @@ function Contrast({
                   <strong>{pair.ratio.toFixed(2)}:1</strong>
                 </div>
                 <div className="badge-row">
-                  <ResultBadge label="AA normal" pass={pair.aaNormal} />
-                  <ResultBadge label="AA large" pass={pair.aaLarge} />
-                  <ResultBadge label="AAA normal" pass={pair.aaaNormal} />
-                  <ResultBadge label="AAA large" pass={pair.aaaLarge} />
+                  <ResultBadge label="AA normal text" pass={pair.aaNormal} />
+                  <ResultBadge label="AA large text" pass={pair.aaLarge} />
+                  <ResultBadge label="AAA normal text" pass={pair.aaaNormal} />
+                  <ResultBadge label="AAA large text" pass={pair.aaaLarge} />
                 </div>
               </div>
             ))}

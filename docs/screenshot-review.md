@@ -13,4 +13,4 @@ It creates 16 fixture-driven PNGs under `.tmp/ui-review`: empty Create in both t
 
 When a screenshot is representative and stable, copy only that file to `docs/assets/screenshots`, give it a semantic name, and reference it from documentation. Curated images are reviewable product documentation; the complete temporary set is disposable diagnostic output.
 
-The current curated set shows light Create, dark Review, dark Library, and mobile Create. Regenerate it only when a deliberate interface change makes the existing image inaccurate.
+The current curated set shows light Create, dark Review Overview, dark role-based Contrast, dark Suggestions, dark Library, and mobile Create. The Review images document the metadata-derived network status, three-way temperature evidence, typed contrast checks, and qualified suggestion language. Regenerate the set only when a deliberate interface change makes an existing image inaccurate.

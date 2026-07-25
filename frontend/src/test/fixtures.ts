@@ -23,10 +23,12 @@ export const analysis: Analysis = {
       monochromatic: [],
     },
     temperatureBalance: {
-      balance: 'balanced',
+      balance: 'mixed',
       warmCount: 1,
+      transitionalCount: 0,
       coolCount: 1,
       warmRatio: 0.5,
+      transitionalRatio: 0,
       coolRatio: 0.5,
     },
     relationshipFit: 50,
