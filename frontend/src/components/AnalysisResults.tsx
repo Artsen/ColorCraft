@@ -26,18 +26,33 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
           ))}
         </div>
 
-        {/* Harmony Score */}
+        {/* Geometric relationship fit */}
         <div className="mb-6 p-4 bg-dark-tertiary rounded-lg border border-border-subtle">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-text-secondary">Harmony Score</span>
-            <span className="text-2xl font-semibold text-purple-400">{colorTheory.score}/100</span>
+            <div>
+              <span className="text-sm text-text-secondary">Relationship fit</span>
+              <p className="text-base font-medium text-text-primary">
+                {colorTheory.relationshipSummary}
+              </p>
+            </div>
+            <span className="text-2xl font-semibold text-purple-400">
+              {colorTheory.relationshipFit}/100
+            </span>
           </div>
           <div className="w-full bg-dark-primary rounded-full h-2">
             <div
               className="bg-purple-600 h-2 rounded-full transition-all"
-              style={{ width: `${colorTheory.score}%` }}
+              style={{ width: `${colorTheory.relationshipFit}%` }}
             />
           </div>
+          <ul className="mt-3 space-y-1 text-xs text-text-secondary">
+            {colorTheory.relationshipFactors.map((factor) => (
+              <li key={factor}>{factor}</li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-text-tertiary">
+            This measures geometric color relationships, not subjective design quality.
+          </p>
         </div>
 
         {/* Details Grid */}

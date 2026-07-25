@@ -1,7 +1,7 @@
 """
 Color suggestion engine for generating harmonious color recommendations.
 """
-from color_extractor import hsl_to_rgb
+from color_extractor import hsl_to_rgb, rgb_to_hsl
 import math
 
 
@@ -447,12 +447,17 @@ def convert_hsl_to_color(hsl_obj):
     """Convert HSL suggestion object to full color object."""
     h, s, l = hsl_obj['hue'], hsl_obj['saturation'], hsl_obj['lightness']
     rgb = hsl_to_rgb([h, s, l])
+    canonical_hsl = rgb_to_hsl(rgb)
     hex_color = '#{:02x}{:02x}{:02x}'.format(*rgb)
     
     return {
         'hex': hex_color,
         'rgb': {'r': rgb[0], 'g': rgb[1], 'b': rgb[2]},
-        'hsl': {'h': h, 's': s, 'l': l},
+        'hsl': {
+            'h': canonical_hsl[0],
+            's': canonical_hsl[1],
+            'l': canonical_hsl[2]
+        },
         'name': hsl_obj['name'],
         'description': hsl_obj['description']
     }

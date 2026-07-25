@@ -1,7 +1,9 @@
-"""
-WCAG 2.1 accessibility contrast ratio calculations.
-"""
-import math
+"""WCAG relative-luminance and contrast calculations for sRGB colors."""
+
+AA_NORMAL_MINIMUM = 4.5
+AA_LARGE_MINIMUM = 3.0
+AAA_NORMAL_MINIMUM = 7.0
+AAA_LARGE_MINIMUM = 4.5
 
 
 def hex_to_rgb(hex_color):
@@ -11,10 +13,10 @@ def hex_to_rgb(hex_color):
 
 
 def relative_luminance(rgb):
-    """Calculate relative luminance for WCAG contrast ratio."""
+    """Calculate relative luminance using the current sRGB breakpoint."""
     def adjust(channel):
         channel = channel / 255.0
-        if channel <= 0.03928:
+        if channel <= 0.04045:
             return channel / 12.92
         return ((channel + 0.055) / 1.055) ** 2.4
     
@@ -56,10 +58,10 @@ def wcag_rating(ratio):
     """
     return {
         'ratio': round(ratio, 2),
-        'aa_normal': ratio >= 4.5,
-        'aa_large': ratio >= 3.0,
-        'aaa_normal': ratio >= 7.0,
-        'aaa_large': ratio >= 4.5
+        'aa_normal': ratio >= AA_NORMAL_MINIMUM,
+        'aa_large': ratio >= AA_LARGE_MINIMUM,
+        'aaa_normal': ratio >= AAA_NORMAL_MINIMUM,
+        'aaa_large': ratio >= AAA_LARGE_MINIMUM
     }
 
 

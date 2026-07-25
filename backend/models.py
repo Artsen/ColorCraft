@@ -28,11 +28,6 @@ class ContractModel(BaseModel):
 
 
 HexColor = Annotated[str, StringConstraints(pattern=r"^#[0-9A-Fa-f]{6}$")]
-PaletteIndexPair = tuple[int, int]
-PaletteIndexTriad = tuple[int, int, int]
-PaletteIndexTetrad = tuple[int, int, int, int]
-
-
 class RGB(ContractModel):
     r: int = Field(ge=0, le=255)
     g: int = Field(ge=0, le=255)
@@ -92,6 +87,11 @@ class ColorInput(ColorValue):
         return self
 
 
+class ExtractedColor(ColorValue):
+    population: float = Field(ge=0, le=1)
+    pixel_count: int = Field(ge=1)
+
+
 class ServiceResponse(ContractModel):
     status: Literal["ok"]
     service: str
@@ -107,8 +107,8 @@ class ReadinessResponse(ContractModel):
 
 class ExtractionResponse(ContractModel):
     success: Literal[True]
-    colors: list[ColorValue]
-    count: int = Field(ge=3, le=10)
+    colors: list[ExtractedColor] = Field(min_length=1, max_length=10)
+    count: int = Field(ge=1, le=10)
 
 
 class PaletteAnalysisRequest(ContractModel):
@@ -119,13 +119,32 @@ class SuggestionRequest(ContractModel):
     colors: list[ColorInput] = Field(min_length=1, max_length=10)
 
 
+HarmonyType = Literal[
+    "complementary",
+    "analogous",
+    "triadic",
+    "tetradic",
+    "split_complementary",
+    "monochromatic",
+]
+
+
+class HarmonyRelationship(ContractModel):
+    type: HarmonyType
+    color_indexes: list[int] = Field(min_length=2, max_length=10)
+    expected_angles: list[float] = Field(min_length=1, max_length=10)
+    measured_angles: list[float] = Field(min_length=1, max_length=10)
+    deviation: float = Field(ge=0, le=180)
+    confidence: float = Field(ge=0, le=1)
+
+
 class HarmonyResults(ContractModel):
-    complementary: list[PaletteIndexPair]
-    analogous: list[PaletteIndexPair]
-    triadic: list[PaletteIndexTriad]
-    tetradic: list[PaletteIndexTetrad]
-    split_complementary: list[PaletteIndexTriad]
-    monochromatic: bool
+    complementary: list[HarmonyRelationship]
+    analogous: list[HarmonyRelationship]
+    triadic: list[HarmonyRelationship]
+    tetradic: list[HarmonyRelationship]
+    split_complementary: list[HarmonyRelationship]
+    monochromatic: list[HarmonyRelationship]
 
 
 class TemperatureResults(ContractModel):
@@ -145,7 +164,9 @@ class ColorMetrics(ContractModel):
 class ColorTheoryResult(ContractModel):
     harmonies: HarmonyResults
     temperature_balance: TemperatureResults
-    score: int = Field(ge=0, le=100)
+    relationship_fit: int = Field(ge=0, le=100)
+    relationship_summary: str
+    relationship_factors: list[str]
     tags: list[str]
     metrics: ColorMetrics
 
@@ -220,7 +241,7 @@ class SuggestionResponse(ContractModel):
 
 class FullAnalysisResponse(ContractModel):
     success: Literal[True]
-    colors: list[ColorValue]
+    colors: list[ExtractedColor]
     analysis: AnalysisResult
 
 

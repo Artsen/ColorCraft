@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import ImageUpload from './components/ImageUpload'
 import ColorPalette from './components/ColorPalette'
 import ColorWheel from './components/ColorWheel'
@@ -21,10 +21,21 @@ function App() {
   const [nColors, setNColors] = useState(5)
   const [extracting, setExtracting] = useState(false)
   const [notice, setNotice] = useState<NoticeState | null>(null)
+  const analysisRequestRef = useRef(0)
+  const analysisControllerRef = useRef<AbortController | null>(null)
+  const extractionRequestRef = useRef(0)
+  const extractionControllerRef = useRef<AbortController | null>(null)
+
+  const invalidateAnalysis = () => {
+    analysisRequestRef.current += 1
+    analysisControllerRef.current?.abort()
+    analysisControllerRef.current = null
+    setAnalysis(null)
+  }
 
   const handleColorsExtracted = (extractedColors: Color[], imageFile?: File, imageUrl?: string) => {
     setColors(extractedColors)
-    setAnalysis(null)
+    invalidateAnalysis()
     setShowUpload(false)
     
     if (imageFile && imageUrl) {
@@ -37,18 +48,29 @@ function App() {
 
     setExtracting(true)
     setNotice(null)
+    extractionControllerRef.current?.abort()
+    const controller = new AbortController()
+    extractionControllerRef.current = controller
+    const requestId = extractionRequestRef.current + 1
+    extractionRequestRef.current = requestId
     try {
-      const data = await extractColors(uploadedImage.file, nColors)
+      const data = await extractColors(
+        uploadedImage.file,
+        nColors,
+        controller.signal,
+      )
+      if (requestId !== extractionRequestRef.current) return
       setColors(data.colors)
-      setAnalysis(null)
+      invalidateAnalysis()
     } catch (error) {
+      if (controller.signal.aborted) return
       console.error('Error re-extracting colors:', error)
       setNotice({
         message: errorMessage(error),
         retry: () => void handleReExtract(),
       })
     } finally {
-      setExtracting(false)
+      if (requestId === extractionRequestRef.current) setExtracting(false)
     }
   }
 
@@ -72,28 +94,33 @@ function App() {
       }
     ]
     setColors(defaultColors)
+    invalidateAnalysis()
   }
 
   const handleColorChange = (index: number, newColor: Color) => {
     const newColors = [...colors]
     newColors[index] = newColor
     setColors(newColors)
-    setAnalysis(null)
+    invalidateAnalysis()
   }
 
   const handleAddColor = (color?: Color) => {
+    if (colors.length >= 10) {
+      setNotice({ message: 'A palette can contain at most 10 colors.' })
+      return
+    }
     const newColor: Color = color || {
       hex: '#808080',
       rgb: { r: 128, g: 128, b: 128 },
       hsl: { h: 0, s: 0, l: 50 }
     }
     setColors([...colors, newColor])
-    setAnalysis(null)
+    invalidateAnalysis()
   }
 
   const handleRemoveColor = (index: number) => {
     setColors(colors.filter((_, i) => i !== index))
-    setAnalysis(null)
+    invalidateAnalysis()
   }
 
   const handleAnalyze = async () => {
@@ -104,23 +131,37 @@ function App() {
 
     setLoading(true)
     setNotice(null)
+    analysisControllerRef.current?.abort()
+    const controller = new AbortController()
+    analysisControllerRef.current = controller
+    const requestId = analysisRequestRef.current + 1
+    analysisRequestRef.current = requestId
     try {
-      const data = await analyzeColors(colors)
+      const data = await analyzeColors(colors, controller.signal)
+      if (requestId !== analysisRequestRef.current) {
+        return
+      }
       setAnalysis(data.analysis)
     } catch (error) {
+      if (controller.signal.aborted) return
       console.error('Error analyzing colors:', error)
       setNotice({
         message: errorMessage(error),
         retry: () => void handleAnalyze(),
       })
     } finally {
-      setLoading(false)
+      if (requestId === analysisRequestRef.current) setLoading(false)
     }
   }
 
   const handleReset = () => {
+    invalidateAnalysis()
+    extractionRequestRef.current += 1
+    extractionControllerRef.current?.abort()
+    extractionControllerRef.current = null
     setColors([])
-    setAnalysis(null)
+    setLoading(false)
+    setExtracting(false)
     setShowUpload(true)
     setUploadedImage(null)
     setNotice(null)

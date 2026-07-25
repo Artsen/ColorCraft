@@ -8,6 +8,7 @@ import pytest
 
 from config import RuntimeSettings
 from main import create_app
+import main
 
 
 @pytest.fixture()
@@ -123,6 +124,54 @@ def test_valid_extraction_request(client: TestClient):
     assert payload["success"] is True
     assert payload["count"] == 3
     assert len(payload["colors"]) == 3
+    assert set(payload["colors"][0]) == {
+        "hex",
+        "rgb",
+        "hsl",
+        "population",
+        "pixelCount",
+    }
+
+
+def test_solid_image_returns_one_color(client: TestClient):
+    image = Image.new("RGB", (2, 2), (10, 20, 30))
+    output = BytesIO()
+    image.save(output, format="PNG")
+    response = client.post(
+        "/api/extract-colors?n_colors=5",
+        files={"file": ("solid.png", output.getvalue(), "image/png")},
+    )
+    assert response.status_code == 200
+    assert response.json()["count"] == 1
+
+    full_response = client.post(
+        "/api/full-analysis?n_colors=5",
+        files={"file": ("solid.png", output.getvalue(), "image/png")},
+    )
+    assert full_response.status_code == 200
+    assert len(full_response.json()["colors"]) == 1
+
+
+def test_invalid_image_returns_controlled_error(client: TestClient):
+    response = client.post(
+        "/api/extract-colors?n_colors=3",
+        files={"file": ("broken.png", b"not an image", "image/png")},
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "image_decode_error"
+    assert "cannot identify image" not in response.text.lower()
+
+
+def test_upload_limit_returns_413(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(main, "MAX_UPLOAD_BYTES", 4)
+    response = client.post(
+        "/api/extract-colors?n_colors=3",
+        files={"file": ("large.png", b"12345", "image/png")},
+    )
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "upload_too_large"
 
 
 def test_invalid_file_type(client: TestClient):
@@ -149,7 +198,9 @@ def test_valid_palette_analysis(client: TestClient):
         json={"colors": [red(), blue()]},
     )
     assert response.status_code == 200
-    assert response.json()["analysis"]["colorTheory"]["score"] >= 0
+    color_theory = response.json()["analysis"]["colorTheory"]
+    assert color_theory["relationshipFit"] >= 0
+    assert "score" not in color_theory
 
 
 def test_invalid_hex_values(client: TestClient):
@@ -233,3 +284,13 @@ def test_suggestion_response_schema(client: TestClient):
     result = response.json()["suggestions"][0]
     assert set(result) == {"baseColor", "harmonies"}
     assert result["harmonies"][0]["suggestions"]
+
+    suggestion = result["harmonies"][0]["suggestions"][0]
+    added = {
+        field: suggestion[field] for field in ("hex", "rgb", "hsl")
+    }
+    analysis_response = client.post(
+        "/api/analyze-colors",
+        json={"colors": [red(), added]},
+    )
+    assert analysis_response.status_code == 200

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { analyzeColors, extractColors } from './client'
+import { analyzeColors, extractColors, suggestColors } from './client'
 import { ColorCraftApiError } from './errors'
 import { analysis, blue, red } from '../test/fixtures'
 
@@ -19,7 +19,11 @@ describe('ColorCraft API client', () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({
         success: true,
-        colors: [red, blue, red],
+        colors: [red, blue, red].map((color, index) => ({
+          ...color,
+          population: 1 / 3,
+          pixelCount: 10 - index,
+        })),
         count: 3,
       }),
     )
@@ -28,7 +32,8 @@ describe('ColorCraft API client', () => {
     const result = await extractColors(new File(['image'], 'image.png'), 3)
 
     expect(result.count).toBe(3)
-    expect(result.colors[0]).toEqual(red)
+    expect(result.colors[0]).toMatchObject(red)
+    expect(result.colors[0].population).toBeCloseTo(1 / 3)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
@@ -108,5 +113,33 @@ describe('ColorCraft API client', () => {
     await expect(analyzeColors([red, blue])).rejects.toMatchObject({
       code: 'contract_error',
     })
+  })
+
+  it('strips extraction metadata from strict palette requests', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ success: true, analysis }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ success: true, suggestions: [] }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+    const extractedColor = {
+      ...red,
+      population: 1,
+      pixelCount: 400,
+    }
+
+    await analyzeColors([extractedColor, blue])
+    await suggestColors([extractedColor])
+
+    for (const call of fetchMock.mock.calls) {
+      const request = call[1] as RequestInit
+      const payload = JSON.parse(String(request.body))
+      expect(payload.colors[0]).toEqual(red)
+      expect(payload.colors[0]).not.toHaveProperty('population')
+      expect(payload.colors[0]).not.toHaveProperty('pixelCount')
+    }
   })
 })

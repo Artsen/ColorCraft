@@ -9,12 +9,16 @@ from fastapi import FastAPI, File, Query, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from PIL import UnidentifiedImageError
-from pydantic import ValidationError
+from PIL import Image, UnidentifiedImageError
+from starlette.concurrency import run_in_threadpool
 import uvicorn
 
 from accessibility import analyze_accessibility
-from color_extractor import extract_colors
+from color_extractor import (
+    ImageDimensionError,
+    NoUsablePixelsError,
+    extract_colors,
+)
 from color_suggestions import generate_all_suggestions
 from color_theory import analyze_color_theory
 from config import RuntimeSettings
@@ -22,8 +26,8 @@ from models import (
     APIError,
     AnalysisResponse,
     AnalysisResult,
-    ColorValue,
     ErrorResponse,
+    ExtractedColor,
     ExtractionResponse,
     FullAnalysisResponse,
     PaletteAnalysisRequest,
@@ -36,6 +40,7 @@ from models import (
 
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 CAPABILITIES = [
     "color extraction",
     "palette analysis",
@@ -167,7 +172,7 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
 
     async def extract_uploaded_colors(
         file: UploadFile, color_count: int
-    ) -> list[ColorValue]:
+    ) -> list[ExtractedColor]:
         if file.content_type not in ALLOWED_IMAGE_TYPES:
             allowed = ", ".join(sorted(ALLOWED_IMAGE_TYPES))
             raise APIException(
@@ -176,7 +181,7 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
                 f"Choose a supported image type: {allowed}.",
             )
 
-        image_bytes = await file.read()
+        image_bytes = await file.read(MAX_UPLOAD_BYTES + 1)
         if not image_bytes:
             raise APIException(
                 422,
@@ -184,11 +189,38 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
                 "The image could not be decoded. Choose a valid JPG, PNG, or "
                 "WebP image.",
             )
+        if len(image_bytes) > MAX_UPLOAD_BYTES:
+            raise APIException(
+                413,
+                "upload_too_large",
+                f"Images must be {MAX_UPLOAD_BYTES // (1024 * 1024)} MB or smaller.",
+            )
 
         try:
-            extracted = extract_colors(image_bytes, color_count)
-            return [ColorValue.model_validate(color) for color in extracted]
-        except (UnidentifiedImageError, OSError, ValueError):
+            extracted = await run_in_threadpool(
+                extract_colors, image_bytes, color_count
+            )
+            return [
+                ExtractedColor.model_validate(color) for color in extracted
+            ]
+        except ImageDimensionError:
+            raise APIException(
+                413,
+                "image_dimensions_too_large",
+                "The decoded image dimensions exceed the safe processing limit.",
+            ) from None
+        except NoUsablePixelsError:
+            raise APIException(
+                422,
+                "no_visible_pixels",
+                "The image does not contain any visible pixels.",
+            ) from None
+        except (
+            Image.DecompressionBombError,
+            UnidentifiedImageError,
+            OSError,
+            ValueError,
+        ):
             raise APIException(
                 422,
                 "image_decode_error",
@@ -199,7 +231,11 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
     @application.post(
         "/api/extract-colors",
         response_model=ExtractionResponse,
-        responses={415: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+        responses={
+            413: {"model": ErrorResponse},
+            415: {"model": ErrorResponse},
+            422: {"model": ErrorResponse},
+        },
     )
     async def extract_colors_endpoint(
         file: UploadFile = File(...),
@@ -255,29 +291,32 @@ def create_app(settings: RuntimeSettings | None = None) -> FastAPI:
     @application.post(
         "/api/full-analysis",
         response_model=FullAnalysisResponse,
-        responses={415: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
+        responses={
+            413: {"model": ErrorResponse},
+            415: {"model": ErrorResponse},
+            422: {"model": ErrorResponse},
+        },
     )
     async def full_analysis_endpoint(
         file: UploadFile = File(...),
         n_colors: ColorCount = 5,
     ) -> FullAnalysisResponse:
         colors = await extract_uploaded_colors(file, n_colors)
-        try:
-            request = PaletteAnalysisRequest(
-                colors=[
-                    color.model_dump(by_alias=False) for color in colors
-                ]
-            )
-        except ValidationError as error:
-            raise APIException(
-                500,
-                "internal_contract_error",
-                "Extracted colors did not satisfy the analysis contract.",
-            ) from error
+        analysis_colors = [
+            {
+                "hex": color.hex,
+                "rgb": color.rgb.model_dump(),
+                "hsl": color.hsl.model_dump(),
+            }
+            for color in colors
+        ]
         return FullAnalysisResponse(
             success=True,
             colors=colors,
-            analysis=analyze_palette(request),
+            analysis=AnalysisResult(
+                color_theory=analyze_color_theory(analysis_colors),
+                accessibility=analyze_accessibility(analysis_colors),
+            ),
         )
 
     return application

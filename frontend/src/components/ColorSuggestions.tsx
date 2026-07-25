@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { suggestColors } from '../api/client'
 import type {
   Color,
@@ -21,23 +21,67 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
   const [selectedColorIndex, setSelectedColorIndex] = useState<number>(0)
   const [expandedHarmony, setExpandedHarmony] = useState<string | null>(null)
   const [notice, setNotice] = useState<NoticeState | null>(null)
+  const [suggestionsFingerprint, setSuggestionsFingerprint] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
+  const controllerRef = useRef<AbortController | null>(null)
+  const fingerprint = paletteFingerprint(colors)
+  const fingerprintRef = useRef(fingerprint)
+  fingerprintRef.current = fingerprint
+
+  useEffect(() => {
+    requestIdRef.current += 1
+    controllerRef.current?.abort()
+    controllerRef.current = null
+    setSuggestions([])
+    setSuggestionsFingerprint(null)
+    setExpandedHarmony(null)
+    setLoading(false)
+    setNotice(null)
+    setSelectedColorIndex((current) =>
+      Math.max(0, Math.min(current, colors.length - 1)),
+    )
+  }, [fingerprint, colors.length])
+
+  useEffect(
+    () => () => {
+      requestIdRef.current += 1
+      controllerRef.current?.abort()
+    },
+    [],
+  )
 
   const fetchSuggestions = async () => {
     if (colors.length === 0) return
 
+    controllerRef.current?.abort()
+    const controller = new AbortController()
+    controllerRef.current = controller
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+    const requestedFingerprint = fingerprint
     setLoading(true)
     setNotice(null)
     try {
-      const data = await suggestColors(colors)
+      const data = await suggestColors(colors, controller.signal)
+      if (
+        requestId !== requestIdRef.current ||
+        requestedFingerprint !== fingerprintRef.current
+      ) {
+        return
+      }
       setSuggestions(data.suggestions)
+      setSuggestionsFingerprint(requestedFingerprint)
     } catch (error) {
+      if (controller.signal.aborted) return
       console.error('Error fetching suggestions:', error)
       setNotice({
         message: errorMessage(error),
         retry: () => void fetchSuggestions(),
       })
     } finally {
-      setLoading(false)
+      if (requestId === requestIdRef.current) {
+        setLoading(false)
+      }
     }
   }
 
@@ -54,6 +98,9 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
     setExpandedHarmony(expandedHarmony === harmonyType ? null : harmonyType)
   }
 
+  const hasCurrentSuggestions =
+    suggestions.length > 0 && suggestionsFingerprint === fingerprint
+
   // Helper to extract angles and colors for mini wheel
   const getHarmonyVisualization = (harmony: HarmonySuggestion, baseHue: number) => {
     const angles = [baseHue]
@@ -67,7 +114,7 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
     return { angles, colors }
   }
 
-  if (suggestions.length === 0) {
+  if (!hasCurrentSuggestions) {
     return (
       <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
         <div className="text-center">
@@ -94,7 +141,12 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
     )
   }
 
-  const currentSuggestion = suggestions[selectedColorIndex]
+  const safeSelectedIndex = Math.min(
+    selectedColorIndex,
+    suggestions.length - 1,
+    colors.length - 1,
+  )
+  const currentSuggestion = suggestions[safeSelectedIndex]
 
   return (
     <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
@@ -112,9 +164,12 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
           {colors.map((color, index) => (
             <button
               key={index}
-              onClick={() => setSelectedColorIndex(index)}
+              onClick={() => {
+                setSelectedColorIndex(index)
+                setExpandedHarmony(null)
+              }}
               className={`w-12 h-12 rounded-md transition-all ${
-                selectedColorIndex === index
+                safeSelectedIndex === index
                   ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-dark-secondary'
                   : 'hover:scale-105'
               }`}
@@ -271,5 +326,15 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
       </div>
     </div>
   )
+}
+
+export function paletteFingerprint(colors: Color[]): string {
+  return colors
+    .map(
+      (color) =>
+        `${color.hex.toLowerCase()}:${color.rgb.r},${color.rgb.g},${color.rgb.b}:` +
+        `${color.hsl.h},${color.hsl.s},${color.hsl.l}`,
+    )
+    .join('|')
 }
 
