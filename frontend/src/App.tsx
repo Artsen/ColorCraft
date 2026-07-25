@@ -4,27 +4,10 @@ import ColorPalette from './components/ColorPalette'
 import ColorWheel from './components/ColorWheel'
 import AnalysisResults from './components/AnalysisResults'
 import ColorSuggestions from './components/ColorSuggestions'
-
-export interface Color {
-  hex: string
-  rgb: { r: number; g: number; b: number }
-  hsl: { h: number; s: number; l: number }
-}
-
-export interface Analysis {
-  color_theory: {
-    harmonies: any
-    temperature_balance: any
-    score: number
-    tags: string[]
-    metrics: any
-  }
-  accessibility: {
-    pairs: any[]
-    issues: any[]
-    summary: any
-  }
-}
+import InlineNotice, { type NoticeState } from './components/InlineNotice'
+import { analyzeColors, extractColors } from './api/client'
+import { errorMessage } from './api/errors'
+import type { Analysis, Color } from './api/contracts'
 
 function App() {
   const [colors, setColors] = useState<Color[]>([])
@@ -37,6 +20,7 @@ function App() {
   } | null>(null)
   const [nColors, setNColors] = useState(5)
   const [extracting, setExtracting] = useState(false)
+  const [notice, setNotice] = useState<NoticeState | null>(null)
 
   const handleColorsExtracted = (extractedColors: Color[], imageFile?: File, imageUrl?: string) => {
     setColors(extractedColors)
@@ -52,23 +36,17 @@ function App() {
     if (!uploadedImage) return
 
     setExtracting(true)
+    setNotice(null)
     try {
-      const formData = new FormData()
-      formData.append('file', uploadedImage.file)
-
-      const response = await fetch(`/api/extract-colors?n_colors=${nColors}`, {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setColors(data.colors)
-        setAnalysis(null)
-      }
+      const data = await extractColors(uploadedImage.file, nColors)
+      setColors(data.colors)
+      setAnalysis(null)
     } catch (error) {
       console.error('Error re-extracting colors:', error)
-      alert('Failed to re-extract colors. Please try again.')
+      setNotice({
+        message: errorMessage(error),
+        retry: () => void handleReExtract(),
+      })
     } finally {
       setExtracting(false)
     }
@@ -120,27 +98,21 @@ function App() {
 
   const handleAnalyze = async () => {
     if (colors.length < 2) {
-      alert('Please add at least 2 colors to analyze')
+      setNotice({ message: 'Add at least two colors, then retry the analysis.' })
       return
     }
 
     setLoading(true)
+    setNotice(null)
     try {
-      const response = await fetch('/api/analyze-colors', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ colors }),
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setAnalysis(data.analysis)
-      }
+      const data = await analyzeColors(colors)
+      setAnalysis(data.analysis)
     } catch (error) {
       console.error('Error analyzing colors:', error)
-      alert('Failed to analyze colors. Please try again.')
+      setNotice({
+        message: errorMessage(error),
+        retry: () => void handleAnalyze(),
+      })
     } finally {
       setLoading(false)
     }
@@ -151,6 +123,7 @@ function App() {
     setAnalysis(null)
     setShowUpload(true)
     setUploadedImage(null)
+    setNotice(null)
   }
 
   return (
@@ -166,6 +139,9 @@ function App() {
 
         {/* Main Content */}
         <div className="space-y-6">
+          {notice && (
+            <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
+          )}
           {showUpload ? (
             <ImageUpload 
               onColorsExtracted={handleColorsExtracted}

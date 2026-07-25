@@ -1,4 +1,4 @@
-import { Color, Analysis } from '../App'
+import type { Analysis, Color } from '../api/contracts'
 
 interface AnalysisResultsProps {
   analysis: Analysis
@@ -6,7 +6,7 @@ interface AnalysisResultsProps {
 }
 
 export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
-  const { color_theory, accessibility } = analysis
+  const { colorTheory, accessibility } = analysis
 
   return (
     <div className="space-y-6">
@@ -16,7 +16,7 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
 
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {color_theory.tags.map((tag, index) => (
+          {colorTheory.tags.map((tag, index) => (
             <span
               key={index}
               className="px-3 py-1 bg-purple-600/20 text-purple-400 rounded-md text-sm border border-purple-600/30"
@@ -30,12 +30,12 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
         <div className="mb-6 p-4 bg-dark-tertiary rounded-lg border border-border-subtle">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-text-secondary">Harmony Score</span>
-            <span className="text-2xl font-semibold text-purple-400">{color_theory.score}/100</span>
+            <span className="text-2xl font-semibold text-purple-400">{colorTheory.score}/100</span>
           </div>
           <div className="w-full bg-dark-primary rounded-full h-2">
             <div
               className="bg-purple-600 h-2 rounded-full transition-all"
-              style={{ width: `${color_theory.score}%` }}
+              style={{ width: `${colorTheory.score}%` }}
             />
           </div>
         </div>
@@ -48,18 +48,18 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-text-secondary">Balance:</span>
-                <span className="text-text-primary capitalize">{color_theory.temperature_balance.balance}</span>
+                <span className="text-text-primary capitalize">{colorTheory.temperatureBalance.balance}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Warm Colors:</span>
                 <span className="text-text-primary">
-                  {color_theory.temperature_balance.warm_count} ({(color_theory.temperature_balance.warm_ratio * 100).toFixed(0)}%)
+                  {colorTheory.temperatureBalance.warmCount} ({(colorTheory.temperatureBalance.warmRatio * 100).toFixed(0)}%)
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Cool Colors:</span>
                 <span className="text-text-primary">
-                  {color_theory.temperature_balance.cool_count} ({(color_theory.temperature_balance.cool_ratio * 100).toFixed(0)}%)
+                  {colorTheory.temperatureBalance.coolCount} ({(colorTheory.temperatureBalance.coolRatio * 100).toFixed(0)}%)
                 </span>
               </div>
             </div>
@@ -71,15 +71,15 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-text-secondary">Hue Diversity:</span>
-                <span className="text-text-primary">{color_theory.metrics.hue_diversity}°</span>
+                <span className="text-text-primary">{colorTheory.metrics.hueDiversity}°</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Avg Saturation:</span>
-                <span className="text-text-primary">{color_theory.metrics.saturation_avg}%</span>
+                <span className="text-text-primary">{colorTheory.metrics.saturationAvg}%</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-secondary">Lightness Range:</span>
-                <span className="text-text-primary">{color_theory.metrics.lightness_range}%</span>
+                <span className="text-text-primary">{colorTheory.metrics.lightnessRange}%</span>
               </div>
             </div>
           </div>
@@ -93,24 +93,36 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
         </h2>
 
         {/* Summary */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="bg-dark-tertiary rounded-lg p-4 border border-border-subtle text-center">
             <div className="text-2xl font-semibold text-text-primary mb-1">
-              {accessibility.summary.total_pairs}
+              {accessibility.summary.totalPairs}
             </div>
             <div className="text-xs text-text-secondary">Total Pairs</div>
           </div>
           <div className="bg-dark-tertiary rounded-lg p-4 border border-green-600/30 text-center">
             <div className="text-2xl font-semibold text-green-400 mb-1">
-              {accessibility.summary.aa_pass}
+              {accessibility.summary.aaNormalPasses}
             </div>
-            <div className="text-xs text-text-secondary">AA Pass</div>
+            <div className="text-xs text-text-secondary">AA Normal</div>
           </div>
           <div className="bg-dark-tertiary rounded-lg p-4 border border-green-600/30 text-center">
             <div className="text-2xl font-semibold text-green-400 mb-1">
-              {accessibility.summary.aaa_pass}
+              {accessibility.summary.aaLargePasses}
             </div>
-            <div className="text-xs text-text-secondary">AAA Pass</div>
+            <div className="text-xs text-text-secondary">AA Large</div>
+          </div>
+          <div className="bg-dark-tertiary rounded-lg p-4 border border-green-600/30 text-center">
+            <div className="text-2xl font-semibold text-green-400 mb-1">
+              {accessibility.summary.aaaNormalPasses}
+            </div>
+            <div className="text-xs text-text-secondary">AAA Normal</div>
+          </div>
+          <div className="bg-dark-tertiary rounded-lg p-4 border border-green-600/30 text-center">
+            <div className="text-2xl font-semibold text-green-400 mb-1">
+              {accessibility.summary.aaaLargePasses}
+            </div>
+            <div className="text-xs text-text-secondary">AAA Large</div>
           </div>
         </div>
 
@@ -167,7 +179,7 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
                 <div className="flex gap-2">
                   <span
                     className={`text-xs px-2 py-0.5 rounded ${
-                      pair.aa_normal
+                      pair.aaNormal
                         ? 'bg-green-600/20 text-green-400 border border-green-600/30'
                         : 'bg-red-600/20 text-red-400 border border-red-600/30'
                     }`}
@@ -176,7 +188,7 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
                   </span>
                   <span
                     className={`text-xs px-2 py-0.5 rounded ${
-                      pair.aa_large
+                      pair.aaLarge
                         ? 'bg-green-600/20 text-green-400 border border-green-600/30'
                         : 'bg-red-600/20 text-red-400 border border-red-600/30'
                     }`}
@@ -185,12 +197,21 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
                   </span>
                   <span
                     className={`text-xs px-2 py-0.5 rounded ${
-                      pair.aaa_normal
+                      pair.aaaNormal
                         ? 'bg-green-600/20 text-green-400 border border-green-600/30'
                         : 'bg-red-600/20 text-red-400 border border-red-600/30'
                     }`}
                   >
                     AAA Normal
+                  </span>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded ${
+                      pair.aaaLarge
+                        ? 'bg-green-600/20 text-green-400 border border-green-600/30'
+                        : 'bg-red-600/20 text-red-400 border border-red-600/30'
+                    }`}
+                  >
+                    AAA Large
                   </span>
                 </div>
               </div>

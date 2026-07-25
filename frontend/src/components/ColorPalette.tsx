@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Color } from '../App'
+import type { Color } from '../api/contracts'
 import ImageColorPicker from './ImageColorPicker'
 
 interface ColorPaletteProps {

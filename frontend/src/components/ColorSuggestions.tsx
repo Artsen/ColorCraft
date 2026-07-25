@@ -1,29 +1,14 @@
 import { useState } from 'react'
-import { Color } from '../App'
+import { suggestColors } from '../api/client'
+import type {
+  Color,
+  HarmonySuggestion,
+  SuggestionColor,
+  SuggestionResult,
+} from '../api/contracts'
+import { errorMessage } from '../api/errors'
+import InlineNotice, { type NoticeState } from './InlineNotice'
 import MiniColorWheel from './MiniColorWheel'
-
-interface Suggestion {
-  hex: string
-  rgb: { r: number; g: number; b: number }
-  hsl: { h: number; s: number; l: number }
-  name: string
-  description: string
-}
-
-interface HarmonyGroup {
-  type: string
-  angle: string
-  description: string
-  use_cases: string[]
-  mood: string
-  examples: string
-  suggestions: Suggestion[]
-}
-
-interface ColorSuggestionData {
-  base_color: Color
-  harmonies: HarmonyGroup[]
-}
 
 interface ColorSuggestionsProps {
   colors: Color[]
@@ -32,36 +17,31 @@ interface ColorSuggestionsProps {
 
 export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestionsProps) {
   const [loading, setLoading] = useState(false)
-  const [suggestions, setSuggestions] = useState<ColorSuggestionData[]>([])
+  const [suggestions, setSuggestions] = useState<SuggestionResult[]>([])
   const [selectedColorIndex, setSelectedColorIndex] = useState<number>(0)
   const [expandedHarmony, setExpandedHarmony] = useState<string | null>(null)
+  const [notice, setNotice] = useState<NoticeState | null>(null)
 
   const fetchSuggestions = async () => {
     if (colors.length === 0) return
 
     setLoading(true)
+    setNotice(null)
     try {
-      const response = await fetch('/api/suggest-colors', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ colors }),
-      })
-
-      const data = await response.json()
-      if (data.success) {
-        setSuggestions(data.suggestions)
-      }
+      const data = await suggestColors(colors)
+      setSuggestions(data.suggestions)
     } catch (error) {
       console.error('Error fetching suggestions:', error)
-      alert('Failed to generate suggestions. Please try again.')
+      setNotice({
+        message: errorMessage(error),
+        retry: () => void fetchSuggestions(),
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  const handleAddSuggestion = (suggestion: Suggestion) => {
+  const handleAddSuggestion = (suggestion: SuggestionColor) => {
     const newColor: Color = {
       hex: suggestion.hex,
       rgb: suggestion.rgb,
@@ -75,9 +55,9 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
   }
 
   // Helper to extract angles and colors for mini wheel
-  const getHarmonyVisualization = (harmony: HarmonyGroup, baseHue: number) => {
+  const getHarmonyVisualization = (harmony: HarmonySuggestion, baseHue: number) => {
     const angles = [baseHue]
-    const colors = [suggestions[selectedColorIndex].base_color.hex]
+    const colors = [suggestions[selectedColorIndex].baseColor.hex]
     
     harmony.suggestions.forEach(sug => {
       angles.push(sug.hsl.h)
@@ -92,6 +72,11 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
       <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
         <div className="text-center">
           <h2 className="text-lg font-medium text-text-primary mb-4">Color Suggestions</h2>
+          {notice && (
+            <div className="mb-4 text-left">
+              <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
+            </div>
+          )}
           <button
             onClick={fetchSuggestions}
             disabled={loading || colors.length === 0}
@@ -114,6 +99,11 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
   return (
     <div className="bg-dark-secondary rounded-lg border border-border-subtle p-6">
       <h2 className="text-lg font-medium text-text-primary mb-4">Color Suggestions & Harmony Guide</h2>
+      {notice && (
+        <div className="mb-4">
+          <InlineNotice notice={notice} onDismiss={() => setNotice(null)} />
+        </div>
+      )}
 
       {/* Base Color Selector */}
       <div className="mb-6">
@@ -141,7 +131,7 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
           const isExpanded = expandedHarmony === harmony.type
           const { angles, colors: harmonyColors } = getHarmonyVisualization(
             harmony,
-            currentSuggestion.base_color.hsl.h
+            currentSuggestion.baseColor.hsl.h
           )
 
           return (
@@ -186,7 +176,7 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
                     {/* Mini Color Wheel */}
                     <div className="flex justify-center">
                       <MiniColorWheel
-                        baseHue={currentSuggestion.base_color.hsl.h}
+                        baseHue={currentSuggestion.baseColor.hsl.h}
                         angles={angles}
                         colors={harmonyColors}
                         size={140}
@@ -216,7 +206,7 @@ export default function ColorSuggestions({ colors, onAddColor }: ColorSuggestion
                     <div>
                       <p className="text-xs text-text-tertiary mb-2">Best used for:</p>
                       <ul className="space-y-1">
-                        {harmony.use_cases.map((useCase, idx) => (
+                        {harmony.useCases.map((useCase, idx) => (
                           <li key={idx} className="text-sm text-text-secondary flex items-start">
                             <span className="text-purple-500 mr-2">•</span>
                             <span>{useCase}</span>
