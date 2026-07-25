@@ -143,12 +143,8 @@ export function formatContrastRatio(
   )
   if (!roundedUpToFailureBoundary) return ratio.toFixed(2)
 
-  const precision = 10_000
-  const floatingPointTolerance =
-    Number.EPSILON * Math.max(1, Math.abs(ratio)) * 4
-  const truncated =
-    Math.floor((ratio + floatingPointTolerance) * precision) / precision
-  return truncated.toFixed(4)
+  const [integerPart, fractionalPart = ''] = ratio.toString().split('.')
+  return `${integerPart}.${fractionalPart.padEnd(4, '0').slice(0, 4)}`
 }
 
 export function resultsForContrastCheck(
