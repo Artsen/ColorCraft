@@ -1,46 +1,141 @@
-.app-root {
+.app-shell {
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
   min-height: 100vh;
   background: var(--color-app-bg);
 }
 
-.workspace {
-  width: min(1080px, 100%);
-  margin: 0 auto;
-  padding: var(--space-7) var(--space-5) var(--space-9);
-}
-
-.app-header {
-  position: relative;
+.shell-sidebar {
+  position: sticky;
+  top: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  height: 100vh;
+  flex-direction: column;
   gap: var(--space-5);
-  margin-bottom: var(--space-7);
-  padding-bottom: var(--space-4);
-  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--space-5) var(--space-4);
+  border-right: 1px solid var(--color-border-subtle);
+  background: var(--color-sidebar-bg);
 }
 
-.app-header::after {
-  position: absolute;
-  right: 0;
-  bottom: -1px;
-  left: 0;
-  height: 1px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-ember), transparent 72%);
-  opacity: 0.45;
-  content: "";
-}
-
-.brand-lockup {
+.shell-brand {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
 }
 
-.brand-copy h1 { margin-bottom: var(--space-1); }
-.brand-copy p { margin: 0; font: var(--font-body-compact); }
-.content-stack { display: grid; gap: var(--space-6); }
+.shell-brand > div {
+  display: grid;
+  min-width: 0;
+}
+
+.shell-brand strong {
+  color: var(--color-text-primary);
+  font: var(--font-product-title);
+}
+
+.shell-brand > div > span {
+  color: var(--color-text-subtle);
+  font: var(--font-metadata);
+}
+
+.new-palette-button { width: 100%; }
+.shell-navigation { display: grid; gap: var(--space-1); }
+.navigation-item-wrap { min-width: 0; }
+
+.navigation-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 42px;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  font: var(--font-label);
+  text-align: left;
+}
+
+.navigation-item:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background: var(--color-surface-hover);
+}
+
+.navigation-item[aria-current="page"] {
+  color: var(--color-text-primary);
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-selected);
+}
+
+.navigation-item[aria-current="page"]::before {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: -1px;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  content: "";
+}
+
+.navigation-item:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.navigation-reason {
+  display: block;
+  margin: 2px var(--space-3) var(--space-2);
+  color: var(--color-text-subtle);
+  font: var(--font-metadata);
+}
+
+.sidebar-theme {
+  margin-top: auto;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.sidebar-theme .theme-control {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.shell-main { min-width: 0; }
+.mobile-topbar,
+.mobile-navigation { display: none; }
+
+.shell-workspace {
+  min-width: 0;
+  padding: var(--space-6) clamp(var(--space-4), 3vw, var(--space-8)) var(--space-9);
+}
+
+.workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.workspace-header h1 { margin-bottom: var(--space-1); }
+.workspace-header p { margin-bottom: 0; }
+.workspace-kicker {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-subtle);
+  font: var(--font-metadata);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.workspace-content { display: grid; gap: var(--space-4); }
+.content-stack { display: grid; gap: var(--space-5); }
 .panel-stack { display: grid; gap: var(--space-4); }
 .section-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); justify-content: center; }
 .split-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }

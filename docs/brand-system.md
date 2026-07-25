@@ -6,11 +6,12 @@ ColorCraft is the color-analysis member of the same product family as Web Video
 Optimizer. The family resemblance comes from structure: precise slate surfaces,
 compact information density, restrained radii, semantic controls, and a narrow
 iris-to-ember accent. ColorCraft remains its own product. It does not reuse the
-Web Video Optimizer monogram, video metaphors, or application shell.
+Web Video Optimizer monogram, video metaphors, or video-specific navigation.
 
-The current experience is intentionally a focused workspace rather than a
-dashboard. A future dashboard can reuse these foundations without forcing
-navigation, account controls, or empty product chrome into today's flow.
+The product uses the family application-shell grammar for three real workflow
+stages: Create, Review, and Export. It remains a focused local utility rather
+than a dashboard. Library, recent-palette, account, and persistence surfaces
+must not appear until the corresponding product capabilities exist.
 
 ## Voice
 
@@ -74,6 +75,20 @@ menus use elevated shadow, and modal dialogs use dialog shadow.
 - Selected states use explicit ARIA state plus semantic visual treatment.
 - Keyboard focus must remain visible. Disabled controls must not rely on opacity
   alone.
+
+## Application shell
+
+- Desktop uses a compact 256px sidebar with product identity, New palette,
+  workflow navigation, and theme selection.
+- Workspace headers describe the current palette source and always state that
+  work is local only.
+- Create is always available. Review and Export reflect real palette
+  prerequisites and explain disabled states.
+- At 1024px and below, the sidebar becomes a mobile top bar and bottom
+  navigation without changing the information architecture.
+- Navigation is URL-backed so browser history restores the current workflow
+  stage. Palette data itself remains session-only.
+- Do not add Library or Recent Palettes until saved-palette persistence exists.
 
 ## Themes and accessibility
 
