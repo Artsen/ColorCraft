@@ -206,7 +206,7 @@ contents, clipboard contents, or unrelated palette data in user-facing errors.
 | exported file | A file that the browser creates from the current palette. | Do not imply that ColorCraft stores the file. |
 | ColorCraft JSON | The portable, single-palette JSON format that ColorCraft exports and imports in the browser. | Distinguish its schema version from the IndexedDB saved-palette schema and backend API schemas. |
 | portable color key | A deterministic document-local color reference such as `color-1` in ColorCraft JSON version 3. | Do not call it an internal workspace ID. |
-| semantic role token | An assigned `--role-*` CSS alias or `role-*` Tailwind key generated from a color role. | Keep it separate from the base palette token. |
+| semantic role token | An assigned `--role-*` CSS alias or `role-*` Tailwind key generated from a color role. | The Tailwind `role-*` namespace is reserved. Keep CSS base `--color-*` and semantic `--role-*` tokens separate. |
 | imported palette | A validated ColorCraft JSON palette activated in the current session. | State that it remains unsaved until **Save palette** is selected. |
 | copy | Place generated export text on the system clipboard. | Do not use as a synonym for export or download. |
 | download | Save generated export data as a local file through the browser. | Do not use as a synonym for copy. |

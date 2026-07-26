@@ -154,9 +154,9 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
           <section className="analysis-section">
             <h3>Issues found</h3>
             <div className="issue-list">
-              {accessibility.issues.map((issue) => (
+              {accessibility.issues.map((issue, index) => (
                 <Notice
-                  key={`${issue.color1}-${issue.color2}`}
+                  key={`${issue.color1}-${issue.color2}-${index}`}
                   variant="warning"
                 >
                   <p>{issue.message}</p>
@@ -175,9 +175,9 @@ export default function AnalysisResults({ analysis }: AnalysisResultsProps) {
         <section className="analysis-section">
           <h3>Color pair contrast</h3>
           <div className="contrast-list">
-            {accessibility.pairs.map((pair) => (
+            {accessibility.pairs.map((pair, index) => (
               <div
-                key={`${pair.color1}-${pair.color2}`}
+                key={`${pair.color1}-${pair.color2}-${index}`}
                 className="contrast-row"
               >
                 <div className="contrast-row-header">

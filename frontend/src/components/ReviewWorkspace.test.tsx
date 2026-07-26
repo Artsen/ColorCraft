@@ -248,6 +248,48 @@ describe('ReviewWorkspace outcomes', () => {
     expect(within(result).getByText(/1.00 to 1/)).toBeInTheDocument()
   })
 
+  it('renders duplicate all-pairs rows without duplicate React keys', () => {
+    const duplicatePair = {
+      color1: '#FF0000',
+      color2: '#0000FF',
+      ratio: 2.15,
+      aaNormal: false,
+      aaLarge: false,
+      aaaNormal: false,
+      aaaLarge: false,
+    }
+    const duplicateAnalysis = measuredAnalysis()
+    duplicateAnalysis.accessibility.pairs = [
+      { ...duplicatePair },
+      { ...duplicatePair },
+    ]
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const { container } = render(
+        <ReviewWorkspace
+          colors={[red, blue]}
+          analysis={duplicateAnalysis}
+          analysisStale={false}
+          analyzing={false}
+          selectedTab="contrast"
+          roles={{}}
+          onSelectTab={vi.fn()}
+          onAnalyze={vi.fn()}
+          onAssignRole={vi.fn()}
+          onAddColor={vi.fn()}
+        />,
+      )
+      expect(
+        container.querySelectorAll('.all-pairs .contrast-row'),
+      ).toHaveLength(2)
+      expect(consoleError.mock.calls.flat().join(' ')).not.toMatch(
+        /same key|unique "key"/i,
+      )
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
   it('clearly identifies stale analysis without rendering prior results', () => {
     render(
       <ReviewWorkspace

@@ -532,10 +532,10 @@ function Contrast({
             components or focus indicators.
           </p>
           <div className="contrast-list">
-            {analysis.accessibility.pairs.map((pair) => (
+            {analysis.accessibility.pairs.map((pair, index) => (
               <div
                 className="contrast-row"
-                key={`${pair.color1}-${pair.color2}`}
+                key={`${pair.color1}-${pair.color2}-${index}`}
               >
                 <div className="contrast-row-header">
                   <span>

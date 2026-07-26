@@ -2,6 +2,7 @@ import type { PaletteColor } from './workspace'
 import { serializePortablePalette } from './portablePalette'
 import {
   contrastRatio,
+  paletteRoles,
   roleAssignmentEntries,
   roleLabels,
   roleTokenNames,
@@ -163,13 +164,31 @@ export function exportToken(value: string, fallback: string): string {
   )
 }
 
+export const reservedSemanticTokens = paletteRoles.map(
+  (role) => `role-${roleTokenNames[role]}`,
+)
+
+function allocateToken(
+  requested: string,
+  allocated: Set<string>,
+  reserved: ReadonlySet<string>,
+): string {
+  let token = requested
+  let suffix = 2
+  while (allocated.has(token) || reserved.has(token)) {
+    token = `${requested}-${suffix}`
+    suffix += 1
+  }
+  allocated.add(token)
+  return token
+}
+
 export function exportTokens(colors: PaletteColor[]): string[] {
-  const counts = new Map<string, number>()
+  const allocated = new Set<string>()
+  const reserved = new Set(reservedSemanticTokens)
   return colors.map((color, index) => {
-    const base = exportToken(color.name ?? '', `palette-${index + 1}`)
-    const count = (counts.get(base) ?? 0) + 1
-    counts.set(base, count)
-    return count === 1 ? base : `${base}-${count}`
+    const requested = exportToken(color.name ?? '', `palette-${index + 1}`)
+    return allocateToken(requested, allocated, reserved)
   })
 }
 
