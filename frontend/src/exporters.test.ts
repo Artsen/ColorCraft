@@ -6,6 +6,7 @@ import {
   generateJson,
   generateSvg,
   generateTailwind,
+  reservedSemanticTokens,
   sanitizeFilename,
 } from './exporters'
 
@@ -103,6 +104,107 @@ describe('browser palette exporters', () => {
     expect(generateTailwind({ ...palette, colors })).toContain(
       "'palette-3': '#ff0000'",
     )
+  })
+
+  it('reserves every semantic role token even when roles are unassigned', () => {
+    const colors = reservedSemanticTokens.map((token, index) => ({
+      ...(index % 2 === 0 ? red : blue),
+      id: `reserved-${index}`,
+      name: token
+        .split('-')
+        .map((part) => `${part[0].toUpperCase()}${part.slice(1)}`)
+        .join(' '),
+    }))
+    expect(exportTokens(colors)).toEqual(
+      reservedSemanticTokens.map((token) => `${token}-2`),
+    )
+    const withoutRoles = generateTailwind({
+      ...palette,
+      colors,
+      roles: {},
+    })
+    const withRoles = generateTailwind({
+      ...palette,
+      colors,
+      roles: { primaryAction: colors[0].id },
+    })
+    const keys = (output: string) =>
+      [...output.matchAll(/^\s+'([^']+)':/gm)].map((match) => match[1])
+    expect(keys(withRoles).slice(0, colors.length)).toEqual(
+      keys(withoutRoles).slice(0, colors.length),
+    )
+  })
+
+  it('allocates deterministic suffixes across reserved and existing suffixes', () => {
+    const colors = [
+      { ...red, id: 'one', name: 'Role primary action' },
+      { ...blue, id: 'two', name: 'Role primary action 2' },
+      { ...red, id: 'three', name: 'Role primary action' },
+      { ...blue, id: 'four', name: 'Ordinary' },
+      { ...red, id: 'five', name: 'Ordinary' },
+      { ...blue, id: 'six', name: 'Ordinary 2' },
+    ]
+    expect(exportTokens(colors)).toEqual([
+      'role-primary-action-2',
+      'role-primary-action-2-2',
+      'role-primary-action-3',
+      'ordinary',
+      'ordinary-2',
+      'ordinary-2-2',
+    ])
+  })
+
+  it.each([
+    'Role primary action',
+    'ROLE PRIMARY ACTION',
+    'role---primary___action!!!',
+  ])('normalizes the reserved-name variant %s safely', (name) => {
+    expect(exportTokens([{ ...red, name }])).toEqual(['role-primary-action-2'])
+  })
+
+  it('keeps unnamed fallbacks and ordinary names unchanged', () => {
+    expect(exportTokens([red, blue])).toEqual(['palette-1', 'palette-2'])
+    expect(
+      exportTokens([
+        { ...red, name: 'Primary action' },
+        { ...blue, name: 'Surface neutral' },
+      ]),
+    ).toEqual(['primary-action', 'surface-neutral'])
+  })
+
+  it('uses collision-safe base tokens consistently in CSS and Tailwind', () => {
+    const collisionPalette = {
+      ...palette,
+      colors: [
+        { ...red, name: 'Role primary action' },
+        { ...blue, name: 'Role primary action' },
+      ],
+      roles: {
+        primaryAction: red.id,
+        pageBackground: blue.id,
+      },
+    }
+    const css = generateCss(collisionPalette)
+    expect(css).toContain('--color-role-primary-action-2: #ff0000;')
+    expect(css).toContain('--color-role-primary-action-3: #0000ff;')
+    expect(css).toContain(
+      '--role-primary-action: var(--color-role-primary-action-2);',
+    )
+    expect(css).toContain(
+      '--role-page-background: var(--color-role-primary-action-3);',
+    )
+
+    const tailwind = generateTailwind(collisionPalette)
+    const keys = [...tailwind.matchAll(/^\s+'([^']+)':/gm)].map(
+      (match) => match[1],
+    )
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(keys).toEqual([
+      'role-primary-action-2',
+      'role-primary-action-3',
+      'role-page-background',
+      'role-primary-action',
+    ])
   })
 
   it('keeps duplicate-color semantic ownership distinct', () => {

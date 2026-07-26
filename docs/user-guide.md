@@ -202,6 +202,9 @@ stated in percentage points.
 
 Named colors produce safe ASCII keys in CSS and Tailwind output and visible
 labels in SVG. Unnamed colors keep the `palette-1`, `palette-2` numeric pattern.
+Tailwind reserves the generated `role-*` namespace for semantic role keys. A
+color name that normalizes to a reserved key receives a deterministic numeric
+suffix, such as `role-primary-action-2`.
 ColorCraft JSON schema version 3 preserves Unicode names, exact order,
 extraction metadata, and unambiguous role ownership. Each color receives a
 document-local key such as `color-1`; the file does not contain internal
@@ -213,8 +216,9 @@ exported file through the browser. Export does not create or update a saved
 palette record.
 
 CSS output adds assigned `--role-*` aliases that reference base `--color-*`
-tokens. Tailwind output adds assigned `role-*` keys, and SVG rows identify their
-assigned roles. Imported version-1 and version-2 files still use HEX role
+tokens. These separate CSS namespaces prevent collisions. Tailwind output adds
+assigned `role-*` keys, and SVG rows identify their assigned roles. Imported
+version-1 and version-2 files still use HEX role
 references. When duplicate HEX values make those older files ambiguous,
 ColorCraft maps the role to the first matching color in palette order.
 

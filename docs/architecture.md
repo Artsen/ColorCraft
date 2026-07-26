@@ -114,11 +114,16 @@ The frontend generates every export without an API request:
 - SVG swatch sheet
 
 CSS emits base `--color-*` values and assigned `--role-*` aliases. Tailwind
-emits base keys and assigned `role-*` semantic keys. SVG annotates each row with
-its assigned roles. Comments replace line breaks and the `*/` sequence in the
-palette name. SVG output escapes `&`, `<`, `>`, `"`, and `'`. Each swatch label
-uses black or white according to the higher measured contrast ratio. Download
-uses an object URL and revokes the URL after the browser starts the download.
+emits base keys and assigned `role-*` semantic keys. The Tailwind `role-*`
+namespace is reserved even when roles are unassigned. The shared base-token
+allocator adds deterministic numeric suffixes when a normalized color name
+would collide with a reserved or previously allocated key. CSS keeps base and
+semantic values in separate `--color-*` and `--role-*` namespaces. SVG
+annotates each row with its assigned roles. Comments replace line breaks and
+the `*/` sequence in the palette name. SVG output escapes `&`, `<`, `>`, `"`,
+and `'`. Each swatch label uses black or white according to the higher measured
+contrast ratio. Download uses an object URL and revokes the URL after the
+browser starts the download.
 
 Export does not create or update a saved palette record.
 
